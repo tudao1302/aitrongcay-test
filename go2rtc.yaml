@@ -1,0 +1,16 @@
+streams:
+  # Thay thế bằng thông tin RTSP camera của bạn
+  # Cấu trúc: rtsp://admin:MẬT_KHẨU@IP_CAMERA:554/H.264/ch1/main/av_stream
+  khay_1: rtsp://admin:Firesmart123@192.168.100.205/h264/ch1/main/av_stream
+
+api:
+  listen: ":1984"
+
+# go2rtc hỗ trợ WebRTC cực nhanh (độ trễ < 500ms)
+webrtc:
+  listen: ":8555"
+
+# go2rtc cũng hỗ trợ HLS ổn định
+hls:
+  # Tự động tạo m3u8 từ bất kỳ stream nào
+  # URL sẽ là http://localhost:1984/api/hls.m3u8?src=khay_1

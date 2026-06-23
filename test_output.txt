@@ -1,0 +1,129 @@
+POT EXISTS: YES
+CURRENT STAGE: Gieo hạt
+RECOMMENDATION: Cần loại bỏ hoàn toàn phần cây chết, vệ sinh khay và gieo hạt mới để bắt đầu chu trình trồng trọt.
+DB ERROR: 
+SUPPLIES COUNT: 20
+SUPPLIES: Array
+(
+    [0] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm súp lơ xanh
+        )
+
+    [1] => Array
+        (
+            [code] => 
+            [name] => Dung dịch dinh dưỡng cho rau cải mầm Tunihe
+        )
+
+    [2] => Array
+        (
+            [code] => 
+            [name] => Khay trồng rau thông minh trắng nông cỡ lớn
+        )
+
+    [3] => Array
+        (
+            [code] => 
+            [name] => Khay trồng cây màu đen cỡ lớn
+        )
+
+    [4] => Array
+        (
+            [code] => 
+            [name] => Đèn LED quang hợp cho cây trồng trong nhà
+        )
+
+    [5] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm Malady
+        )
+
+    [6] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm lúa mạch
+        )
+
+    [7] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm Malady
+        )
+
+    [8] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm Đà Lạt
+        )
+
+    [9] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm thảo dược methi
+        )
+
+    [10] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm đậu Hà Lan
+        )
+
+    [11] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm hướng dương
+        )
+
+    [12] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm rau muống
+        )
+
+    [13] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm cải ngọt
+        )
+
+    [14] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm củ cải đỏ
+        )
+
+    [15] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau mầm củ cải trắng
+        )
+
+    [16] => Array
+        (
+            [code] => 
+            [name] => Hạt giống cà chua chocolate
+        )
+
+    [17] => Array
+        (
+            [code] => VN0010-02
+            [name] => Viên nén xơ dừa làm giá thể trồng cây
+        )
+
+    [18] => Array
+        (
+            [code] => 
+            [name] => Hạt giống rau cải xoong
+        )
+
+    [19] => Array
+        (
+            [code] => RAU-DAY
+            [name] => Hạt giống rau đay
+        )
+
+)
+

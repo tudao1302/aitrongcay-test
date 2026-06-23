@@ -1,0 +1,22 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="800" fill="#F7F4EC"/>
+<rect width="1200" height="395" fill="#DDEFF6"/>
+<path d="M0 474C165 444 329 462 484 439C635 417 721 345 878 336C1016 327 1093 366 1200 399V800H0V474Z" fill="#B7D99A"/>
+<path d="M0 557C123 505 243 525 351 497C476 464 554 390 700 395C836 400 928 503 1200 444V800H0V557Z" fill="#89C882"/>
+<circle cx="937" cy="132" r="72" fill="#F6D88A"/>
+<path d="M166 625C194 564 228 519 267 480C306 442 359 419 424 411C475 405 539 414 592 427C667 447 735 489 819 492C910 495 1018 455 1087 419" stroke="#2F8458" stroke-width="26" stroke-linecap="round"/>
+<path d="M184 680C219 626 253 594 291 562C352 511 419 484 504 482C599 479 654 517 741 551C844 590 953 601 1080 564" stroke="#1F6B45" stroke-width="32" stroke-linecap="round"/>
+<rect x="119" y="617" width="962" height="91" rx="45.5" fill="#8D5A33"/>
+<path d="M242 642L272 522" stroke="#6B4A2C" stroke-width="12" stroke-linecap="round"/>
+<path d="M272 522C309 513 339 502 372 471" stroke="#5A8F57" stroke-width="16" stroke-linecap="round"/>
+<path d="M271 522C242 500 216 487 182 471" stroke="#7BC47F" stroke-width="16" stroke-linecap="round"/>
+<path d="M430 636L460 525" stroke="#6B4A2C" stroke-width="12" stroke-linecap="round"/>
+<path d="M460 525C510 514 550 487 582 446" stroke="#5A8F57" stroke-width="18" stroke-linecap="round"/>
+<path d="M460 525C419 494 380 482 350 462" stroke="#7BC47F" stroke-width="18" stroke-linecap="round"/>
+<path d="M671 635L690 503" stroke="#6B4A2C" stroke-width="12" stroke-linecap="round"/>
+<path d="M690 503C737 482 779 456 809 418" stroke="#5A8F57" stroke-width="18" stroke-linecap="round"/>
+<path d="M690 503C651 487 619 478 576 458" stroke="#7BC47F" stroke-width="18" stroke-linecap="round"/>
+<path d="M852 639L884 535" stroke="#6B4A2C" stroke-width="12" stroke-linecap="round"/>
+<path d="M884 535C932 525 973 503 1019 458" stroke="#5A8F57" stroke-width="18" stroke-linecap="round"/>
+<path d="M884 535C835 512 798 499 748 490" stroke="#7BC47F" stroke-width="18" stroke-linecap="round"/>
+</svg>

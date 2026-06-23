@@ -1,0 +1,202 @@
+2026-06-02 03:47:35
+Error: Out of memory (allocated 52428800) (tried to allocate 2621440 bytes)
+  in D:\laragon\www\aitrongcay\wp-admin\includes\upgrade.php:1122
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---
+2026-06-02 04:15:02
+Error: Out of memory (allocated 52428800) (tried to allocate 2621440 bytes)
+  in D:\laragon\www\aitrongcay\wp-admin\includes\upgrade.php:1018
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---
+2026-06-02 04:45:26
+Error: Out of memory (allocated 52428800) (tried to allocate 2621440 bytes)
+  in D:\laragon\www\aitrongcay\wp-admin\includes\upgrade.php:1018
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---
+2026-06-02 09:28:46
+Error: Out of memory (allocated 52428800) (tried to allocate 2621440 bytes)
+  in D:\laragon\www\aitrongcay\wp-admin\includes\upgrade.php:1013
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---
+2026-06-05 04:21:37
+Error: Uncaught TypeError: str_replace(): Argument #3 ($subject) must be of type array|string, int given in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\template-parts\virtual\soil-health.php:192
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\template-parts\virtual\soil-health.php(192): str_replace('%', '', 64)
+#1 D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\templates\virtual-page.php(31): include('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-includes\template-loader.php(132): include('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-blog-header.php(19): require_once('D:\\laragon\\www\\...')
+#4 D:\laragon\www\aitrongcay\index.php(17): require('D:\\laragon\\www\\...')
+#5 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\template-parts\virtual\soil-health.php:192
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-06-05 04:21:38
+Error: Uncaught TypeError: str_replace(): Argument #3 ($subject) must be of type array|string, int given in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\template-parts\virtual\soil-health.php:192
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\template-parts\virtual\soil-health.php(192): str_replace('%', '', 64)
+#1 D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\templates\virtual-page.php(31): include('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-includes\template-loader.php(132): include('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-blog-header.php(19): require_once('D:\\laragon\\www\\...')
+#4 D:\laragon\www\aitrongcay\index.php(17): require('D:\\laragon\\www\\...')
+#5 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\template-parts\virtual\soil-health.php:192
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-06-08 03:42:43
+Error: Out of memory (allocated 52428800) (tried to allocate 2621440 bytes)
+  in D:\laragon\www\aitrongcay\wp-admin\includes\upgrade.php:113
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---
+2026-06-11 07:41:16
+Error: Out of memory (allocated 52428800) (tried to allocate 2621440 bytes)
+  in D:\laragon\www\aitrongcay\wp-admin\includes\class-wp-site-health.php:3209
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---
+2026-06-11 07:55:28
+Error: Uncaught TypeError: aitrongcay_primary_garden_key_for_user(): Argument #1 ($user) must be of type ?WP_User, bool given, called in D:\laragon\www\aitrongcay\test-reset.php on line 13 and defined in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Stack trace:
+#0 D:\laragon\www\aitrongcay\test-reset.php(13): aitrongcay_primary_garden_key_for_user(false)
+#1 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-06-11 07:59:40
+Error: Uncaught TypeError: aitrongcay_primary_garden_key_for_user(): Argument #1 ($user) must be of type ?WP_User, bool given, called in D:\laragon\www\aitrongcay\test-reset.php on line 13 and defined in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Stack trace:
+#0 D:\laragon\www\aitrongcay\test-reset.php(13): aitrongcay_primary_garden_key_for_user(false)
+#1 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-06-11 07:59:40
+Error: Uncaught TypeError: aitrongcay_primary_garden_key_for_user(): Argument #1 ($user) must be of type ?WP_User, bool given, called in D:\laragon\www\aitrongcay\test-reset.php on line 13 and defined in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Stack trace:
+#0 D:\laragon\www\aitrongcay\test-reset.php(13): aitrongcay_primary_garden_key_for_user(false)
+#1 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Memory peak: 54,525,952 bytes
+?:0  {closure}()
+---
+2026-06-11 08:02:40
+Error: Uncaught TypeError: aitrongcay_primary_garden_key_for_user(): Argument #1 ($user) must be of type ?WP_User, bool given, called in D:\laragon\www\aitrongcay\test-reset.php on line 13 and defined in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Stack trace:
+#0 D:\laragon\www\aitrongcay\test-reset.php(13): aitrongcay_primary_garden_key_for_user(false)
+#1 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-06-11 08:02:47
+Error: Uncaught TypeError: aitrongcay_primary_garden_key_for_user(): Argument #1 ($user) must be of type ?WP_User, bool given, called in D:\laragon\www\aitrongcay\test-reset.php on line 13 and defined in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Stack trace:
+#0 D:\laragon\www\aitrongcay\test-reset.php(13): aitrongcay_primary_garden_key_for_user(false)
+#1 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-06-11 08:09:04
+Error: Uncaught TypeError: aitrongcay_primary_garden_key_for_user(): Argument #1 ($user) must be of type ?WP_User, bool given, called in D:\laragon\www\aitrongcay\test-reset.php on line 13 and defined in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Stack trace:
+#0 D:\laragon\www\aitrongcay\test-reset.php(13): aitrongcay_primary_garden_key_for_user(false)
+#1 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:1733
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-06-16 04:32:30
+Error: Out of memory (allocated 52428800) (tried to allocate 2621440 bytes)
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\inc\blynk-webhook.php:215
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---
+2026-06-16 04:32:30
+Error: Out of memory (allocated 52428800) (tried to allocate 2621440 bytes)
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\inc\blynk-webhook.php:215
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---
+2026-06-23 03:10:18
+Error: Uncaught TypeError: aitrongcay_portal_pots(): Argument #2 ($viewer) must be of type ?WP_User, bool given, called in D:\laragon\www\aitrongcay\test-dashboard-pots.php on line 6 and defined in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\inc\portal-garden-data.php:348
+Stack trace:
+#0 D:\laragon\www\aitrongcay\test-dashboard-pots.php(6): aitrongcay_portal_pots('garden:e7ae08dd...', false)
+#1 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\inc\portal-garden-data.php:348
+Memory peak: 54,525,952 bytes
+?:0  {closure}()
+---
+2026-06-23 03:11:18
+Error: Uncaught TypeError: aitrongcay_portal_pots(): Argument #2 ($viewer) must be of type ?WP_User, bool given, called in D:\laragon\www\aitrongcay\test-dashboard-pots.php on line 6 and defined in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\inc\portal-garden-data.php:348
+Stack trace:
+#0 D:\laragon\www\aitrongcay\test-dashboard-pots.php(6): aitrongcay_portal_pots('garden:e7ae08dd...', false)
+#1 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\inc\portal-garden-data.php:348
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-06-23 03:11:53
+Error: Uncaught TypeError: aitrongcay_portal_pots(): Argument #2 ($viewer) must be of type ?WP_User, bool given, called in D:\laragon\www\aitrongcay\test-dashboard-pots.php on line 6 and defined in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\inc\portal-garden-data.php:348
+Stack trace:
+#0 D:\laragon\www\aitrongcay\test-dashboard-pots.php(6): aitrongcay_portal_pots('garden:e7ae08dd...', false)
+#1 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\inc\portal-garden-data.php:348
+Memory peak: 54,525,952 bytes
+?:0  {closure}()
+---
+2026-06-23 03:12:25
+Error: Uncaught TypeError: aitrongcay_portal_pots(): Argument #2 ($viewer) must be of type ?WP_User, bool given, called in D:\laragon\www\aitrongcay\test-dashboard-pots.php on line 6 and defined in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\inc\portal-garden-data.php:348
+Stack trace:
+#0 D:\laragon\www\aitrongcay\test-dashboard-pots.php(6): aitrongcay_portal_pots('garden:e7ae08dd...', false)
+#1 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\inc\portal-garden-data.php:348
+Memory peak: 54,525,952 bytes
+?:0  {closure}()
+---
+2026-06-23 04:15:23
+Error: Uncaught TypeError: count(): Argument #1 ($value) must be of type Countable|array, null given in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\template-parts\virtual\portal.php:433
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\templates\virtual-page.php(31): include()
+#1 D:\laragon\www\aitrongcay\wp-includes\template-loader.php(132): include('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-blog-header.php(19): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\index.php(17): require('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\template-parts\virtual\portal.php:433
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-06-23 04:15:37
+Error: Uncaught TypeError: count(): Argument #1 ($value) must be of type Countable|array, null given in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\template-parts\virtual\portal.php:433
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\templates\virtual-page.php(31): include()
+#1 D:\laragon\www\aitrongcay\wp-includes\template-loader.php(132): include('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-blog-header.php(19): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\index.php(17): require('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\template-parts\virtual\portal.php:433
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---

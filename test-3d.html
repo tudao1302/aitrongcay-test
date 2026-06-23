@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mô hình 3D Vườn Rau</title>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #111; font-family: sans-serif; }
+    #info { position: absolute; top: 15px; width: 100%; text-align: center; color: #fff; z-index: 10; font-size: 14px; opacity: 0.8;}
+    #label {
+      position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: #6fdba8; color: #000; padding: 8px 16px;
+      border-radius: 6px; font-weight: 700; font-size: 14px; display: none; z-index: 10;
+      box-shadow: 0 4px 15px rgba(111, 219, 168, 0.4); text-align: center; max-width: 90%;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">🖱️ Dùng chuột xoay/zoom. 👆 Click vào khay để chọn lệnh.</div>
+  <div id="label">N01H2</div>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#1a1d1a');
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+    // Góc nhìn Isometric chiếu chéo từ hướng ngược lại
+    camera.position.set(-120, 100, -150);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // Ánh sáng môi trường
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    dirLight.position.set(50, 100, 50);
+    scene.add(dirLight);
+
+    // Lưới mặt sàn
+    scene.add(new THREE.GridHelper(200, 20, 0x334433, 0x222222));
+
+    const trays = [];
+    const rackW = 16, rackD = 10, tierH = 14;
+    
+    // Vật liệu sắt V lỗ, khay trắng, đèn hồng
+    // Vật liệu sắt V lỗ, khay trắng, đèn hồng
+    const matLeg = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.8, roughness: 0.4 });
+    const matTray = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+    const matTrayHover = new THREE.MeshStandardMaterial({ color: 0x6fdba8, emissive: 0x225533 });
+    const matLed = new THREE.MeshBasicMaterial({ color: 0xff00aa });
+
+    // Dựng 4 hàng song song (Z), mỗi hàng gồm 2 rack chụm vào nhau theo chiều rộng (X)
+    let nodeCount = 0;
+    
+    // Khoảng cách lối đi giữa các hàng (dọc theo trục Z)
+    const aisleWidth = 20; 
+    function makeTextSprite(message) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 256;
+      canvas.height = 128;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = 'Bold 48px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      // Viền chữ
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.strokeText(message, 128, 64);
+      
+      // Màu chữ
+      ctx.fillStyle = '#6fdba8';
+      ctx.fillText(message, 128, 64);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.scale.set(30, 15, 1); // Kích thước bảng tên
+      return sprite;
+    }
+
+    const numberTextures = [];
+    for (let i = 1; i <= 6; i++) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 128;
+      canvas.height = 128;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0)';
+      ctx.fillRect(0, 0, 128, 128);
+      ctx.font = 'Bold 80px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#333333';
+      ctx.fillText(i.toString(), 64, 64);
+      numberTextures.push(new THREE.CanvasTexture(canvas));
+    }
+
+    for (let r = 0; r < 4; r++) {
+      const z = (r - 1.5) * (rackD + aisleWidth);
+      
+      // Gắn bảng tên "Rack X" ở trên đỉnh, giữa 2 dãy
+      const label = makeTextSprite("Rack " + (r + 1));
+      label.position.set(0, tierH * 3 + 15, z);
+      scene.add(label);
+
+      for (let c = 0; c < 2; c++) {
+        // 2 rack chụm sát vào nhau theo trục X (rackW)
+        // Nếu rackW = 16, c=0 -> x = -8, c=1 -> x = +8
+        const x = (c === 0) ? -(rackW / 2) : (rackW / 2);
+        
+
+        const nodeIdNum = r * 3 + c;
+        const nodeName = "N" + nodeIdNum.toString().padStart(2, '0');
+
+        // 4 Chân sắt V lỗ
+        [-rackW/2, rackW/2].forEach(lx => {
+          [-rackD/2, rackD/2].forEach(lz => {
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(0.8, tierH * 3, 0.8), matLeg);
+            leg.position.set(x + lx, (tierH * 3)/2, z + lz);
+            scene.add(leg);
+          });
+        });
+
+        // 3 Tầng khay
+        for (let t = 0; t < 3; t++) {
+          const y = t * tierH + 5;
+          const tray = new THREE.Mesh(new THREE.BoxGeometry(rackW - 1, 1.5, rackD - 1), matTray);
+          tray.position.set(x, y, z);
+          const slotNum = (c * 3) + t + 1;
+          tray.userData = { 
+            id: nodeName + "H" + t,
+            rack: r + 1,
+            slot: slotNum
+          };
+          scene.add(tray);
+          trays.push(tray);
+
+          // Tạo một mặt phẳng chứa số đặt ngay trên khay
+          const planeGeo = new THREE.PlaneGeometry(8, 8);
+          const planeMat = new THREE.MeshBasicMaterial({ 
+            map: numberTextures[slotNum - 1], 
+            transparent: true,
+            depthWrite: false
+          });
+          const numberPlane = new THREE.Mesh(planeGeo, planeMat);
+          numberPlane.rotation.x = -Math.PI / 2;
+          numberPlane.rotation.z = Math.PI;
+          numberPlane.position.set(x, y + 0.76, z);
+          scene.add(numberPlane);
+
+          // Đèn quang hợp hồng dưới đáy tầng trên
+          if (t < 2) {
+            const led = new THREE.Mesh(new THREE.BoxGeometry(rackW - 2, 0.5, 1), matLed);
+            led.position.set(x, y + tierH - 1, z);
+            scene.add(led);
+            // Sáng màu hồng
+            const pLight = new THREE.PointLight(0xff00aa, 0.6, 25);
+            pLight.position.set(x, y + tierH - 2, z);
+            scene.add(pLight);
+          }
+        }
+      }
+    }
+
+    // Bắt sự kiện chuột
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let hovered = null;
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(trays);
+
+      if (hovered) hovered.material = matTray;
+      if (intersects.length > 0) {
+        hovered = intersects[0].object;
+        hovered.material = matTrayHover;
+        document.body.style.cursor = 'pointer';
+      } else {
+        hovered = null;
+        document.body.style.cursor = 'default';
+      }
+    });
+
+    window.addEventListener('click', () => {
+      if (hovered) {
+        document.getElementById('label').style.display = 'block';
+        const d = hovered.userData;
+        document.getElementById('label').innerText = `✅ Robot di chuyển đến: ${d.id} (Thuộc Khoang số ${d.slot} của Rack ${d.rack})`;
+        
+        // Gửi thông báo ra trang cha (Dashboard) nếu file này được nhúng trong iframe
+        if (window.parent !== window) {
+          window.parent.postMessage({
+            type: 'robot_node_selected',
+            id: d.id,
+            rack: d.rack,
+            slot: d.slot
+          }, '*');
+        }
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+    animate();
+  </script>
+</body>
+</html>
