@@ -4553,9 +4553,21 @@ label {
     left: 14px;
     right: auto;
     top: auto;
-    bottom: 14px;
+    bottom: calc(100px + env(safe-area-inset-bottom, 0px)); /* Move above bottom nav by default */
     padding: 10px 13px;
     font-size: 14px;
+    border-radius: 999px;
+    width: auto;
+    height: auto;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, .24);
+  }
+  .floating-ai-chat span:not(.floating-ai-chat-icon) {
+    display: inline;
+  }
+  .floating-ai-chat .floating-ai-chat-icon {
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, .22);
   }
 
   .nav-menu,

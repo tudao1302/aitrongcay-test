@@ -579,7 +579,7 @@ if ($needs_photo_library) {
                     <article class="photo-library-slide" data-photo-card data-photo-id="<?php echo esc_attr((string) $attachment_id); ?>">
                       <div class="photo-library-image-wrap">
                         <img class="photo-library-image" src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr($title); ?>" data-photo-lightbox-image="<?php echo esc_url($image_url); ?>" data-photo-lightbox-title="<?php echo esc_attr($title); ?>" data-photo-lightbox-caption="<?php echo esc_attr($caption); ?>">
-                        <div class="photo-library-caption"><div><strong><?php echo esc_html($title); ?></strong><span><?php echo esc_html($caption); ?></span></div><span><?php echo esc_html(get_the_date('d/m/Y H:i', $attachment_id)); ?></span></div>
+                        <div class="photo-library-caption"><div><strong><?php echo esc_html($title); ?></strong><span><?php echo esc_html($caption); ?></span></div></div>
                       </div>
                       <div class="photo-library-actions">
                         <a class="small-link" href="<?php echo esc_url($download_url); ?>" target="_blank" rel="noopener">Mở ảnh gốc</a>
@@ -829,7 +829,7 @@ if ($needs_photo_library) {
                                             </div>
                                         </div>
                                     <?php else : ?>
-                                        <div class="pot-inline-row"><h3><?php echo esc_html($pot['name']); ?></h3><a class="btn btn-secondary pot-inline-post-btn" href="<?php echo esc_url(add_query_arg(['compose' => '1', 'garden' => $garden_key], home_url('/cho-que/'))); ?>">Đăng tin</a><span class="chip pot-metric-chip" style="margin-left:8px"><?php echo esc_html((string) ($pot['plant_name'] ?? 'Cây chưa xác định')); ?></span></div>
+                                        <div class="pot-inline-row"><h3><?php echo esc_html($pot['name']); ?></h3><a class="btn btn-secondary pot-inline-post-btn" href="<?php echo esc_url(add_query_arg(['compose' => '1', 'garden' => $garden_key], home_url('/cho-que/'))); ?>">Đăng tin</a><span class="chip pot-metric-chip"><?php echo esc_html((string) ($pot['plant_name'] ?? 'Cây chưa xác định')); ?></span></div>
                                     <?php endif; ?>
                                 </div>
                                 <div class="control-environment-metrics pot-metric-inline">
@@ -1107,8 +1107,8 @@ if ($needs_photo_library) {
                             
                             <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
                                 <?php if (count($nk_rack_names) > 1): ?>
-                                <label style="font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:8px;background:#f8fafc;padding:6px 14px;border-radius:12px;border:1px solid rgba(15,23,42,.08)">Rack: 
-                                    <select id="nkRackSelect" onchange="AITR_NK_FILTER_RACK(this.value)" style="border:none;background:transparent;font-weight:700;font-size:15px;color:#2f7b45;outline:none;cursor:pointer">
+                                <label style="max-width:100%;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:8px;background:#f8fafc;padding:6px 14px;border-radius:12px;border:1px solid rgba(15,23,42,.08)">Rack: 
+                                    <select id="nkRackSelect" onchange="AITR_NK_FILTER_RACK(this.value)" style="max-width:100%;border:none;background:transparent;font-weight:700;font-size:15px;color:#2f7b45;outline:none;cursor:pointer">
                                         <?php foreach ($nk_rack_names as $r_id => $r_name): ?>
                                         <option value="<?php echo esc_attr((string)$r_id); ?>"><?php echo esc_html($r_name); ?></option>
                                         <?php endforeach; ?>
@@ -1116,8 +1116,8 @@ if ($needs_photo_library) {
                                 </label>
                                 <?php endif; ?>
                                 
-                                <label style="font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:8px;background:#f8fafc;padding:6px 14px;border-radius:12px;border:1px solid rgba(15,23,42,.08)">Khoang: 
-                                    <select id="nkKhoangSelect" onchange="AITR_NK_FILTER_KHOANG(this.value)" style="border:none;background:transparent;font-weight:700;font-size:15px;color:#2f7b45;outline:none;cursor:pointer">
+                                <label style="max-width:100%;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:8px;background:#f8fafc;padding:6px 14px;border-radius:12px;border:1px solid rgba(15,23,42,.08)">Khoang: 
+                                    <select id="nkKhoangSelect" onchange="AITR_NK_FILTER_KHOANG(this.value)" style="max-width:100%;border:none;background:transparent;font-weight:700;font-size:15px;color:#2f7b45;outline:none;cursor:pointer">
                                     </select>
                                 </label>
                             </div>
@@ -1472,7 +1472,7 @@ var AITR_GARDEN_KEY = <?php echo wp_json_encode($garden_key); ?>;
     '.share-friend-name{color:#0f172a;font-weight:700;font-size:1rem;line-height:1.35;}' +
     '.share-role-badge{min-width:110px;justify-content:center;}' +
     '.share-single-card .social-actions{gap:10px;}' +
-    '@media (max-width: 768px){.share-single-card .member-row{padding:14px 14px;}.share-role-badge{min-width:auto;}}';
+    '@media (max-width: 768px){.share-single-card .member-row{padding:14px 14px;}.share-role-badge{min-width:auto;}.garden-inline-input{min-width:100%;font-size:24px;padding:10px;}.pot-inline-input{min-width:100%;font-size:1.3rem;}.garden-inline-name-text{font-size:26px;}.pot-inline-name-text{font-size:1.35rem;}.pot-inline-row{row-gap:10px;}}';
   document.head.appendChild(style);
 })();
 

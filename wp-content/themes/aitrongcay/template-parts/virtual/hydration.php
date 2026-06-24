@@ -23,7 +23,7 @@ if (!$is_logged_in) {
 $pots = function_exists('aitrongcay_portal_pots') ? aitrongcay_portal_pots($garden_key, $current_user instanceof WP_User ? $current_user : null) : [];
 
 $friends_url = add_query_arg(['garden' => $garden_key], home_url('/portal/hang-xom/'));
-$photo_library_url = '#'; 
+$photo_library_url = $garden_key !== '' ? add_query_arg('garden', rawurlencode($garden_key), home_url('/portal/nhat-ky-cham-soc/')) : home_url('/portal/nhat-ky-cham-soc/');
 $flower_bio_url = add_query_arg(['garden' => $garden_key], home_url('/portal/flower-bio/'));
 
 // Lấy Token của vườn để sử dụng chung
@@ -285,6 +285,17 @@ unset($shared_top_link);
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 8px;
+      position: relative;
+    }
+
+    .d2-hamburger {
+      display: none;
+      background: rgba(111, 219, 168, 0.1);
+      border: 1px solid rgba(111, 219, 168, 0.2);
+      border-radius: 12px;
+      color: var(--primary);
+      cursor: pointer;
+      padding: 8px;
     }
 
     .d2-top-links {
@@ -558,20 +569,23 @@ unset($shared_top_link);
       .d2-brand, .d2-level, .d2-upgrade, .d2-side-footer { display: none; }
       .d2-nav {
         grid-template-columns: repeat(6, minmax(0, 1fr));
-        gap: 8px;
+        gap: 4px;
         padding: 0;
       }
       .d2-nav a {
         flex-direction: column;
         justify-content: center;
         text-align: center;
-        padding: 10px 8px;
-        border-radius: 18px;
-        font-size: 11px;
+        padding: 8px 4px;
+        border-radius: 14px;
+        font-size: 9px;
         line-height: 1.15;
-        gap: 5px;
+        gap: 4px;
         font-weight: 700;
         color: rgba(227, 227, 222, .74);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .d2-nav a.active {
         border-radius: 18px;
@@ -583,8 +597,31 @@ unset($shared_top_link);
       .d2-nav .bottom-nav-label { display: none; }
       .d2-nav .bottom-nav-short { display: block; }
       .d2-nav .bottom-nav-icon { font-size: 20px; line-height: 1; }
-      .d2-main { padding: 16px 14px 104px; }
       .hy-grid { grid-template-columns: 1fr; }
+      
+      .d2-top { flex-wrap: nowrap; gap: 14px; align-items: center; }
+      .d2-top > div:first-child { flex: 1 1 0; min-width: 0; }
+      .d2-hamburger { display: block; flex-shrink: 0; }
+      .d2-top-links { 
+        display: none; 
+        position: absolute; 
+        top: 100%; 
+        right: 0; 
+        margin-top: 12px; 
+        background: rgba(26, 28, 25, 0.98); 
+        border: 1px solid rgba(255, 255, 255, 0.08); 
+        border-radius: 16px; 
+        padding: 8px 0; 
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4); 
+        flex-direction: column; 
+        gap: 0; 
+        z-index: 100; 
+        min-width: 220px; 
+      }
+      .d2-top-links.is-open { display: flex; }
+      .d2-top-links a { padding: 14px 20px; color: #e3e3de; border-bottom: 1px solid rgba(255,255,255,0.04); }
+      .d2-top-links a:last-child { border-bottom: none; }
+      .d2-main { padding: calc(42px + env(safe-area-inset-top, 0px)) 14px calc(104px + env(safe-area-inset-bottom, 0px)); }
     }
   </style>
 
@@ -632,7 +669,10 @@ unset($shared_top_link);
           <h1 class="d2-garden-name">💦 Hydration Center</h1>
           <p class="d2-subtitle">Quản lý tưới tiêu thông minh & Giám sát lượng nước</p>
         </div>
-        <div class="d2-top-links">
+        <button class="d2-hamburger" type="button" aria-label="Menu" aria-expanded="false" onclick="document.getElementById('hyTopMenu').classList.toggle('is-open');">
+          <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <div class="d2-top-links" id="hyTopMenu">
           <?php foreach ($shared_top_links as $top_link): ?>
             <a href="<?php echo esc_url($top_link['url']); ?>"><?php echo esc_html($top_link['label']); ?></a>
           <?php endforeach; ?>

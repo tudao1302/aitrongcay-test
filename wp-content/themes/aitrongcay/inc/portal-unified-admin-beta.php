@@ -55,70 +55,86 @@ function aitrongcay_handle_unified_admin_beta_actions(): void {
         // Get owner user from membership or dataset
         $owner = function_exists('aitrongcay_get_garden_owner_user') ? aitrongcay_get_garden_owner_user($garden_key) : null;
         $owner_user_id = $owner instanceof WP_User ? (int) $owner->ID : 0;
+        $is_admin_garden = $owner instanceof WP_User && user_can($owner, 'manage_options');
 
         if (function_exists('aitrongcay_get_rack_by_id') && function_exists('aitrongcay_garden_racks_table') && function_exists('aitrongcay_garden_rack_assignments_table')) {
-            // Cho phép một khu vườn gán nhiều Rack, không chặn lại nữa
-
             $rack = aitrongcay_get_rack_by_id($rack_id);
-            if (! is_array($rack) || ($rack['status'] ?? '') !== 'inventory') {
-                wp_safe_redirect(add_query_arg('beta_error', rawurlencode('Rack này không khả dụng hoặc đã được giao.'), $redirect));
+            if (! is_array($rack)) {
+                wp_safe_redirect(add_query_arg('beta_error', rawurlencode('Rack không tồn tại.'), $redirect));
                 exit;
             }
 
-            $from_gk = (string) ($rack['garden_key'] ?? '');
-            $now = current_time('mysql');
+            if ($is_admin_garden) {
+                // Admin Clone Mode
+                $cloned_racks = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
+                if (!in_array($rack_id, $cloned_racks, true)) {
+                    $cloned_racks[] = $rack_id;
+                    update_option('aitrongcay_cloned_racks_' . $garden_key, $cloned_racks, false);
+                }
+                wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'gardens', 'selected_garden' => $garden_key], $redirect));
+                exit;
+            } else {
+                // Normal Customer Mode
+                if (($rack['status'] ?? '') !== 'inventory') {
+                    wp_safe_redirect(add_query_arg('beta_error', rawurlencode('Rack này không khả dụng hoặc đã được giao.'), $redirect));
+                    exit;
+                }
 
-            // Update Rack status
-            $updated = $wpdb->update(
-                aitrongcay_garden_racks_table(),
-                [
+                $from_gk = (string) ($rack['garden_key'] ?? '');
+                $now = current_time('mysql');
+
+                // Update Rack status
+                $updated = $wpdb->update(
+                    aitrongcay_garden_racks_table(),
+                    [
+                        'garden_key' => $garden_key,
+                        'owner_user_id' => $owner_user_id,
+                        'status' => 'assigned',
+                        'updated_at' => $now
+                    ],
+                    ['id' => $rack_id],
+                    ['%s', '%d', '%s', '%s'],
+                    ['%d']
+                );
+
+                if ($updated === false) {
+                    wp_safe_redirect(add_query_arg('beta_error', rawurlencode('Lỗi hệ thống: Không thể gán Rack vào CSDL.'), $redirect));
+                    exit;
+                }
+
+                // Insert Assignment Record
+                $wpdb->insert(aitrongcay_garden_rack_assignments_table(), [
+                    'rack_id' => $rack_id,
+                    'user_id' => $owner_user_id,
                     'garden_key' => $garden_key,
-                    'owner_user_id' => $owner_user_id,
-                    'status' => 'assigned',
-                    'updated_at' => $now
-                ],
-                ['id' => $rack_id],
-                ['%s', '%d', '%s', '%s'],
-                ['%d']
-            );
+                    'household_key' => $garden_key,
+                    'assigned_at' => $now,
+                    'status' => 'active',
+                    'notes' => 'Giao rack qua trang Unified Admin Beta',
+                ], ['%d', '%d', '%s', '%s', '%s', '%s', '%s']);
 
-            if ($updated === false) {
-                wp_safe_redirect(add_query_arg('beta_error', rawurlencode('Lỗi hệ thống: Không thể gán Rack vào CSDL.'), $redirect));
+                if (function_exists('aitrongcay_move_blynk_config_key')) {
+                    aitrongcay_move_blynk_config_key($from_gk, $garden_key);
+                }
+
+                if (function_exists('aitrongcay_log_rack_inventory_event')) {
+                    aitrongcay_log_rack_inventory_event($rack_id, 'assign', 'inventory', 'assigned', $owner_user_id, 'Giao vườn qua trang quản lý hợp nhất BETA', get_current_user_id());
+                }
+
+                // Add notification to garden
+                $rack_name = $rack['rack_name'] ?: $rack['rack_code'];
+                $notices = get_option('aitr_garden_notices_' . $garden_key, []);
+                $notices[] = [
+                    'id' => uniqid(),
+                    'message' => "Bạn đã được gán thêm Rack <strong>{$rack_name}</strong> từ chủ khu vườn.",
+                    'type' => 'success',
+                    'time' => current_time('mysql')
+                ];
+                update_option('aitr_garden_notices_' . $garden_key, $notices);
+
+                wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'gardens', 'selected_garden' => $garden_key], $redirect));
                 exit;
             }
-
-            // Insert Assignment Record
-            $wpdb->insert(aitrongcay_garden_rack_assignments_table(), [
-                'rack_id' => $rack_id,
-                'user_id' => $owner_user_id,
-                'garden_key' => $garden_key,
-                'household_key' => $garden_key,
-                'assigned_at' => $now,
-                'status' => 'active',
-                'notes' => 'Giao rack qua trang Unified Admin Beta',
-            ], ['%d', '%d', '%s', '%s', '%s', '%s', '%s']);
-
-            if (function_exists('aitrongcay_move_blynk_config_key')) {
-                aitrongcay_move_blynk_config_key($from_gk, $garden_key);
-            }
-
-            if (function_exists('aitrongcay_log_rack_inventory_event')) {
-                aitrongcay_log_rack_inventory_event($rack_id, 'assign', 'inventory', 'assigned', $owner_user_id, 'Giao vườn qua trang quản lý hợp nhất BETA', get_current_user_id());
-            }
-
-            // Add notification to garden
-            $rack_name = $rack['rack_name'] ?: $rack['rack_code'];
-            $notices = get_option('aitr_garden_notices_' . $garden_key, []);
-            $notices[] = [
-                'id' => uniqid(),
-                'message' => "Bạn đã được gán thêm Rack <strong>{$rack_name}</strong> từ chủ khu vườn.",
-                'type' => 'success',
-                'time' => current_time('mysql')
-            ];
-            update_option('aitr_garden_notices_' . $garden_key, $notices);
-
-            wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'gardens', 'selected_garden' => $garden_key], $redirect));
-            exit;
         }
     }
 
@@ -129,6 +145,17 @@ function aitrongcay_handle_unified_admin_beta_actions(): void {
 
         if ($rack_id <= 0) {
             wp_safe_redirect(add_query_arg('beta_error', rawurlencode('Thiếu mã rack_id.'), $redirect));
+            exit;
+        }
+
+        // Check if this is an admin cloned rack
+        $cloned_racks = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
+        $key = array_search($rack_id, $cloned_racks, true);
+        if ($key !== false) {
+            // Just remove the clone
+            unset($cloned_racks[$key]);
+            update_option('aitrongcay_cloned_racks_' . $garden_key, array_values($cloned_racks), false);
+            wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'gardens', 'selected_garden' => $garden_key], $redirect));
             exit;
         }
 
@@ -1129,11 +1156,24 @@ function aitrongcay_render_unified_admin_beta_page(): void {
 
                             // Get mapped racks of this garden
                             $mapped_racks = [];
+                            $cloned_rack_ids = get_option('aitrongcay_cloned_racks_' . $selected_garden_key, []);
+                            
                             foreach ($racks as $r) {
+                                $r_id = (int) ($r['id'] ?? 0);
                                 if ((string) ($r['garden_key'] ?? '') === $selected_garden_key) {
-                                    $mapped_racks[] = $ar = $r;
+                                    $mapped_racks[] = $r;
+                                } elseif (in_array($r_id, $cloned_rack_ids, true)) {
+                                    $r['_is_clone'] = true;
+                                    $mapped_racks[] = $r;
                                 }
                             }
+                            
+                            $selected_is_admin = false;
+                            $owner_user = function_exists('aitrongcay_get_garden_owner_user') ? aitrongcay_get_garden_owner_user($selected_garden_key) : null;
+                            if ($owner_user instanceof WP_User && user_can($owner_user, 'manage_options')) {
+                                $selected_is_admin = true;
+                            }
+                            $assignable_racks = $selected_is_admin ? $wpdb->get_results("SELECT * FROM {$wpdb->prefix}aitr_garden_racks ORDER BY id ASC", ARRAY_A) ?: [] : $available_racks;
 
                             // Get auto pump settings
                             $pump_rules = function_exists('aitrongcay_get_pump_rules') ? aitrongcay_get_pump_rules($selected_garden_key) : [];
@@ -1179,7 +1219,7 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                                                 <?php foreach ($mapped_racks as $mr): ?>
                                                     <tr>
                                                         <td><code><?php echo esc_html((string) ($mr['rack_code'] ?? '')); ?></code></td>
-                                                        <td><strong><?php echo esc_html((string) ($mr['rack_name'] ?? '')); ?></strong></td>
+                                                        <td><strong><?php echo esc_html((string) ($mr['rack_name'] ?? '')); ?></strong> <?php if (!empty($mr['_is_clone'])) echo '<span style="color:#fbbf24;font-size:11px;margin-left:4px">[Bản sao]</span>'; ?></td>
                                                         <td>
                                                             <?php
                                                                 $conn = (string) ($mr['connectivity_status'] ?? 'unknown');
@@ -1218,9 +1258,10 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                                             <label style="display:block;margin-bottom:6px;font-size:12px;font-weight:600;color:#94a3b8">Giao thêm Rack từ kho thiết bị:</label>
                                             <select name="rack_id" class="aitr-form-control" style="background:#0f172a;height:40px" required>
                                                 <option value="">-- Chọn Rack trong kho --</option>
-                                                <?php foreach ($available_racks as $avail): ?>
+                                                <?php foreach ($assignable_racks as $avail): ?>
+                                                    <?php $status_label = (($avail['status'] ?? 'inventory') !== 'inventory') ? ' [Đang cho thuê]' : ''; ?>
                                                     <option value="<?php echo (int) ($avail['id'] ?? 0); ?>">
-                                                        <?php echo esc_html((string) ($avail['rack_name'] ?? $avail['rack_code'])); ?> (<?php echo (int) ($avail['slot_count'] ?? 3); ?> khoang)
+                                                        <?php echo esc_html((string) ($avail['rack_name'] ?? $avail['rack_code']) . $status_label); ?> (<?php echo (int) ($avail['slot_count'] ?? 3); ?> khoang)
                                                     </option>
                                                 <?php endforeach; ?>
                                             </select>

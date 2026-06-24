@@ -1119,9 +1119,9 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     }
 
     .d2-profile-popup {
-      position: fixed;
-      top: 72px;
-      right: 28px;
+      position: absolute;
+      top: calc(100% + 14px);
+      right: 0;
       min-width: 240px;
       background: rgba(26, 28, 25, .98);
       border: 1px solid rgba(255, 255, 255, .06);
@@ -1515,7 +1515,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       place-items: center;
       text-align: center;
       box-shadow: 0 18px 38px rgba(0, 0, 0, .22), 0 0 18px rgba(111, 219, 168, .05);
-      border: 1px solid rgba(255, 255, 255, .10)
+      border: 1px solid rgba(255, 255, 255, .10);
+      flex-shrink: 0;
     }
 
     .d2-vital .value {
@@ -1638,8 +1639,23 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     .d2-actions {
       display: flex;
       gap: 14px;
-      flex-wrap: wrap;
-      justify-content: flex-end
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+      overflow-x: auto;
+      max-width: 100%;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    }
+    .d2-actions::-webkit-scrollbar {
+      height: 4px;
+    }
+    .d2-actions::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .d2-actions::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 4px;
     }
 
     .d2-icon-btn {
@@ -1653,7 +1669,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       color: var(--primary);
       font-size: 28px;
       border: 1px solid rgba(255, 255, 255, .10);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 16px 34px rgba(0, 0, 0, .18), 0 0 18px rgba(111, 219, 168, .05)
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 16px 34px rgba(0, 0, 0, .18), 0 0 18px rgba(111, 219, 168, .05);
+      flex-shrink: 0;
     }
 
     .d2-real-btn {
@@ -2369,7 +2386,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       cursor: pointer;
       text-decoration: none;
       transition: transform .18s ease, opacity .18s ease, box-shadow .18s ease;
-      padding: 0
+      padding: 0;
+      flex-shrink: 0;
     }
 
     .d2-ctl:hover,
@@ -2503,7 +2521,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       }
 
       .d2-shell {
-        grid-template-columns: 1fr
+        grid-template-columns: minmax(0, 1fr)
       }
 
       .d2-side {
@@ -2533,7 +2551,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
 
       .d2-nav {
         grid-template-columns: repeat(6, minmax(0, 1fr));
-        gap: 8px;
+        gap: 4px;
         padding: 0
       }
 
@@ -2541,13 +2559,16 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         flex-direction: column;
         justify-content: center;
         text-align: center;
-        padding: 10px 8px;
-        border-radius: 18px;
-        font-size: 11px;
+        padding: 8px 4px;
+        border-radius: 14px;
+        font-size: 9px;
         line-height: 1.15;
-        gap: 5px;
+        gap: 4px;
         font-weight: 700;
-        color: rgba(227, 227, 222, .74)
+        color: rgba(227, 227, 222, .74);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .d2-nav a.active {
@@ -2572,23 +2593,31 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       }
 
       .d2-main {
-        padding: 16px 14px 14px
+        padding: calc(32px + env(safe-area-inset-top, 0px)) 16px 16px;
       }
 
       .d2-top {
         display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
         gap: 12px;
         padding: 0 0 14px;
         margin-bottom: 18px
       }
 
       .d2-garden-rename {
-        max-width: 100%
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: none;
+        order: 1;
       }
 
       .d2-garden-name {
-        font-size: 24px;
-        white-space: normal
+        font-size: 26px;
+        white-space: normal;
+        line-height: 1.25;
+        padding-top: 2px;
       }
 
       .d2-garden-input {
@@ -2597,13 +2626,23 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       }
 
       .d2-top-links {
-        gap: 18px;
-        overflow: auto;
-        padding-bottom: 0;
-        flex: 1 1 auto
+        order: 3;
+        width: 100%;
+        gap: 14px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        flex: 0 0 100%;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .d2-top-links a {
+        display: inline-block;
       }
 
       .d2-top-actions {
+        order: 2;
+        flex: 0 0 auto;
         padding: 6px 8px;
         border-radius: 18px
       }
@@ -2614,12 +2653,13 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       }
 
       .d2-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         gap: 16px
       }
 
       .d2-live,
       .d2-sidecards {
+        grid-template-columns: minmax(0, 1fr);
         gap: 16px
       }
 
@@ -2636,7 +2676,21 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       .d2-growth-track {
         overflow-x: auto;
         gap: 18px;
-        padding-bottom: 8px
+        padding-bottom: 16px;
+        justify-content: flex-start;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .d2-growth-track::-webkit-scrollbar {
+        height: 6px;
+      }
+      .d2-growth-track::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+      }
+      .d2-growth-track::-webkit-scrollbar-thumb {
+        background: rgba(111, 219, 168, 0.4);
+        border-radius: 4px;
       }
 
       .d2-growth-track::before,
@@ -2700,10 +2754,10 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         position: absolute;
         left: 12px;
         right: 12px;
-        bottom: 12px;
+        bottom: 34px;
         padding: 0;
         display: flex;
-        justify-content: flex-end;
+        justify-content: center;
         align-items: flex-end;
         gap: 10px;
         z-index: 3
@@ -2715,17 +2769,26 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
 
       .d2-actions {
         justify-content: flex-start;
+        margin: 0 auto;
+        width: auto;
         gap: 8px;
         flex-wrap: nowrap;
         overflow-x: auto;
         max-width: 100%;
-        padding: 6px 2px;
-        -ms-overflow-style: none;
-        scrollbar-width: none
+        padding: 6px 2px 10px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+        -webkit-overflow-scrolling: touch;
       }
-
       .d2-actions::-webkit-scrollbar {
-        display: none
+        height: 3px;
+      }
+      .d2-actions::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .d2-actions::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 3px;
       }
 
       .d2-vitals {
@@ -2734,37 +2797,58 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       }
 
       .d2-vital,
-      .d2-icon-btn,
-      .d2-inline-control {
-        width: 52px;
-        height: 52px;
+      .d2-icon-btn {
+        width: 44px;
+        height: 44px;
         flex: 0 0 auto
+      }
+      
+      .d2-inline-control {
+        width: auto;
+        height: 44px;
+        flex: 0 0 auto;
+        padding: 0 12px;
+      }
+
+      .d2-vital {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 0;
+      }
+
+      .d2-vital > div:first-child {
+        font-size: 14px;
+        line-height: 1;
+        margin-bottom: 2px;
       }
 
       .d2-vital .value {
-        font-size: 12px
+        font-size: 11px;
+        line-height: 1;
+        margin-top: 0;
       }
 
       .d2-ctl .round,
       .d2-inline-control .round {
-        width: 30px;
-        height: 30px;
-        font-size: 15px;
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
         margin-bottom: 2px
       }
 
       .d2-ctl strong,
       .d2-inline-control strong {
         font-size: 8px;
-        letter-spacing: .04em
+        letter-spacing: .02em
       }
 
       .d2-icon-btn {
-        font-size: 22px
+        font-size: 18px
       }
 
       .d2-ai-strip {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         gap: 12px;
         margin-top: 16px
       }
@@ -2776,7 +2860,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       }
 
       .d2-sidecards {
-        grid-template-columns: 1fr
+        grid-template-columns: minmax(0, 1fr)
       }
 
       .d2-trays-card {
@@ -2787,6 +2871,61 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         top: auto;
         right: auto;
         transform: none !important
+      }
+
+      .d2-growth-track {
+        overflow-x: auto;
+        padding-bottom: 12px;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        justify-content: flex-start;
+        gap: 16px;
+      }
+      .d2-growth-track::-webkit-scrollbar { display: none; }
+      
+      .d2-growth-track::before {
+        left: 0;
+        right: 0;
+        top: 36px;
+      }
+      
+      .d2-growth-progress {
+        left: 0;
+        top: 36px;
+      }
+      
+      .d2-growth-step {
+        flex: 0 0 68px;
+        max-width: none;
+        padding: 0;
+      }
+      
+      .d2-growth-icon {
+        width: 52px;
+        height: 52px;
+        font-size: 22px;
+        border-width: 5px;
+        margin-bottom: 8px;
+      }
+      
+      .d2-growth-step.is-active::after {
+        width: 72px;
+        height: 72px;
+        top: -5px;
+      }
+      
+      .d2-growth-icon-check {
+        width: 18px;
+        height: 18px;
+        font-size: 10px;
+        right: -4px;
+        bottom: -4px;
+        border-width: 2px;
+      }
+      
+      .d2-growth-step-name {
+        font-size: 11px;
+        line-height: 1.2;
       }
 
       .d2-trays-card.is-floating {
@@ -4068,12 +4207,6 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
                 </button>
                 <button class="d2-icon-btn" type="button" title="Lịch trình & cài đặt bơm tự động"
                   data-pump-modal-open>⏱</button>
-                <button class="d2-inline-control<?php echo $hero_has_nutrient ? '' : ' is-disabled'; ?>" type="button"
-                  <?php echo $hero_has_nutrient ? '' : 'disabled'; ?> data-d2-nutrient>
-                  <div>
-                    <div class="round">🧪</div><strong>Bón dinh dưỡng</strong>
-                  </div>
-                </button>
                 <button class="d2-inline-control is-off<?php echo $hero_has_mist ? '' : ' is-disabled'; ?>"
                   type="button" <?php echo $hero_has_mist ? '' : 'disabled'; ?> data-d2-mist-toggle="mist"
                   data-state="0">
@@ -4287,18 +4420,45 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         
         global $wpdb;
         $racks_table = function_exists('aitrongcay_garden_racks_table') ? aitrongcay_garden_racks_table() : $wpdb->prefix . 'aitr_garden_racks';
-        $assigned_racks = $wpdb->get_results($wpdb->prepare("SELECT id, slot_count FROM {$racks_table} WHERE garden_key = %s", $garden_key), ARRAY_A);
+        $assigned_racks = $wpdb->get_results($wpdb->prepare("SELECT id, garden_key, slot_count FROM {$racks_table} WHERE garden_key = %s", $garden_key), ARRAY_A);
+        
+        $cloned_rack_ids = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
+        if (!empty($cloned_rack_ids)) {
+            $ids_placeholder = implode(',', array_fill(0, count($cloned_rack_ids), '%d'));
+            $cloned_racks = $wpdb->get_results($wpdb->prepare("SELECT id, garden_key, slot_count FROM {$racks_table} WHERE id IN ($ids_placeholder)", ...$cloned_rack_ids), ARRAY_A);
+            if (!empty($cloned_racks)) {
+                if (!is_array($assigned_racks)) $assigned_racks = [];
+                $assigned_racks = array_merge($assigned_racks, $cloned_racks);
+            }
+        }
+        
         $rack_slot_counts = [];
+        $tl_rack_slots = [];
         if ($assigned_racks) {
+            $unique_gks = [];
             foreach ($assigned_racks as $r) {
                 $rack_slot_counts[(int)$r['id']] = (int)$r['slot_count'];
+                if (!empty($r['garden_key'])) {
+                    $unique_gks[$r['garden_key']] = true;
+                }
+            }
+            
+            if (function_exists('aitrongcay_get_rack_slots')) {
+                foreach (array_keys($unique_gks) as $gk) {
+                    $s = aitrongcay_get_rack_slots((string) $gk);
+                    if (!empty($s)) {
+                        $tl_rack_slots = array_merge($tl_rack_slots, $s);
+                    }
+                }
             }
         }
 
-        if (!empty($rack_slots)) {
-            foreach ($rack_slots as $slot) {
+        if (!empty($tl_rack_slots)) {
+            foreach ($tl_rack_slots as $slot) {
                 $_rack_id = (int)($slot['rack_id'] ?? 0);
                 if ($_rack_id === 0) continue;
+                
+                if (!isset($rack_slot_counts[$_rack_id])) continue; // Skip racks we don't own/clone
                 
                 $_slot_index = (int)($slot['slot_index'] ?? 1);
                 $_slot_count = $rack_slot_counts[$_rack_id] ?? 100;
@@ -4705,7 +4865,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             captureFormData.append('action', 'aitrongcay_capture_photo_server');
             captureFormData.append('garden_key', data.garden_key || '');
             captureFormData.append('pot_code', data.pot_code || '');
-            captureFormData.append('robot_stream', 'http://127.0.0.1:1984/api/frame.jpeg?src=vuon2');
+            captureFormData.append('robot_stream', 'https://determine-exchanges-modification-include.trycloudflare.com/api/frame.jpeg?src=vuon2');
             captureFormData.append('nonce', typeof AITR_AJAX_NONCE !== 'undefined' ? AITR_AJAX_NONCE : '');
 
             fetch('<?php echo esc_url(admin_url('admin-ajax.php')); ?>', { method: 'POST', body: captureFormData })
@@ -5338,25 +5498,13 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       var d2ProfileTrigger = document.querySelector('[data-d2-profile-trigger]');
       var d2ProfilePopup = document.querySelector('[data-d2-profile-popup]');
       if (d2ProfileTrigger && d2ProfilePopup) {
-        function positionD2ProfilePopup() {
-          var rect = d2ProfileTrigger.getBoundingClientRect();
-          d2ProfilePopup.style.top = Math.round(rect.bottom + 10) + 'px';
-          d2ProfilePopup.style.right = Math.max(16, Math.round(window.innerWidth - rect.right)) + 'px';
-        }
         function closeD2Profile() { d2ProfilePopup.hidden = true; d2ProfileTrigger.setAttribute('aria-expanded', 'false'); }
         d2ProfileTrigger.addEventListener('click', function (event) {
           event.preventDefault(); event.stopPropagation();
           var willOpen = d2ProfilePopup.hidden;
-          if (willOpen) positionD2ProfilePopup();
           d2ProfilePopup.hidden = !willOpen;
           d2ProfileTrigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         });
-        window.addEventListener('resize', function () {
-          if (!d2ProfilePopup.hidden) positionD2ProfilePopup();
-        });
-        window.addEventListener('scroll', function () {
-          if (!d2ProfilePopup.hidden) positionD2ProfilePopup();
-        }, { passive: true });
         document.addEventListener('click', function (event) {
           if (!d2ProfilePopup.hidden && !d2ProfilePopup.contains(event.target) && event.target !== d2ProfileTrigger) closeD2Profile();
         });

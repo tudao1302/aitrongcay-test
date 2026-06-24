@@ -38,38 +38,43 @@ function aitrongcay_get_rack_monitor_configs(string $garden_key = ''): array
     if ($garden_key !== '' && function_exists('aitrongcay_get_rack_slots')) {
         global $wpdb;
         $racks_table = function_exists('aitrongcay_garden_racks_table') ? aitrongcay_garden_racks_table() : $wpdb->prefix . 'aitr_garden_racks';
-        $assigned_racks = $wpdb->get_results($wpdb->prepare("SELECT id, rack_name, rack_code, slot_count, blynk_auth_token FROM {$racks_table} WHERE garden_key = %s ORDER BY id ASC", $garden_key), ARRAY_A);
+        $assigned_racks = $wpdb->get_results($wpdb->prepare("SELECT id, garden_key, rack_name, rack_code, slot_count, blynk_auth_token FROM {$racks_table} WHERE garden_key = %s ORDER BY id ASC", $garden_key), ARRAY_A);
+        
+        $cloned_rack_ids = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
+        if (!empty($cloned_rack_ids)) {
+            $ids_placeholder = implode(',', array_fill(0, count($cloned_rack_ids), '%d'));
+            $cloned_racks = $wpdb->get_results($wpdb->prepare("SELECT id, garden_key, rack_name, rack_code, slot_count, blynk_auth_token FROM {$racks_table} WHERE id IN ($ids_placeholder) ORDER BY id ASC", ...$cloned_rack_ids), ARRAY_A);
+            if (!empty($cloned_racks)) {
+                if (!is_array($assigned_racks)) $assigned_racks = [];
+                foreach ($cloned_racks as $cr) {
+                    $cr['_is_clone'] = true;
+                    $assigned_racks[] = $cr;
+                }
+            }
+        }
         
         if (!empty($assigned_racks)) {
-            $slots = aitrongcay_get_rack_slots($garden_key);
             $racks_grouped = [];
-            foreach ($assigned_racks as $r) {
-                $racks_grouped[(int) $r['id']] = [];
-            }
-            if (!empty($slots)) {
-                foreach ($slots as $slot) {
-                    $rack_id = (int) ($slot['rack_id'] ?? 1);
-                    if (isset($racks_grouped[$rack_id])) {
-                        $racks_grouped[$rack_id][] = $slot;
+            $unique_garden_keys = array_unique(array_column($assigned_racks, 'garden_key'));
+            $unique_garden_keys[] = $garden_key;
+            
+            foreach ($unique_garden_keys as $gk) {
+                if ($gk !== '') {
+                    $slots = aitrongcay_get_rack_slots((string) $gk);
+                    if (!empty($slots)) {
+                        foreach ($slots as $slot) {
+                            $rack_id = (int) ($slot['rack_id'] ?? 1);
+                            if (!isset($racks_grouped[$rack_id])) {
+                                $racks_grouped[$rack_id] = [];
+                            }
+                            $racks_grouped[$rack_id][] = $slot;
+                        }
                     }
                 }
             }
 
             $racks = [];
-            $rack_idx = 0;
-            $saved_options = [];
-            if ($garden_key === 'tung-01') {
-                $saved_options = (array) get_option('aitrongcay_rack_monitor_configs', []);
-            }
-            if (empty($saved_options)) {
-                $saved_options = get_option('aitrongcay_rack_cfg_' . $garden_key, []);
-                if (empty($saved_options)) {
-                    $saved_options = get_option('aitrongcay_rack_cfg_' . sanitize_key($garden_key), []);
-                }
-            }
-            if (! is_array($saved_options)) {
-                $saved_options = [];
-            }
+            $saved_options_map = [];
 
             foreach ($assigned_racks as $rack_info) {
                 $rack_id = (int) $rack_info['id'];
@@ -124,7 +129,29 @@ function aitrongcay_get_rack_monitor_configs(string $garden_key = ''): array
                         }
                     }
 
-                    $saved_tray = $saved_options[$rack_idx]['trays'][$si] ?? [];
+                    $true_gk = (string) ($rack_info['garden_key'] ?? $garden_key);
+                    
+                    if (!isset($saved_options_map[$true_gk])) {
+                        $so = [];
+                        if ($true_gk === 'tung-01') {
+                            $so = (array) get_option('aitrongcay_rack_monitor_configs', []);
+                        } else {
+                            $so = get_option('aitrongcay_rack_cfg_' . $true_gk, []);
+                            if (empty($so)) $so = get_option('aitrongcay_rack_cfg_' . sanitize_key($true_gk), []);
+                        }
+                        $saved_options_map[$true_gk] = is_array($so) ? $so : [];
+                    }
+                    
+                    $true_saved_options = $saved_options_map[$true_gk];
+                    $saved_rack = null;
+                    foreach ($true_saved_options as $sro) {
+                        if (isset($sro['rack_id']) && (int) $sro['rack_id'] === $rack_id) {
+                            $saved_rack = $sro;
+                            break;
+                        }
+                    }
+                    
+                    $saved_tray = $saved_rack ? ($saved_rack['trays'][$si] ?? []) : [];
                     $tray_data = array_merge(aitrongcay_tray_defaults(), [
                         'name'        => trim((string) ($slot['slot_name'] ?? '')) ?: ('Khoang ' . ($si + 1)),
                         'webcam_url'  => trim((string) ($slot['camera_stream_url'] ?? '')),
@@ -151,8 +178,8 @@ function aitrongcay_get_rack_monitor_configs(string $garden_key = ''): array
                     'rack_name' => $rack_name,
                     'blynk_auth_token' => trim((string) ($rack_info['blynk_auth_token'] ?? '')),
                     'trays'     => $trays,
+                    '_is_clone' => !empty($rack_info['_is_clone']),
                 ];
-                $rack_idx++;
             }
             return $racks;
         }

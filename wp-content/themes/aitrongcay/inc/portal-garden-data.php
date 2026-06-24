@@ -349,18 +349,48 @@ function aitrongcay_portal_garden_ai(string $garden_key = '', ?WP_User $viewer =
 function aitrongcay_portal_pots(string $garden_key = '', ?WP_User $viewer = null): array
 {
     $viewer = $viewer instanceof WP_User ? $viewer : wp_get_current_user();
-    $pots = (array) (aitrongcay_portal_dataset_for_garden($garden_key, $viewer)['pots'] ?? []);
-
-    if (function_exists('aitrongcay_get_custom_pots')) {
-        $owner = function_exists('aitrongcay_get_garden_owner_user') ? aitrongcay_get_garden_owner_user($garden_key) : null;
-        $target_user = $owner instanceof WP_User ? $owner : $viewer;
-        $target_user_id = (int) ($target_user->ID ?? 0);
-        if ($target_user_id > 0) {
-            $db_or_custom_pots = aitrongcay_get_custom_pots($garden_key, $target_user_id);
-            if (! empty($db_or_custom_pots)) {
-                $pots = $db_or_custom_pots;
+    
+    $fetch_pots_for_garden = function($gk) use ($viewer) {
+        $pts = (array) (aitrongcay_portal_dataset_for_garden($gk, $viewer)['pots'] ?? []);
+        if (function_exists('aitrongcay_get_custom_pots')) {
+            $owner = function_exists('aitrongcay_get_garden_owner_user') ? aitrongcay_get_garden_owner_user($gk) : null;
+            $target_user = $owner instanceof WP_User ? $owner : $viewer;
+            $target_user_id = (int) ($target_user->ID ?? 0);
+            if ($target_user_id > 0) {
+                $db_or_custom_pots = aitrongcay_get_custom_pots($gk, $target_user_id);
+                if (! empty($db_or_custom_pots)) {
+                    $pts = $db_or_custom_pots;
+                }
             }
         }
+        return $pts;
+    };
+
+    $pots = $fetch_pots_for_garden($garden_key);
+
+    $cloned_rack_ids = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
+    if (!empty($cloned_rack_ids) && function_exists('aitrongcay_garden_racks_table')) {
+        global $wpdb;
+        $racks_table = aitrongcay_garden_racks_table();
+        $ids_placeholder = implode(',', array_fill(0, count($cloned_rack_ids), '%d'));
+        $cloned_gks = $wpdb->get_col($wpdb->prepare("SELECT DISTINCT garden_key FROM {$racks_table} WHERE id IN ($ids_placeholder) AND garden_key != ''", ...$cloned_rack_ids));
+        
+        foreach ($cloned_gks as $cgk) {
+            if ($cgk !== $garden_key) {
+                $pots = array_merge($pots, $fetch_pots_for_garden((string) $cgk));
+            }
+        }
+        
+        $unique_pots = [];
+        foreach ($pots as $p) {
+            $c = $p['code'] ?? '';
+            if ($c !== '') {
+                $unique_pots[$c] = $p;
+            } else {
+                $unique_pots[] = $p;
+            }
+        }
+        $pots = array_values($unique_pots);
     }
 
     if (function_exists('aitrongcay_portal_apply_garden_device_mapping')) {

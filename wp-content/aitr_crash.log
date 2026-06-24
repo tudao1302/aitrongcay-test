@@ -200,3 +200,9 @@ Stack trace:
 Memory peak: 56,623,104 bytes
 ?:0  {closure}()
 ---
+2026-06-24 09:02:50
+Error: Out of memory (allocated 52428800) (tried to allocate 2621440 bytes)
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\inc\portal-unified-admin-beta.php:1537
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---

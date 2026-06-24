@@ -43,7 +43,113 @@ $footer_groups = aitrongcay_footer_groups();
     </div>
 </footer>
 
-<a class="floating-ai-chat" href="<?php echo esc_url(home_url('/portal/tro-ly-ai/')); ?>" aria-label="Chat với AI">
+<a id="draggable-ai-chat" class="floating-ai-chat" href="<?php echo esc_url(home_url('/portal/tro-ly-ai/')); ?>" aria-label="Chat với AI">
     <span class="floating-ai-chat-icon" aria-hidden="true">💬</span>
     <span>Chat với AI</span>
 </a>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatBtn = document.getElementById('draggable-ai-chat');
+    if (!chatBtn) return;
+
+    let isDragging = false;
+    let startX, startY;
+    let initialLeft, initialTop;
+    let wasDragged = false;
+
+    // Remove inline styles if window resizes to avoid sticking off-screen
+    window.addEventListener('resize', () => {
+        chatBtn.style.left = '';
+        chatBtn.style.top = '';
+        chatBtn.style.right = '';
+        chatBtn.style.bottom = '';
+    });
+
+    const dragStart = (e) => {
+        if (e.type === 'touchstart') {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        } else {
+            startX = e.clientX;
+            startY = e.clientY;
+            e.preventDefault(); // Prevent text selection/drag native
+        }
+
+        const rect = chatBtn.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        
+        isDragging = true;
+        wasDragged = false;
+        
+        // Disable transition during drag for smoothness
+        chatBtn.style.transition = 'none';
+        
+        // Remove fixed bottom/right constraints so left/top takes over
+        chatBtn.style.bottom = 'auto';
+        chatBtn.style.right = 'auto';
+    };
+
+    const dragMove = (e) => {
+        if (!isDragging) return;
+        
+        let clientX, clientY;
+        if (e.type === 'touchmove') {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+            // Prevent default only if moving to avoid blocking scrolling entirely if not needed,
+            // but for a draggable element we usually prevent scroll while dragging it.
+            if (e.cancelable) e.preventDefault();
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            wasDragged = true;
+        }
+
+        let newLeft = initialLeft + dx;
+        let newTop = initialTop + dy;
+
+        // Constrain to window bounds
+        const maxLeft = window.innerWidth - chatBtn.offsetWidth;
+        const maxTop = window.innerHeight - chatBtn.offsetHeight;
+        
+        if (newLeft < 0) newLeft = 0;
+        if (newTop < 0) newTop = 0;
+        if (newLeft > maxLeft) newLeft = maxLeft;
+        if (newTop > maxTop) newTop = maxTop;
+
+        chatBtn.style.left = newLeft + 'px';
+        chatBtn.style.top = newTop + 'px';
+    };
+
+    const dragEnd = (e) => {
+        isDragging = false;
+        chatBtn.style.transition = ''; // Restore hover transitions
+    };
+
+    // Touch events
+    chatBtn.addEventListener('touchstart', dragStart, {passive: false});
+    document.addEventListener('touchmove', dragMove, {passive: false});
+    document.addEventListener('touchend', dragEnd);
+
+    // Mouse events
+    chatBtn.addEventListener('mousedown', dragStart);
+    document.addEventListener('mousemove', dragMove);
+    document.addEventListener('mouseup', dragEnd);
+
+    // Prevent click if dragged
+    chatBtn.addEventListener('click', (e) => {
+        if (wasDragged) {
+            e.preventDefault();
+            wasDragged = false;
+        }
+    });
+});
+</script>

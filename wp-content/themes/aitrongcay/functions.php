@@ -6312,7 +6312,7 @@ function aitrongcay_capture_photo_server_ajax(): void
         wp_send_json_error(['message' => 'Không lấy được ảnh. Kiểm tra go2rtc hoặc cấu hình webcam của khoang.'], 500);
     }
 
-    $filename = 'capture-' . strtolower($pot_code) . '-' . wp_date('Ymd-His') . '.jpg';
+    $filename = 'capture-' . strtolower($pot_code) . '-' . wp_date('Ymd-His', null, new DateTimeZone('Asia/Ho_Chi_Minh')) . '.jpg';
     $uploaded = wp_upload_bits($filename, null, $binary);
     if (! empty($uploaded['error'])) {
         wp_send_json_error(['message' => $uploaded['error']], 500);
@@ -6320,7 +6320,7 @@ function aitrongcay_capture_photo_server_ajax(): void
 
     $attachment_id = wp_insert_attachment([
         'post_mime_type' => 'image/jpeg',
-        'post_title'     => 'Ảnh ' . $pot_code . ' · ' . current_time('H:i d/m/Y'),
+        'post_title'     => 'Ảnh ' . $pot_code . ' · ' . wp_date('H:i d/m/Y', null, new DateTimeZone('Asia/Ho_Chi_Minh')),
         'post_status'    => 'inherit',
         'post_author'    => get_current_user_id(),
     ], $uploaded['file']);

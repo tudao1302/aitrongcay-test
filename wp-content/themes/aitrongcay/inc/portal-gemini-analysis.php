@@ -53,6 +53,17 @@ function aitrongcay_resolve_pot_webcam_info(string $garden_key, string $pot_code
         return $slug !== '' ? ['slug' => $slug, 'base_url' => $base] : [];
     };
 
+    // Method 0: Check DB directly for slot-specific camera
+    if (function_exists('aitrongcay_get_rack_slot_camera_stream_url')) {
+        $cam_url = aitrongcay_get_rack_slot_camera_stream_url($garden_key, $pot_code);
+        if ($cam_url !== '') {
+            $info = $extract($cam_url);
+            if ($info !== []) {
+                return $info;
+            }
+        }
+    }
+
     // Method 1: slot_index-based
     if (function_exists('aitrongcay_get_rack_slots')) {
         foreach ((array) aitrongcay_get_rack_slots($garden_key) as $slot) {

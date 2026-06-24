@@ -75,7 +75,8 @@ $eco_nav_items = array_map(static function (array $item) use ($market_view_garde
     if (in_array((string) ($item['key'] ?? ''), ['dashboard', 'kho-nong-cu'], true) && $market_view_garden_key !== '') {
         $url = add_query_arg('garden', $market_view_garden_key, $url);
     }
-    return ['key' => (string) ($item['key'] ?? ''), 'label' => (string) ($item['label'] ?? ''), 'url' => $url];
+    $item['url'] = $url;
+    return $item;
 }, aitrongcay_eco_nav_items());
 set_query_var('aitr_eco_shell', [
     'title' => 'Eco-Tech Marketplace',
