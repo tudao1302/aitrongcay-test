@@ -5,3 +5,11 @@ error_log
 node_modules/
 robot-listener/node_modules/
 .vscode/
+
+# Ignore log files
+wp-content/debug.log
+wp-content/aitr_crash.log
+*.log
+
+# Ignore server config
+.htaccess
