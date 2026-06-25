@@ -33,10 +33,14 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 body {
   margin: 0;
+  overflow-x: hidden;
+  width: 100%;
   font-family: Manrope, system-ui, sans-serif;
   color: var(--charcoal);
   background:
@@ -2658,10 +2662,14 @@ label {
 
 .ai-agent-exact-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: 18px;
   padding: 12px 0 0;
   align-items: start;
+}
+
+.ai-agent-rail-toggle {
+  display: none;
 }
 
 .ai-agent-session-rail {
@@ -2784,6 +2792,8 @@ label {
   box-shadow: none;
   font-size: 18px;
   white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .ai-agent-design-log .garden-ai-message.user .garden-ai-bubble {
@@ -2909,14 +2919,69 @@ label {
 }
 
 @media (max-width: 820px) {
-  .ai-agent-session-rail {
-    position: static;
+  .ai-agent-exact-main {
+    grid-template-columns: minmax(0, 1fr);
   }
-
-  .ai-agent-design-header,
-  .ai-agent-design-input {
+  .ai-agent-session-rail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    z-index: 9999;
+    background: #1c211e;
+    border: none;
+    border-radius: 0;
+    padding: 18px;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
+  }
+  .ai-agent-session-rail.is-open {
+    transform: translateX(0);
+  }
+  .ai-agent-session-list {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100%;
+    flex: 1;
+    gap: 10px;
+    padding-bottom: 24px;
+  }
+  .ai-agent-session-item {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    flex-shrink: 0;
+  }
+  .ai-agent-rail-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #a8b3ac;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+  .ai-agent-design-input textarea {
+    min-height: 44px;
+    padding: 10px 4px;
+    font-size: 15px;
+  }
+  .ai-agent-design-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  .ai-agent-design-send {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
   }
 
   .ai-agent-design-form,
@@ -2926,10 +2991,7 @@ label {
     padding-right: 16px;
   }
 
-  .ai-agent-design-send {
-    width: 100%;
-    height: 52px;
-  }
+
 
   .pot-card,
   .pot-card details {

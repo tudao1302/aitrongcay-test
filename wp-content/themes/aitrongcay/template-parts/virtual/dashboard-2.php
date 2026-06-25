@@ -1430,30 +1430,42 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       z-index: 10;
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 14px 16px;
+      gap: 8px;
+      padding: 10px 12px;
       background: rgba(18, 20, 17, .88);
       border: 1px solid #31a375;
-      border-radius: 14px;
+      border-radius: 10px;
       backdrop-filter: blur(8px)
+    }
+
+    .d2-no-rack-hint.is-inline {
+      position: relative;
+      bottom: auto;
+      left: auto;
+      right: auto;
+      margin: 16px 16px 0;
     }
 
     .d2-no-rack-hint-text {
       flex: 1;
       margin: 0;
-      font-size: 13px;
+      font-size: 12px;
       color: #e3e3de;
-      line-height: 1.4
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .d2-no-rack-hint-cta {
       display: inline-block;
-      padding: 8px 14px;
+      padding: 6px 10px;
       background: #31a375;
       color: #062013;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
-      border-radius: 8px;
+      border-radius: 6px;
       text-decoration: none;
       white-space: nowrap
     }
@@ -4150,23 +4162,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
               <img src="<?php echo esc_url($hero_image); ?>" alt="<?php echo esc_attr($hero_name); ?>" loading="eager"
                 decoding="async" fetchpriority="high" data-d2-hero-image>
             <?php endif; ?>
-            <div class="d2-no-rack-hint d2-cam-hint" id="d2CamHint" data-upsell-overlay <?php if ($hero_stream_url !== '') echo 'style="display: none;"'; ?>>
-              <?php if (str_contains($hero_image, 'hero-greenhouse.svg')): ?>
-                <p class="d2-no-rack-hint-text" data-hint-text>📹 Khoang này chưa có ảnh và luồng Camera trực tiếp. Chờ robot tới chụp hoặc lắp đặt thêm để xem 24/7.</p>
-              <?php else: ?>
-                <p class="d2-no-rack-hint-text" data-hint-text>📹 Bạn muốn xem khu vườn trực tiếp 24/7? Tiến hành lắp đặt Camera ngay.</p>
-              <?php endif; ?>
-              <a class="d2-no-rack-hint-cta" href="<?php echo esc_url(add_query_arg('garden', $garden_key, home_url('/portal/kho-nong-cu-2/'))); ?>">Tới Kho nông cụ →</a>
-              <button type="button" class="d2-no-rack-hint-close" onclick="this.parentElement.style.display='none'">×</button>
-            </div>
             <div class="d2-pill d2-live-tag" data-d2-media-badge><?php echo esc_html($hero_media_badge); ?></div>
-            <?php if (!$has_rack): ?>
-            <div class="d2-no-rack-hint" id="d2NoRackHint">
-              <p class="d2-no-rack-hint-text">🌱 Bạn chưa có rack. Hãy tiến hành thuê rack để bắt đầu trồng cây!</p>
-              <a class="d2-no-rack-hint-cta" href="<?php echo esc_url($rent_rack_url); ?>">Đặt dịch vụ →</a>
-              <button type="button" class="d2-no-rack-hint-close" onclick="document.getElementById('d2NoRackHint').style.display='none'">×</button>
-            </div>
-            <?php endif; ?>
             <div class="d2-bottom">
               <div></div>
               <div class="d2-actions">
@@ -4218,6 +4214,25 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
               </div>
             </div>
           </div>
+          
+          <?php if (!$has_rack): ?>
+            <div class="d2-no-rack-hint is-inline" id="d2NoRackHint">
+              <p class="d2-no-rack-hint-text">🌱 Bạn chưa có rack. Hãy tiến hành thuê rack để bắt đầu trồng cây!</p>
+              <a class="d2-no-rack-hint-cta" href="<?php echo esc_url($rent_rack_url); ?>">Đặt dịch vụ →</a>
+              <button type="button" class="d2-no-rack-hint-close" onclick="this.parentElement.style.display='none'">×</button>
+            </div>
+          <?php else: ?>
+            <div class="d2-no-rack-hint is-inline d2-cam-hint" id="d2CamHint" data-upsell-overlay <?php if ($hero_stream_url !== '') echo 'style="display: none;"'; ?>>
+              <?php if (str_contains($hero_image, 'hero-greenhouse.svg')): ?>
+                <p class="d2-no-rack-hint-text" data-hint-text>📹 Khoang này chưa có ảnh và luồng Camera trực tiếp. Chờ robot tới chụp hoặc lắp đặt thêm để xem 24/7.</p>
+              <?php else: ?>
+                <p class="d2-no-rack-hint-text" data-hint-text>📹 Bạn muốn xem khu vườn trực tiếp 24/7? Tiến hành lắp đặt Camera ngay.</p>
+              <?php endif; ?>
+              <a class="d2-no-rack-hint-cta" href="<?php echo esc_url(add_query_arg('garden', $garden_key, home_url('/portal/kho-nong-cu-2/'))); ?>">Tới Kho nông cụ →</a>
+              <button type="button" class="d2-no-rack-hint-close" onclick="this.parentElement.style.display='none'">×</button>
+            </div>
+          <?php endif; ?>
+
           <div class="d2-growth-card" data-d2-growth-journey>
             <div class="d2-growth-head" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
               <div class="d2-growth-badge" data-d2-growth-age-wrap<?php echo isset($hero_growth_journey['ageDays']) && $hero_growth_journey['ageDays'] !== null ? '' : ' hidden'; ?>>
@@ -4671,7 +4686,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     <?php if ($is_admin_user): ?>
       <!-- ROBOT CONTROL MODAL -->
       <div class="d2-tray-settings-overlay" id="d2RobotModal" style="display:none; align-items:center; justify-content:center; z-index: 10000; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);">
-        <div class="d2-tray-settings-box" style="max-width: 480px; width: 100%; padding: 24px; position: relative;">
+        <div class="d2-tray-settings-box" style="max-width: 800px; width: 95%; padding: 24px; position: relative; max-height: 95vh; overflow-y: auto;">
           <div class="d2-tray-settings-head">
             <strong>🤖 Điều khiển Robot Camera</strong>
             <button type="button" class="d2-tray-settings-close" onclick="document.getElementById('d2RobotModal').style.display='none'">✕</button>
@@ -4685,8 +4700,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             <button type="button" id="rbView3dBtn" style="padding: 8px 20px; background: #1c1f1c; border: 1px solid rgba(111, 219, 168, 0.2); color: #8e9c91; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s;">Mô hình 3D</button>
           </div>
 
-          <div id="rb3dView" style="display:none; height: 400px; margin-bottom: 24px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line);">
-            <iframe id="rb3dIframe" src="<?php echo esc_url(home_url('/test-3d.html')); ?>" style="width:100%; height:100%; border:none;"></iframe>
+          <div id="rb3dView" style="display:none; height: 550px; margin-bottom: 24px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line);">
+            <iframe id="rb3dIframe" src="<?php echo esc_url(home_url('/test-3d.html?v=' . time())); ?>" style="width:100%; height:100%; border:none;"></iframe>
           </div>
 
           <style>
@@ -5196,7 +5211,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     ); ?>;
     var AITR_IS_ADMIN = <?php echo $is_admin_user ? 'true' : 'false'; ?>;
     var AITR_HAS_M3U8 = <?php echo $has_any_m3u8 ? 'true' : 'false'; ?>;
-    var AITR_TIMELAPSE_STREAMS = <?php echo wp_json_encode($timelapse_streams, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    var AITR_TIMELAPSE_STREAMS = <?php echo wp_json_encode($timelapse_streams ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
     var AITR_HLS_JS_URL = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
     (function () {
       var gardenWrap = document.querySelector('[data-garden-inline-name]');
@@ -7461,7 +7476,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     <div class="d2-custom-modal">
       <div class="d2-custom-modal-icon">🌱</div>
       <h3 class="d2-custom-modal-title">Bắt đầu vụ mới?</h3>
-      <p class="d2-custom-modal-text">Bạn có chắc chắn muốn dọn khoang và trồng lứa mới? Việc này sẽ khởi tạo lại ngày sinh trưởng về Ngày 1 và xóa lịch sử phân tích AI cũ.</p>
+      <p class="d2-custom-modal-text">Bạn có chắc chắn muốn dọn khoang và trồng lứa mới? Việc này sẽ khởi tạo lại ngày sinh trưởng về Ngày 1 và xóa lịch sử phân tích AI cũ.<br><br><strong style="color: #e53e3e;">Khu vườn sẽ được dọn kho ảnh vĩnh viễn. Bạn hãy đảm bảo đã lưu lại những bức ảnh kỉ niệm của khu vườn trước khi dọn kho.</strong></p>
       <div class="d2-custom-modal-actions">
         <button type="button" class="d2-custom-modal-btn cancel" id="d2ResetCropCancel">Hủy</button>
         <button type="button" class="d2-custom-modal-btn confirm" id="d2ResetCropConfirm">Xác nhận trồng mới</button>
@@ -7497,15 +7512,15 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         var potCode = resetBtn.getAttribute('data-reset-crop');
         var formData = new FormData();
         formData.append('action', 'aitrongcay_reset_pot_crop');
-        formData.append('nonce', window.AITR_PORTAL ? window.AITR_PORTAL.nonce : '');
-        formData.append('garden_key', window.AITR_PORTAL ? window.AITR_PORTAL.garden_key : '');
+        formData.append('nonce', typeof AITR_AJAX_NONCE !== 'undefined' ? AITR_AJAX_NONCE : (window.AITR_PORTAL ? window.AITR_PORTAL.nonce : ''));
+        formData.append('garden_key', typeof AITR_GARDEN_KEY !== 'undefined' ? AITR_GARDEN_KEY : (window.AITR_PORTAL ? window.AITR_PORTAL.garden_key : ''));
         formData.append('pot_code', potCode);
         
         resetBtn.textContent = 'Đang dọn...';
         resetBtn.style.opacity = '0.5';
         resetBtn.disabled = true;
 
-        fetch((window.AITR_PORTAL ? window.AITR_PORTAL.ajaxurl : '/wp-admin/admin-ajax.php'), {
+        fetch((typeof AITR_AJAX_URL !== 'undefined' ? AITR_AJAX_URL : (window.AITR_PORTAL ? window.AITR_PORTAL.ajaxurl : '/wp-admin/admin-ajax.php')), {
           method: 'POST',
           body: formData
         })

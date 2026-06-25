@@ -800,24 +800,33 @@ function aitrongcay_render_unified_admin_beta_page(): void {
 
         .aitr-form-control {
             width: 100%;
-            background: #0f172a;
-            border: 1px solid #475569;
+            background: #0f172a !important;
+            border: 1px solid #475569 !important;
             border-radius: 8px;
             padding: 10px 14px;
-            color: #f1f5f9;
+            color: #ffffff !important;
             font-size: 14px;
             font-family: inherit;
         }
 
+        .aitr-form-control::placeholder {
+            color: #94a3b8 !important;
+            opacity: 1;
+        }
+
         .aitr-form-control:focus {
-            border-color: #10b981;
+            border-color: #10b981 !important;
             outline: none;
             box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
         }
 
+        select.aitr-form-control {
+            color: #ffffff !important;
+        }
+
         select.aitr-form-control option {
-            background: #1e293b;
-            color: #f1f5f9;
+            background: #1e293b !important;
+            color: #ffffff !important;
             padding: 10px;
         }
 
@@ -1115,6 +1124,19 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                 <div class="aitr-two-col">
                     <!-- Left Sidebar List of Gardens -->
                     <div class="aitr-list-sidebar">
+                        <div style="padding: 12px; border-bottom: 1px solid #334155; position: sticky; top: 0; background: #1e293b; z-index: 10; border-radius: 12px 12px 0 0;">
+                            <input type="text" id="aitrGardenSearch" class="aitr-form-control" placeholder="🔍 Tìm tên khách, email..." onkeyup="aitrFilterGardens()" style="font-size: 13px; padding: 8px 12px; background: #0f172a; border-radius: 6px;">
+                        </div>
+                        <script>
+                        function aitrFilterGardens() {
+                            var filter = document.getElementById('aitrGardenSearch').value.toLowerCase();
+                            var nodes = document.querySelectorAll('.aitr-list-sidebar .aitr-list-item');
+                            nodes.forEach(function(node) {
+                                var text = node.innerText.toLowerCase();
+                                node.style.display = text.includes(filter) ? '' : 'none';
+                            });
+                        }
+                        </script>
                         <?php
                         if (empty($gardens)):
                             echo '<p style="padding:20px;text-align:center;color:#64748b">Không tìm thấy khu vườn nào.</p>';
@@ -1476,6 +1498,15 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                                                     <input type="hidden" name="action" value="aitrongcay_delete_inventory_rack">
                                                     <input type="hidden" name="rack_id" value="<?php echo (int) ($rk['id'] ?? 0); ?>">
                                                     <button type="submit" class="aitr-btn aitr-btn-danger" style="padding:4px 8px;font-size:11px"><i class="fa-solid fa-trash"></i> Xóa</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <!-- Revoke Rack -->
+                                                <form method="post" style="display:inline" onsubmit="event.preventDefault(); aitrConfirmRevoke(this);">
+                                                    <?php wp_nonce_field('aitrongcay_beta_action_nonce'); ?>
+                                                    <input type="hidden" name="beta_action" value="release_rack">
+                                                    <input type="hidden" name="rack_id" value="<?php echo (int) ($rk['id'] ?? 0); ?>">
+                                                    <input type="hidden" name="garden_key" value="<?php echo esc_attr((string) ($rk['garden_key'] ?? '')); ?>">
+                                                    <button type="submit" class="aitr-btn aitr-btn-danger" style="padding:4px 8px;font-size:11px"><i class="fa-solid fa-arrow-right-left"></i> Thu hồi</button>
                                                 </form>
                                             <?php endif; ?>
                                         </div>

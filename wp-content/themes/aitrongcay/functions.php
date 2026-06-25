@@ -1435,6 +1435,10 @@ function aitrongcay_garden_rack_assignments_table(): string
 
 function aitrongcay_install_social_tables(): void
 {
+    if (get_option('aitrongcay_social_schema_version', '') === '5') {
+        return;
+    }
+
     global $wpdb;
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -7432,6 +7436,7 @@ function aitrongcay_ai_list_sessions_ajax(): void
             'scope_type' => (string) ($session['scope_type'] ?? 'garden'),
             'updated_at' => (string) ($session['updated_at'] ?? ''),
             'last_message_at' => (string) ($session['last_message_at'] ?? ''),
+            'last_user_message' => (string) ($session['last_user_message'] ?? ''),
         ];
     }, is_array($sessions) ? $sessions : []);
     wp_send_json_success(['sessions' => $items]);

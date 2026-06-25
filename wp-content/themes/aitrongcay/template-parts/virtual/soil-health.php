@@ -41,7 +41,8 @@ unset($shared_top_link);
 <section class="d2-app">
   <style>
     .site-header, .site-footer { display: none !important; }
-    
+    html, body { overflow-x: hidden !important; width: 100%; }
+
     .d2-app {
       --bg: #121411;
       --panel: rgba(22, 26, 22, 0.6);
@@ -136,6 +137,12 @@ unset($shared_top_link);
       .d2-nav .bottom-nav-label { display: none; }
       .d2-nav .bottom-nav-short { display: block; }
       .sh-grid { grid-template-columns: 1fr; }
+      .sh-card { padding: 16px; }
+      .sh-vital-grid { gap: 8px; }
+      .sh-vital-box { padding: 12px 8px; }
+      .sh-vital-val { font-size: 22px; margin: 4px 0; }
+      .sh-vital-label { font-size: 11px; }
+      .sh-title { font-size: 24px; }
       
       .d2-top { flex-wrap: nowrap; gap: 14px; align-items: center; }
       .d2-top > div:first-child { flex: 1 1 0; min-width: 0; }

@@ -345,11 +345,11 @@ if ($needs_photo_library) {
     .photo-library-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:18px;flex-wrap:wrap}.photo-library-head h3{margin:0;font-family:'Noto Serif',serif;font-size:30px;color:#fff}.photo-library-meta{color:rgba(227,227,222,.62);font-size:14px;line-height:1.7}
     .photo-library-slider{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center}.photo-library-viewport{position:relative;overflow:hidden;touch-action:pan-y;cursor:grab}.photo-library-viewport.is-dragging{cursor:grabbing}.photo-library-track{display:flex;transition:transform .34s ease,opacity .22s ease}.photo-library-track.is-fading{opacity:.72}.photo-library-slide{min-width:100%}
     .photo-library-image-wrap{position:relative}.photo-library-image{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:22px;background:#0b120e;cursor:zoom-in}
-    .photo-library-caption{position:absolute;left:14px;right:14px;bottom:14px;display:flex;justify-content:space-between;gap:12px;align-items:flex-end;padding:12px 14px;border-radius:18px;background:linear-gradient(180deg, rgba(11,18,14,.08), rgba(11,18,14,.78));backdrop-filter:blur(8px)}
-    .photo-library-caption strong{display:block;color:#fff;font-size:14px;line-height:1.4}.photo-library-caption span{display:block;color:rgba(227,227,222,.76);font-size:12px;line-height:1.5}.photo-library-counter{position:absolute;right:14px;top:14px;padding:6px 10px;border-radius:999px;background:rgba(11,18,14,.72);color:#f5f7f3;font-size:12px;font-weight:700;backdrop-filter:blur(8px)}
+    .photo-library-caption{position:absolute;left:12px;right:12px;bottom:12px;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.9)}
+    .photo-library-caption strong{display:block;color:#fff;font-size:12px;font-weight:600;line-height:1.4}.photo-library-caption span{display:block;color:rgba(255,255,255,.85);font-size:11px;line-height:1.5}.photo-library-counter{position:absolute;right:14px;top:14px;padding:6px 10px;border-radius:999px;background:rgba(11,18,14,.72);color:#f5f7f3;font-size:12px;font-weight:700;backdrop-filter:blur(8px)}
     .photo-library-nav{width:44px;height:44px;border:none;border-radius:999px;background:rgba(51,53,50,.78);color:#fff;font-size:28px;line-height:1;display:grid;place-items:center}.photo-library-nav[disabled]{opacity:.35;cursor:not-allowed}
     .photo-library-dots{grid-column:1/-1;display:flex;justify-content:center;gap:8px;margin-top:12px}.photo-library-dot{width:10px;height:10px;border:none;border-radius:999px;background:rgba(255,255,255,.24)}.photo-library-dot.is-active{background:#6fdba8;transform:scale(1.15)}
-    .photo-library-actions{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap}.photo-library-upload{display:block;margin-top:18px}.photo-library-upload-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center}.photo-library-file{display:flex;align-items:center;gap:12px;background:#fff;border-radius:18px;padding:14px 16px;min-height:64px}.photo-library-file input[type="file"]{width:100%;color:#3a433d}.photo-library-upload .btn{min-height:64px;padding:0 24px;border-radius:18px}.photo-library-status{display:block;margin-top:10px;color:rgba(227,227,222,.58)}
+    .photo-library-actions{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}.photo-library-actions a{color:#6fdba8;font-weight:600;font-size:14px;text-decoration:none;padding:8px 16px;background:rgba(111,219,168,.15);border-radius:12px;transition:all .2s ease}.photo-library-actions a:hover{background:rgba(111,219,168,.25)}.photo-library-actions .btn-ghost{margin-left:auto;color:#ef4444;background:rgba(239,68,68,.1)}.photo-library-upload{display:block;margin-top:18px}.photo-library-upload-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center}.photo-library-file{display:flex;align-items:center;gap:12px;background:#fff;border-radius:18px;padding:14px 16px;min-height:64px}.photo-library-file input[type="file"]{width:100%;color:#3a433d}.photo-library-upload .btn{min-height:64px;padding:0 24px;border-radius:18px}.photo-library-status{display:block;margin-top:10px;color:rgba(227,227,222,.58)}
     .photo-library-empty{padding:24px;border-radius:22px;background:rgba(41,43,39,.42);color:rgba(227,227,222,.7)}
     .photo-lightbox{position:fixed;inset:0;z-index:120;background:rgba(5,8,6,.92);display:flex;align-items:center;justify-content:center;padding:28px}.photo-lightbox[hidden]{display:none !important}.photo-lightbox-inner{max-width:min(96vw,1200px);max-height:92vh;display:grid;gap:14px}.photo-lightbox img{display:block;max-width:100%;max-height:78vh;border-radius:22px;background:#0b120e}.photo-lightbox-meta{display:flex;justify-content:space-between;gap:14px;align-items:center;color:#e3e3de}.photo-lightbox-close{position:absolute;top:18px;right:18px;width:46px;height:46px;border:none;border-radius:999px;background:rgba(255,255,255,.08);color:#fff;font-size:28px}
     @media (max-width:760px){.photo-library-slider{grid-template-columns:1fr}.photo-library-nav{display:none}.photo-library-upload-form{grid-template-columns:1fr}.photo-library-upload .btn{width:100%}}
@@ -583,6 +583,7 @@ if ($needs_photo_library) {
                       </div>
                       <div class="photo-library-actions">
                         <a class="small-link" href="<?php echo esc_url($download_url); ?>" target="_blank" rel="noopener">Mở ảnh gốc</a>
+                        <a class="small-link" href="<?php echo esc_url($download_url); ?>" download>Tải ảnh</a>
                         <button class="btn btn-ghost" type="button" data-delete-photo="<?php echo esc_attr((string) $attachment_id); ?>" aria-label="Xóa ảnh này" title="Xóa ảnh này" style="min-width:auto;padding:6px 10px;border-radius:999px">✕</button>
                       </div>
                     </article>
@@ -1224,6 +1225,7 @@ if ($needs_photo_library) {
                                             <p class="small subtle" style="margin:0"><?php echo esc_html($caption); ?></p>
                                             <div class="inline-list photo-actions" style="margin-top:12px;justify-content:space-between;align-items:center;gap:10px">
                                                 <a class="small-link" href="<?php echo esc_url($download_url); ?>" target="_blank" rel="noopener">Mở ảnh gốc</a>
+                                                <a class="small-link" href="<?php echo esc_url($download_url); ?>" download>Tải ảnh</a>
                                                 <button class="btn btn-ghost" type="button" data-delete-photo="<?php echo esc_attr((string) $attachment_id); ?>" aria-label="Xóa ảnh này" title="Xóa ảnh này" style="min-width:auto;padding:6px 10px;border-radius:999px">✕</button>
                                             </div>
                                         </article>
@@ -1314,6 +1316,14 @@ if ($needs_photo_library) {
                 <?php $is_ai_onboarding = isset($_GET['mode']) && sanitize_key((string) wp_unslash($_GET['mode'])) === 'onboarding'; ?>
                 <?php $ai_sessions = $is_logged_in && function_exists('aitrongcay_ai_list_sessions') ? aitrongcay_ai_list_sessions($current_user, $garden_key, 30) : []; ?>
                 <?php $guest_ai_summary = 'Chào anh, em có thể tư vấn chọn cây theo nhu cầu dinh dưỡng, mùa vụ và mục tiêu sử dụng của gia đình. Anh có thể bắt đầu hỏi ngay ở chế độ khách, khi cần lưu hành trình hoặc gắn với khu vườn cụ thể thì mình đăng nhập sau cũng được.'; ?>
+                <?php 
+                $active_session_title = 'Cuộc trò chuyện mới';
+                if ($is_logged_in && !empty($ai_sessions[0])) {
+                    $active_session_title = trim((string) ($ai_sessions[0]['last_user_message'] ?? ''));
+                    if ($active_session_title === '') $active_session_title = 'Cuộc trò chuyện mới';
+                    else $active_session_title = wp_trim_words($active_session_title, 8, '...');
+                }
+                ?>
                 <div class="ai-agent-exact-page">
                     <div class="ai-agent-exact-main">
                         <?php if ($is_logged_in) : ?>
@@ -1323,26 +1333,37 @@ if ($needs_photo_library) {
                             </div>
                             <div class="ai-agent-session-list" data-ai-session-list>
                                 <?php foreach ($ai_sessions as $index => $session_item) : ?>
+                                    <?php 
+                                        $display_title = trim((string) ($session_item['last_user_message'] ?? ''));
+                                        if ($display_title === '') $display_title = 'Cuộc trò chuyện mới';
+                                        else $display_title = wp_trim_words($display_title, 8, '...');
+                                    ?>
                                     <button
                                         class="ai-agent-session-item<?php echo $index === 0 ? ' is-active' : ''; ?>"
                                         type="button"
                                         data-ai-session-item
                                         data-session-id="<?php echo esc_attr((string) ($session_item['id'] ?? 0)); ?>"
-                                        data-session-title="<?php echo esc_attr((string) (($session_item['title'] ?? '') ?: 'Phiên chat')); ?>"
+                                        data-session-title="<?php echo esc_attr($display_title); ?>"
                                     >
-                                        <strong><?php echo esc_html((string) (($session_item['title'] ?? '') ?: 'Phiên chat')); ?></strong>
-                                        <span><?php echo esc_html((string) (($session_item['last_message_at'] ?? '') ?: ($session_item['updated_at'] ?? ''))); ?></span>
+                                        <strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block"><?php echo esc_html($display_title); ?></strong>
                                     </button>
                                 <?php endforeach; ?>
                             </div>
                         </aside>
                         <?php endif; ?>
                         <div class="ai-agent-exact-panel" data-garden-ai-chat<?php echo $is_ai_onboarding ? ' data-ai-onboarding="1"' : ''; ?>>
-                            <div class="ai-agent-design-header">
-                                <h1 class="ai-agent-design-title" data-ai-session-title><?php echo esc_html($is_ai_onboarding ? 'Giao thức khởi tạo khoang' : (! $is_logged_in ? 'AI tư vấn trồng cây cho gia đình' : (($ai_sessions[0]['title'] ?? '') ?: 'Giao thức Hộ vệ'))); ?></h1>
-                                <?php if (! $is_logged_in && ! $is_ai_onboarding) : ?>
-                                    <div class="ai-agent-design-meta small subtle" style="margin-top:10px">Đăng nhập để lưu lịch sử tư vấn và gắn đề xuất này với khu vườn của anh.</div>
+                            <div class="ai-agent-design-header" style="display:flex;flex-direction:row;align-items:center;gap:12px">
+                                <?php if ($is_logged_in) : ?>
+                                    <button type="button" class="btn btn-ghost ai-agent-rail-toggle" data-ai-rail-toggle aria-label="Mở lịch sử chat" style="padding:8px;border-radius:12px;margin-left:-8px">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                                    </button>
                                 <?php endif; ?>
+                                <div style="min-width:0;flex:1">
+                                    <h1 class="ai-agent-design-title" data-ai-session-title style="margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?php echo esc_html($is_ai_onboarding ? 'Giao thức khởi tạo khoang' : (! $is_logged_in ? 'AI tư vấn trồng cây cho gia đình' : $active_session_title)); ?></h1>
+                                    <?php if (! $is_logged_in && ! $is_ai_onboarding) : ?>
+                                        <div class="ai-agent-design-meta small subtle" style="margin-top:4px">Đăng nhập để lưu lịch sử tư vấn và gắn đề xuất này với khu vườn của anh.</div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
 
                             <div class="garden-ai-chat-log garden-ai-chat-log-page ai-agent-design-log" data-garden-ai-log>
@@ -1403,10 +1424,19 @@ var AITR_GARDEN_KEY = <?php echo wp_json_encode($garden_key); ?>;
 
 (function () {
   var sessionRail = document.querySelector('.ai-agent-session-rail');
-  var ecoSide = document.querySelector('.eco-side');
-  if (sessionRail && ecoSide && !ecoSide.contains(sessionRail)) {
-    ecoSide.appendChild(sessionRail);
-  }
+  
+  // Toggle sidebar logic
+  document.addEventListener('click', function(e) {
+    var toggleBtn = e.target.closest('[data-ai-rail-toggle]');
+    if (toggleBtn && sessionRail) {
+      sessionRail.classList.toggle('is-open');
+      return;
+    }
+    // Close when clicking outside rail on mobile
+    if (sessionRail && sessionRail.classList.contains('is-open') && !e.target.closest('.ai-agent-session-rail')) {
+      sessionRail.classList.remove('is-open');
+    }
+  });
 
   document.addEventListener('click', function (event) {
     var chip = event.target.closest('[data-ai-fill]');
