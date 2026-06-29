@@ -98,9 +98,11 @@ const renderAiSessionItems = (sessions = []) => {
     list.innerHTML = sessions.map(session => {
       const id = Number(session.id || 0);
       const active = id === activeAiSessionId ? ' is-active' : '';
-      const title = session.title || 'Phiên chat';
-      const time = session.last_message_at || session.updated_at || '';
-      return `<button class="ai-agent-session-item${active}" type="button" data-ai-session-item data-session-id="${id}" data-session-title="${title.replace(/"/g, '&quot;')}"><strong>${title}</strong><span>${time}</span></button>`;
+      let title = (session.last_user_message || '').trim();
+      if (!title) title = 'Cuộc trò chuyện mới';
+      else if (title.split(' ').length > 8) title = title.split(' ').slice(0, 8).join(' ') + '...';
+      
+      return `<button class="ai-agent-session-item${active}" type="button" data-ai-session-item data-session-id="${id}" data-session-title="${title.replace(/"/g, '&quot;')}"><strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">${title}</strong></button>`;
     }).join('');
   });
 };
@@ -186,6 +188,7 @@ const upsertActiveSessionPreview = (patch = {}) => {
   const merged = {
     id: activeAiSessionId,
     title: patch.title || 'Phiên chat',
+    last_user_message: patch.last_user_message || next[index]?.last_user_message || '',
     last_message_at: patch.last_message_at || nowIso,
     updated_at: patch.updated_at || nowIso,
     ...((index >= 0 ? next[index] : {})),
@@ -253,7 +256,7 @@ const sendGardenAiMessage = async (message) => {
     result.data?.mode || 'Adapter-ready',
     latencyLabel ? `${statusText}${statusText ? ' · ' : ''}${latencyLabel}` : statusText
   );
-  upsertActiveSessionPreview({ title: result.data?.sessionTitle || 'Phiên chat' });
+  upsertActiveSessionPreview({ title: result.data?.sessionTitle || 'Phiên chat', last_user_message: message });
 };
 
 document.addEventListener('click', (event) => {

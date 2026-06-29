@@ -197,7 +197,13 @@ function aitrongcay_do_timelapse_capture(): void {
  * H.265 cameras return 500 immediately — no sleep needed, skip straight to ISAPI fallback.
  */
 function aitrongcay_timelapse_fetch_frame(string $frame_url): ?string {
-    $args     = ['timeout' => 10, 'sslverify' => false];
+    $args     = [
+        'timeout'   => 10,
+        'sslverify' => false,
+        'headers'   => [
+            'ngrok-skip-browser-warning' => 'true'
+        ]
+    ];
     $response = wp_remote_get($frame_url, $args);
     $code     = is_wp_error($response) ? 0 : wp_remote_retrieve_response_code($response);
 
@@ -489,6 +495,12 @@ function aitrongcay_ajax_timelapse_list(): void {
     $days_raw = isset($_POST['days']) ? sanitize_text_field($_POST['days']) : '7';
     $days = $days_raw === 'all' ? 365 : max(1, min(365, (int) $days_raw));
 
+    file_put_contents(WP_CONTENT_DIR . '/timelapse_debug.log', 
+        date('Y-m-d H:i:s') . " | HOST: " . $_SERVER['HTTP_HOST'] . 
+        " | garden: $garden_key | stream: $stream_slug | days: $days\n", 
+        FILE_APPEND
+    );
+
     if ($stream_slug === '') {
         wp_send_json_error(['message' => 'Thiếu tham số.']);
         return;
@@ -530,6 +542,9 @@ function aitrongcay_ajax_timelapse_list(): void {
         wp_send_json_error(['message' => 'Không có quyền truy cập.']);
         return;
     }
+
+    // NOTE: Timelapse privacy checks have been removed. 
+    // If a user has access to the garden (validated above), they can view all timelapse frames.
 
     // sanitize_key strips ":" → backward-compat với path đã lưu trước đây (gardenhash/ không có dấu :)
     $safe_stream  = $legacy_stream !== '' ? $legacy_stream : sanitize_key($stream_slug);
@@ -583,6 +598,8 @@ function aitrongcay_ajax_timelapse_list(): void {
                 $sensors = json_decode(file_get_contents($json_file), true);
             }
             $ts = strtotime($date . ' ' . str_replace('-', ':', $t_str));
+            
+            $ts = strtotime($date . ' ' . str_replace('-', ':', $t_str));
             $frames[] = [
                 'url'     => $base_url . '/' . $date . '/' . basename($file),
                 'date'    => $date,
@@ -632,13 +649,15 @@ function aitrongcay_ajax_timelapse_list(): void {
             $date = wp_date('Y-m-d', strtotime($photo_post->post_date));
             $time = wp_date('H:i', strtotime($photo_post->post_date));
             $url = wp_get_attachment_image_url($photo_post->ID, 'large') ?: wp_get_attachment_url($photo_post->ID);
+            $ts = strtotime($photo_post->post_date);
+            
             if ($url) {
                 $frames[] = [
                     'url'     => wp_make_link_relative((string) $url),
                     'date'    => $date,
                     'time'    => $time,
                     'sensors' => null, // Ảnh từ robot hoặc thư viện không có sensor
-                    'ts'      => strtotime($photo_post->post_date),
+                    'ts'      => $ts,
                 ];
             }
         }
@@ -654,6 +673,12 @@ function aitrongcay_ajax_timelapse_list(): void {
         unset($f['ts']);
     }
     unset($f);
+
+    file_put_contents(WP_CONTENT_DIR . '/timelapse_debug.log', 
+        date('Y-m-d H:i:s') . " | HOST: " . $_SERVER['HTTP_HOST'] . 
+        " | RETURNED FRAMES: " . count($frames) . "\n", 
+        FILE_APPEND
+    );
 
     wp_send_json_success([
         'frames' => array_values($frames),

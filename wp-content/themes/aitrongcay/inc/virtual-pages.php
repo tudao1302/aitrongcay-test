@@ -18,6 +18,7 @@ function aitrongcay_virtual_pages(): array
         'dang-nhap' => ['title' => 'Đăng nhập', 'template' => 'template-parts/virtual/dang-nhap.php'],
         'dang-xuat' => ['title' => 'Đăng xuất', 'template' => 'template-parts/virtual/dang-nhap.php'],
         'tai-khoan' => ['title' => 'Tài khoản', 'template' => 'template-parts/virtual/tai-khoan.php'],
+        'nang-cap-goi' => ['title' => 'Nâng cấp gói', 'template' => 'template-parts/virtual/nang-cap-goi.php'],
         'portal' => ['title' => 'Portal', 'template' => 'template-parts/virtual/portal.php'],
         'portal/dashboard' => ['title' => 'Tổng quan khu vườn', 'template' => 'template-parts/virtual/portal.php'],
         'portal/dashboard-2' => ['title' => 'Tổng quan khu vườn 2', 'template' => 'template-parts/virtual/dashboard-2.php'],

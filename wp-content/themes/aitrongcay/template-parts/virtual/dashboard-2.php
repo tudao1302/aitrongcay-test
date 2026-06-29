@@ -29,6 +29,18 @@ if ($slug !== 'portal' && !$is_logged_in) {
   exit;
 }
 
+$header_avatar_html = '👤';
+if ($is_logged_in) {
+    $current_user_header = $current_user instanceof WP_User ? $current_user : wp_get_current_user();
+    $header_avatar_id = (int) get_user_meta($current_user_header->ID, 'aitrongcay_avatar_id', true);
+    $header_avatar_url = $header_avatar_id ? (wp_get_attachment_image_url($header_avatar_id, 'thumbnail') ?: wp_get_attachment_url($header_avatar_id)) : '';
+    if ($header_avatar_url) {
+        $header_avatar_html = '<img src="' . esc_url($header_avatar_url) . '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">';
+    } else {
+        $header_avatar_html = esc_html(mb_strtoupper(mb_substr($current_user_header->display_name ?: $current_user_header->user_login, 0, 1)));
+    }
+}
+
 $hero_pot = $pots[0] ?? null;
 $hero_pot_code = (string) ($hero_pot['code'] ?? '');
 $rack_configs = function_exists('aitrongcay_get_rack_monitor_configs') ? aitrongcay_get_rack_monitor_configs($garden_key) : [];
@@ -340,15 +352,15 @@ $build_growth_journey = static function (int $plant_id, int $analysis_level = 2,
   $progress_width = 0;
   
   if ($growth_stage_total > 1) {
-    // Chiều rộng lý thuyết để chạm đến node hiện tại
-    $base_width = (($active_stage_position - 1) / ($growth_stage_total - 1)) * 100;
-    
-    // Khoảng cách giữa 2 node
-    $step_width = 100 / ($growth_stage_total - 1);
+    // Khoảng cách giữa 2 node khi các node chia đều (flex: 1)
+    $step_width = 100 / $growth_stage_total;
 
+    // Chiều rộng lý thuyết để chạm đến tâm node hiện tại
+    $base_width = ((2 * $active_stage_position - 1) / (2 * $growth_stage_total)) * 100;
+    
     if ($active_stage_position < $growth_stage_total) {
        // Thêm một đoạn ngắn qua node hiện tại để hiển thị trạng thái "đang xử lý" ở giai đoạn này
-       $progress_width = $base_width + ($step_width * 0.2); 
+       $progress_width = $base_width + ($step_width * 0.35); 
     } else {
        $progress_width = 100;
     }
@@ -489,12 +501,44 @@ foreach ($rack_slot_webcam_map as $_pc => $_wu) {
       $_photos = glob($_date_dirs[0] . '/*.jpg');
       if (!empty($_photos)) {
         rsort($_photos);
-        $pot_latest_tl_map[$_pc] = wp_make_link_relative(content_url(
+        $pot_latest_tl_map[strtoupper($_pc)] = wp_make_link_relative(content_url(
           'uploads/timelapse/' . $_fs_gk . '/' . $_slug . '/' . basename($_date_dirs[0]) . '/' . basename($_photos[0])
         ));
       }
     }
   }
+}
+
+// Fallback: Fetch latest photos from Media Library (Robot captures) for ALL pots
+// This ensures pots without a live camera still show the latest robot photo
+if ($garden_key !== '') {
+    $photo_query = new WP_Query([
+        'post_type'      => 'attachment',
+        'post_status'    => 'inherit',
+        'posts_per_page' => 100,
+        'meta_query'     => [
+            [
+                'key'   => '_aitrongcay_photo_garden_key',
+                'value' => $garden_key,
+            ],
+        ],
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ]);
+    if ($photo_query->have_posts()) {
+        foreach ($photo_query->posts as $p) {
+            $p_code = strtoupper(trim((string) get_post_meta($p->ID, '_aitrongcay_pot_code', true)));
+            if ($p_code !== '' && empty($pot_latest_tl_map[$p_code])) {
+                $img_url = wp_get_attachment_image_url($p->ID, 'large') ?: wp_get_attachment_url($p->ID);
+                if ($img_url) {
+                    $pot_latest_tl_map[$p_code] = wp_make_link_relative((string) $img_url);
+                }
+            }
+        }
+    }
+    
+    // DEBUG: print found images
+    echo '<!-- DEBUG_ROBOT_PHOTOS: found ' . $photo_query->found_posts . ' photos. Keys in map: ' . implode(', ', array_keys($pot_latest_tl_map)) . ' -->';
 }
 
 // Build tray_name → {ri, ti, hasToken} for reliable lane routing (bypasses JS string matching)
@@ -512,7 +556,7 @@ foreach ($rack_configs as $_ri => $_rack) {
   }
 }
 
-$switcher_pot_payload = array_values(array_map(static function (array $pot_item) use ($garden_key, $pot_notes, $photo_library_url, $hero_image, $build_growth_journey, $rack_configs, $rack_slot_webcam_map, $rack_slot_tray_name_map, $tray_name_to_lane, $pot_snap_map): array {
+$switcher_pot_payload = array_values(array_map(static function (array $pot_item) use ($garden_key, $pot_notes, $photo_library_url, $hero_image, $build_growth_journey, $rack_configs, $rack_slot_webcam_map, $rack_slot_tray_name_map, $tray_name_to_lane, $pot_snap_map, $pot_latest_tl_map): array {
   $pot_code = (string) ($pot_item['code'] ?? '');
   $stream_url = function_exists('aitrongcay_hls_stream_url') ? aitrongcay_hls_stream_url($garden_key, $pot_code) : '';
 
@@ -543,7 +587,7 @@ $switcher_pot_payload = array_values(array_map(static function (array $pot_item)
     'slotLabel' => $tray_name,
     'lane' => $_lane_info ? ['ri' => $_lane_info['ri'], 'ti' => $_lane_info['ti']] : null,
     'hasToken' => $_lane_info ? (bool) $_lane_info['hasToken'] : false,
-    'image' => wp_make_link_relative((string) ($pot_item['image'] ?? '')) ?: (get_template_directory_uri() . '/assets/images/tool-tray-real.png'),
+    'image' => (!empty($pot_latest_tl_map[strtoupper($pot_code)]) ? $pot_latest_tl_map[strtoupper($pot_code)] : (wp_make_link_relative((string) ($pot_item['image'] ?? '')) ?: (get_template_directory_uri() . '/assets/images/tool-tray-real.png'))),
     'streamUrl' => $stream_url,
     'snapshotAt' => $snapshot_at,
     'mediaBadge' => $stream_url !== ''
@@ -655,7 +699,18 @@ if (!$rack_one_pots) {
 // only tracks inventory ownership (1 row per garden_key due to UNIQUE constraint).
 $rack_switcher_payload = [];
 if ($has_active_subscription || !empty($rack_configs)) {
-  $_flat_pots  = $rack_one_pots ?: $switcher_pot_payload;
+  $_flat_pots  = $rack_one_pots ?: [];
+  $_used_codes = [];
+  foreach ($_flat_pots as $_p) {
+      if (!empty($_p['code'])) {
+          $_used_codes[$_p['code']] = true;
+      }
+  }
+  foreach ($switcher_pot_payload as $_p) {
+      if (!empty($_p['code']) && !isset($_used_codes[$_p['code']])) {
+          $_flat_pots[] = $_p;
+      }
+  }
   $_pot_offset = 0;
   foreach ($rack_configs as $_ri => $_rcfg) {
     $_tray_count_from_cfg = count($_rcfg['trays'] ?? []);
@@ -1115,7 +1170,12 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       display: grid;
       place-items: center;
       background: #1a1c19;
-      cursor: pointer
+      cursor: pointer;
+      padding: 0;
+      overflow: hidden;
+      box-sizing: border-box;
+      color: #fff;
+      font-weight: bold;
     }
 
     .d2-profile-popup {
@@ -1422,6 +1482,42 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       background: linear-gradient(180deg, rgba(0, 0, 0, .26), rgba(0, 0, 0, .10) 30%, rgba(0, 0, 0, .46) 100%)
     }
 
+    .d2-frame:fullscreen {
+      border-radius: 0;
+      border: none;
+      background: #000;
+    }
+
+    .d2-frame:fullscreen img,
+    .d2-frame:fullscreen video {
+      object-fit: contain;
+    }
+
+    .d2-fullscreen-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 10;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(11, 13, 11, .42);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, .15);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      cursor: pointer;
+      transition: all .2s ease;
+      line-height: 1;
+    }
+
+    .d2-fullscreen-btn:hover {
+      background: rgba(11, 13, 11, .7);
+      transform: scale(1.05);
+    }
+
     .d2-no-rack-hint {
       position: absolute;
       bottom: 64px;
@@ -1430,30 +1526,42 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       z-index: 10;
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 14px 16px;
+      gap: 8px;
+      padding: 10px 12px;
       background: rgba(18, 20, 17, .88);
       border: 1px solid #31a375;
-      border-radius: 14px;
+      border-radius: 10px;
       backdrop-filter: blur(8px)
+    }
+
+    .d2-no-rack-hint.is-inline {
+      position: relative;
+      bottom: auto;
+      left: auto;
+      right: auto;
+      margin: 16px 16px 0;
     }
 
     .d2-no-rack-hint-text {
       flex: 1;
       margin: 0;
-      font-size: 13px;
+      font-size: 12px;
       color: #e3e3de;
-      line-height: 1.4
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .d2-no-rack-hint-cta {
       display: inline-block;
-      padding: 8px 14px;
+      padding: 6px 10px;
       background: #31a375;
       color: #062013;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
-      border-radius: 8px;
+      border-radius: 6px;
       text-decoration: none;
       white-space: nowrap
     }
@@ -1506,8 +1614,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     }
 
     .d2-vital {
-      width: 68px;
-      height: 68px;
+      width: 52px;
+      height: 52px;
       border-radius: 999px;
       background: rgba(51, 53, 50, .34);
       backdrop-filter: blur(22px) saturate(120%);
@@ -1517,25 +1625,26 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       box-shadow: 0 18px 38px rgba(0, 0, 0, .22), 0 0 18px rgba(111, 219, 168, .05);
       border: 1px solid rgba(255, 255, 255, .10);
       flex-shrink: 0;
+      font-size: 16px;
     }
 
     .d2-vital .value {
-      font-size: 14px;
+      font-size: 11px;
       font-weight: 800;
-      margin-top: 2px;
+      margin-top: 1px;
       line-height: 1
     }
 
     .d2-bottom {
       position: absolute;
-      left: 22px;
-      right: 22px;
-      bottom: 24px;
+      left: 16px;
+      right: 16px;
+      bottom: 12px;
       z-index: 2;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      gap: 16px
+      gap: 12px
     }
 
     .d2-info {
@@ -1659,15 +1768,15 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     }
 
     .d2-icon-btn {
-      width: 68px;
-      height: 68px;
+      width: 52px;
+      height: 52px;
       border-radius: 999px;
       background: rgba(51, 53, 50, .32);
       backdrop-filter: blur(22px) saturate(120%);
       display: grid;
       place-items: center;
       color: var(--primary);
-      font-size: 28px;
+      font-size: 20px;
       border: 1px solid rgba(255, 255, 255, .10);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 16px 34px rgba(0, 0, 0, .18), 0 0 18px rgba(111, 219, 168, .05);
       flex-shrink: 0;
@@ -2372,8 +2481,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
 
     .d2-ctl,
     .d2-inline-control {
-      width: 68px;
-      height: 68px;
+      width: 52px;
+      height: 52px;
       border-radius: 999px;
       background: rgba(51, 53, 50, .32);
       backdrop-filter: blur(22px) saturate(120%);
@@ -2406,26 +2515,26 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
 
     .d2-ctl .round,
     .d2-inline-control .round {
-      width: 36px;
-      height: 36px;
+      width: 26px;
+      height: 26px;
       border-radius: 999px;
       background: rgba(6, 77, 58, .48);
       display: grid;
       place-items: center;
       color: var(--primary);
-      margin: 0 auto 4px;
-      font-size: 18px;
+      margin: 0 auto 3px;
+      font-size: 13px;
       transition: background .18s ease, color .18s ease
     }
 
     .d2-ctl strong,
     .d2-inline-control strong {
       display: block;
-      font-size: 9px;
-      letter-spacing: .08em;
+      font-size: 8px;
+      letter-spacing: .06em;
       text-transform: uppercase;
-      line-height: 1.15;
-      padding: 0 4px
+      line-height: 1.1;
+      padding: 0 2px
     }
 
     .d2-ctl.is-on .round,
@@ -4089,7 +4198,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             <button class="d2-icon-btn d2-tray-settings-btn" type="button" title="Cài đặt sensor 3 khoang"
               data-tray-settings-open>⚙️</button>
           <?php endif; ?>
-          <button class="d2-profile-trigger" type="button" data-d2-profile-trigger aria-expanded="false">👤</button>
+          <button class="d2-profile-trigger" type="button" data-d2-profile-trigger aria-expanded="false"><?php echo $header_avatar_html; ?></button>
           <div class="d2-profile-popup" data-d2-profile-popup hidden>
             <a href="<?php echo esc_url(home_url('/tai-khoan/')); ?>">Quản lý tài khoản</a>
             <a href="<?php echo esc_url(aitrongcay_logout_url()); ?>">Đăng xuất</a>
@@ -4150,23 +4259,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
               <img src="<?php echo esc_url($hero_image); ?>" alt="<?php echo esc_attr($hero_name); ?>" loading="eager"
                 decoding="async" fetchpriority="high" data-d2-hero-image>
             <?php endif; ?>
-            <div class="d2-no-rack-hint d2-cam-hint" id="d2CamHint" data-upsell-overlay <?php if ($hero_stream_url !== '') echo 'style="display: none;"'; ?>>
-              <?php if (str_contains($hero_image, 'hero-greenhouse.svg')): ?>
-                <p class="d2-no-rack-hint-text" data-hint-text>📹 Khoang này chưa có ảnh và luồng Camera trực tiếp. Chờ robot tới chụp hoặc lắp đặt thêm để xem 24/7.</p>
-              <?php else: ?>
-                <p class="d2-no-rack-hint-text" data-hint-text>📹 Bạn muốn xem khu vườn trực tiếp 24/7? Tiến hành lắp đặt Camera ngay.</p>
-              <?php endif; ?>
-              <a class="d2-no-rack-hint-cta" href="<?php echo esc_url(add_query_arg('garden', $garden_key, home_url('/portal/kho-nong-cu-2/'))); ?>">Tới Kho nông cụ →</a>
-              <button type="button" class="d2-no-rack-hint-close" onclick="this.parentElement.style.display='none'">×</button>
-            </div>
             <div class="d2-pill d2-live-tag" data-d2-media-badge><?php echo esc_html($hero_media_badge); ?></div>
-            <?php if (!$has_rack): ?>
-            <div class="d2-no-rack-hint" id="d2NoRackHint">
-              <p class="d2-no-rack-hint-text">🌱 Bạn chưa có rack. Hãy tiến hành thuê rack để bắt đầu trồng cây!</p>
-              <a class="d2-no-rack-hint-cta" href="<?php echo esc_url($rent_rack_url); ?>">Đặt dịch vụ →</a>
-              <button type="button" class="d2-no-rack-hint-close" onclick="document.getElementById('d2NoRackHint').style.display='none'">×</button>
-            </div>
-            <?php endif; ?>
+            <button class="d2-fullscreen-btn" type="button" aria-label="Toàn màn hình" title="Xem toàn màn hình" onclick="if(document.fullscreenElement){document.exitFullscreen();}else{this.closest('.d2-frame').requestFullscreen();}">⛶</button>
             <div class="d2-bottom">
               <div></div>
               <div class="d2-actions">
@@ -4218,6 +4312,25 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
               </div>
             </div>
           </div>
+          
+          <?php if (!$has_rack): ?>
+            <div class="d2-no-rack-hint is-inline" id="d2NoRackHint">
+              <p class="d2-no-rack-hint-text">🌱 Bạn chưa có rack. Hãy tiến hành thuê rack để bắt đầu trồng cây!</p>
+              <a class="d2-no-rack-hint-cta" href="<?php echo esc_url($rent_rack_url); ?>">Đặt dịch vụ →</a>
+              <button type="button" class="d2-no-rack-hint-close" onclick="this.parentElement.style.display='none'">×</button>
+            </div>
+          <?php else: ?>
+            <div class="d2-no-rack-hint is-inline d2-cam-hint" id="d2CamHint" data-upsell-overlay <?php if ($hero_stream_url !== '') echo 'style="display: none;"'; ?>>
+              <?php if (str_contains($hero_image, 'hero-greenhouse.svg')): ?>
+                <p class="d2-no-rack-hint-text" data-hint-text>📹 Khoang này chưa có ảnh và luồng Camera trực tiếp. Chờ robot tới chụp hoặc lắp đặt thêm để xem 24/7.</p>
+              <?php else: ?>
+                <p class="d2-no-rack-hint-text" data-hint-text>📹 Bạn muốn xem khu vườn trực tiếp 24/7? Tiến hành lắp đặt Camera ngay.</p>
+              <?php endif; ?>
+              <a class="d2-no-rack-hint-cta" href="<?php echo esc_url(add_query_arg('garden', $garden_key, home_url('/portal/kho-nong-cu-2/'))); ?>">Tới Kho nông cụ →</a>
+              <button type="button" class="d2-no-rack-hint-close" onclick="this.parentElement.style.display='none'">×</button>
+            </div>
+          <?php endif; ?>
+
           <div class="d2-growth-card" data-d2-growth-journey>
             <div class="d2-growth-head" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
               <div class="d2-growth-badge" data-d2-growth-age-wrap<?php echo isset($hero_growth_journey['ageDays']) && $hero_growth_journey['ageDays'] !== null ? '' : ' hidden'; ?>>
@@ -4671,7 +4784,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     <?php if ($is_admin_user): ?>
       <!-- ROBOT CONTROL MODAL -->
       <div class="d2-tray-settings-overlay" id="d2RobotModal" style="display:none; align-items:center; justify-content:center; z-index: 10000; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);">
-        <div class="d2-tray-settings-box" style="max-width: 480px; width: 100%; padding: 24px; position: relative;">
+        <div class="d2-tray-settings-box" style="max-width: 800px; width: 95%; padding: 24px; position: relative; max-height: 95vh; overflow-y: auto;">
           <div class="d2-tray-settings-head">
             <strong>🤖 Điều khiển Robot Camera</strong>
             <button type="button" class="d2-tray-settings-close" onclick="document.getElementById('d2RobotModal').style.display='none'">✕</button>
@@ -4685,8 +4798,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             <button type="button" id="rbView3dBtn" style="padding: 8px 20px; background: #1c1f1c; border: 1px solid rgba(111, 219, 168, 0.2); color: #8e9c91; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s;">Mô hình 3D</button>
           </div>
 
-          <div id="rb3dView" style="display:none; height: 400px; margin-bottom: 24px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line);">
-            <iframe id="rb3dIframe" src="<?php echo esc_url(home_url('/test-3d.html')); ?>" style="width:100%; height:100%; border:none;"></iframe>
+          <div id="rb3dView" style="display:none; height: 550px; margin-bottom: 24px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line);">
+            <iframe id="rb3dIframe" src="<?php echo esc_url(home_url('/test-3d.html?v=' . time())); ?>" style="width:100%; height:100%; border:none;"></iframe>
           </div>
 
           <style>
@@ -5196,7 +5309,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     ); ?>;
     var AITR_IS_ADMIN = <?php echo $is_admin_user ? 'true' : 'false'; ?>;
     var AITR_HAS_M3U8 = <?php echo $has_any_m3u8 ? 'true' : 'false'; ?>;
-    var AITR_TIMELAPSE_STREAMS = <?php echo wp_json_encode($timelapse_streams, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    var AITR_TIMELAPSE_STREAMS = <?php echo wp_json_encode($timelapse_streams ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
     var AITR_HLS_JS_URL = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
     (function () {
       var gardenWrap = document.querySelector('[data-garden-inline-name]');
@@ -5852,7 +5965,16 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             targetPot.growthJourney.hasStageSignal = true;
             targetPot.growthJourney.activeStagePosition = matchedIndex + 1;
             targetPot.growthJourney.currentStage = targetPot.growthJourney.stages[matchedIndex].name || targetPot.currentStage;
-            targetPot.growthJourney.progressWidth = Math.max(0, Math.min(100, ((matchedIndex + 0.5) / targetPot.growthJourney.stages.length) * 100));
+            var totalStages = targetPot.growthJourney.stages.length;
+            var baseWidth = ((matchedIndex + 0.5) / totalStages) * 100;
+            var stepWidth = 100 / totalStages;
+            var newProgress = baseWidth;
+            if (matchedIndex < totalStages - 1) {
+              newProgress += stepWidth * 0.35;
+            } else {
+              newProgress = 100;
+            }
+            targetPot.growthJourney.progressWidth = Math.max(0, Math.min(100, newProgress));
           } else if (typeof targetPot.growthJourney.hasStageSignal === 'undefined') {
             targetPot.growthJourney.hasStageSignal = false;
           }
@@ -6209,16 +6331,18 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         }
         var total = safeJourney.growthStageTotal || safeJourney.stages.length || 1;
         var hasStageSignal = !!safeJourney.hasStageSignal;
-        var activePos = hasStageSignal ? (safeJourney.activeStagePosition || 1) : 1;
-        var progressWidth = hasStageSignal && typeof safeJourney.progressWidth !== 'undefined' ? safeJourney.progressWidth : 0;
+        var activePos = safeJourney.activeStagePosition || 1;
+        var progressWidth = typeof safeJourney.progressWidth !== 'undefined' ? safeJourney.progressWidth : 0;
         progressWidth = Math.max(0, Math.min(100, progressWidth));
         var html = '<div class="d2-growth-progress" data-d2-growth-progress style="width:' + progressWidth + '%"></div>';
         safeJourney.stages.forEach(function (stage, index) {
           var position = index + 1;
-          var stateClass = hasStageSignal ? (position === activePos ? 'is-active' : (position < activePos ? 'is-past' : 'is-future')) : 'is-future';
-          var icon = hasStageSignal && position === activePos ? '✨' : (position === 1 ? '🌱' : (position === total ? '🍅' : '🪴'));
+          var isActiveStage = position === activePos;
+          var isCompletedStage = position < activePos;
+          var stateClass = isActiveStage ? 'is-active' : (isCompletedStage ? 'is-past' : 'is-future');
+          var icon = isActiveStage ? '✨' : (position === 1 ? '🌱' : (position === total ? '🍅' : '🪴'));
           html += '<div class="d2-growth-step ' + stateClass + '" data-d2-growth-step data-stage-position="' + position + '">' +
-            '<div class="d2-growth-icon"><span class="d2-growth-icon-emoji">' + icon + '</span>' + (position < activePos ? '<span class="d2-growth-icon-check">✓</span>' : '') + '</div>' +
+            '<div class="d2-growth-icon"><span class="d2-growth-icon-emoji">' + icon + '</span>' + (isCompletedStage ? '<span class="d2-growth-icon-check">✓</span>' : '') + '</div>' +
             '<div class="d2-growth-step-name">' + (stage && stage.name ? stage.name : 'Giai đoạn') + '</div>' +
             '</div>';
         });
@@ -7461,7 +7585,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     <div class="d2-custom-modal">
       <div class="d2-custom-modal-icon">🌱</div>
       <h3 class="d2-custom-modal-title">Bắt đầu vụ mới?</h3>
-      <p class="d2-custom-modal-text">Bạn có chắc chắn muốn dọn khoang và trồng lứa mới? Việc này sẽ khởi tạo lại ngày sinh trưởng về Ngày 1 và xóa lịch sử phân tích AI cũ.</p>
+      <p class="d2-custom-modal-text">Bạn có chắc chắn muốn dọn khoang và trồng lứa mới? Việc này sẽ khởi tạo lại ngày sinh trưởng về Ngày 1 và xóa lịch sử phân tích AI cũ.<br><br><strong style="color: #e53e3e;">Khu vườn sẽ được dọn kho ảnh vĩnh viễn. Bạn hãy đảm bảo đã lưu lại những bức ảnh kỉ niệm của khu vườn trước khi dọn kho.</strong></p>
       <div class="d2-custom-modal-actions">
         <button type="button" class="d2-custom-modal-btn cancel" id="d2ResetCropCancel">Hủy</button>
         <button type="button" class="d2-custom-modal-btn confirm" id="d2ResetCropConfirm">Xác nhận trồng mới</button>
@@ -7497,15 +7621,15 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         var potCode = resetBtn.getAttribute('data-reset-crop');
         var formData = new FormData();
         formData.append('action', 'aitrongcay_reset_pot_crop');
-        formData.append('nonce', window.AITR_PORTAL ? window.AITR_PORTAL.nonce : '');
-        formData.append('garden_key', window.AITR_PORTAL ? window.AITR_PORTAL.garden_key : '');
+        formData.append('nonce', typeof AITR_AJAX_NONCE !== 'undefined' ? AITR_AJAX_NONCE : (window.AITR_PORTAL ? window.AITR_PORTAL.nonce : ''));
+        formData.append('garden_key', typeof AITR_GARDEN_KEY !== 'undefined' ? AITR_GARDEN_KEY : (window.AITR_PORTAL ? window.AITR_PORTAL.garden_key : ''));
         formData.append('pot_code', potCode);
         
         resetBtn.textContent = 'Đang dọn...';
         resetBtn.style.opacity = '0.5';
         resetBtn.disabled = true;
 
-        fetch((window.AITR_PORTAL ? window.AITR_PORTAL.ajaxurl : '/wp-admin/admin-ajax.php'), {
+        fetch((typeof AITR_AJAX_URL !== 'undefined' ? AITR_AJAX_URL : (window.AITR_PORTAL ? window.AITR_PORTAL.ajaxurl : '/wp-admin/admin-ajax.php')), {
           method: 'POST',
           body: formData
         })

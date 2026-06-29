@@ -680,8 +680,19 @@ function aitrongcay_ai_build_openai_messages(array $payload): array
         $pot_labels[] = ($plant_name !== '' ? ($label . ' [' . $plant_name . ']') : $label) . $metrics_str;
     }
 
+    $current_date = wp_date('l, d/m/Y');
+    $current_month = (int) wp_date('n');
+    $season = '';
+    if (in_array($current_month, [2, 3, 4], true)) $season = 'Mùa xuân';
+    elseif (in_array($current_month, [5, 6, 7], true)) $season = 'Mùa hè';
+    elseif (in_array($current_month, [8, 9, 10], true)) $season = 'Mùa thu';
+    else $season = 'Mùa đông';
+
     $system = [
         'Anh là Cindy, trợ lý AI của aitrongcay.com.',
+        'Thời gian hệ thống hiện tại: ' . $current_date . ' (' . $season . '). Vị trí: Việt Nam.',
+        'Bạn là chuyên gia nông nghiệp Việt Nam, am hiểu cực kỳ sâu sắc về khí hậu, thời tiết các vùng miền và đặc tính sinh trưởng của TẤT CẢ các loại cây, rau, quả tại Việt Nam.',
+        'Khi được hỏi tư vấn trồng cây, LUÔN CHỦ ĐỘNG DỰA VÀO THÁNG/MÙA HIỆN TẠI (' . $season . ', tháng ' . $current_month . ') để đưa ra lời khuyên thực tế ngay lập tức. TUYỆT ĐỐI KHÔNG HỎI NGƯỢC LẠI người dùng xem đang là tháng mấy hay mùa nào.',
         'Giọng điệu: tự nhiên, dịu dàng, ngắn gọn và đáng tin như một người làm vườn chuyên nghiệp.',
         'Xưng em, gọi người dùng là anh/chị.',
         'Luôn bám sát vào dữ liệu cảm biến thực tế của khu vườn đang mở (đã được cung cấp bên dưới), tuyệt đối không bịa số liệu.',
@@ -698,7 +709,34 @@ function aitrongcay_ai_build_openai_messages(array $payload): array
         $contextLines[] = 'Tên khu vườn: ' . $garden_name;
     }
     if ($pot_labels !== []) {
-        $contextLines[] = 'Các khoang/cụm đang thấy: ' . implode(', ', $pot_labels);
+        $contextLines[] = "Các khoang/cụm đang trồng trên Dashboard:\n- " . implode("\n- ", $pot_labels);
+    }
+    
+    $pot_notes = is_array($payload['garden']['pot_notes'] ?? null) ? $payload['garden']['pot_notes'] : [];
+    if (!empty($pot_notes)) {
+        $notes_str = [];
+        foreach ($pot_notes as $pot_code => $note_text) {
+            if (trim($note_text) !== '') {
+                $notes_str[] = "[$pot_code] $note_text";
+            }
+        }
+        if (!empty($notes_str)) {
+            $contextLines[] = "Nhật ký chăm sóc vườn (từ Dashboard):\n" . implode("\n", $notes_str);
+        }
+    }
+
+    $tool_shelf = is_array($payload['garden']['tool_shelf'] ?? null) ? $payload['garden']['tool_shelf'] : [];
+    if (!empty($tool_shelf)) {
+        $tool_names = [];
+        foreach ($tool_shelf as $tool) {
+            $name = trim((string) ($tool['name'] ?? ''));
+            if ($name !== '') {
+                $tool_names[] = $name;
+            }
+        }
+        if (!empty($tool_names)) {
+            $contextLines[] = "Kho nông cụ hiện có: " . implode(', ', $tool_names);
+        }
     }
     $workingSummary = trim((string) ($payload['thread']['working_summary'] ?? ''));
     if ($workingSummary !== '') {

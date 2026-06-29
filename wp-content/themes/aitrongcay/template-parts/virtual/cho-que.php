@@ -108,7 +108,20 @@ get_template_part('template-parts/site/eco-hero');
 <?php if ($created_post) : ?><div class="notice success" style="margin:0 0 18px"><strong><?php echo esc_html(aitrongcay_page_text('cho_que', 'listing_created_notice')); ?></strong></div><?php endif; ?>
 <section class="eco-market-compose">
   <div class="eco-market-compose-row">
-    <div class="eco-market-compose-avatar"><?php echo is_user_logged_in() ? '🌿' : '👤'; ?></div>
+    <?php
+    $avatar_html = '👤';
+    if (is_user_logged_in()) {
+        $current_user_header = wp_get_current_user();
+        $avatar_id = (int) get_user_meta($current_user_header->ID, 'aitrongcay_avatar_id', true);
+        $avatar_url = $avatar_id ? (wp_get_attachment_image_url($avatar_id, 'thumbnail') ?: wp_get_attachment_url($avatar_id)) : '';
+        if ($avatar_url) {
+            $avatar_html = '<img src="' . esc_url($avatar_url) . '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">';
+        } else {
+            $avatar_html = esc_html(mb_strtoupper(mb_substr($current_user_header->display_name ?: $current_user_header->user_login, 0, 1)));
+        }
+    }
+    ?>
+    <div class="eco-market-compose-avatar" style="overflow:hidden;padding:0;box-sizing:border-box;color:#fff;font-weight:bold"><?php echo $avatar_html; ?></div>
     <div style="flex:1">
       <?php if (is_user_logged_in()) : ?>
         <textarea placeholder="<?php echo esc_attr(aitrongcay_page_text('cho_que', 'listing_primary_cta')); ?>" readonly onclick="var btn=document.querySelector('[data-open-market-compose]'); if(btn) btn.click();"></textarea>

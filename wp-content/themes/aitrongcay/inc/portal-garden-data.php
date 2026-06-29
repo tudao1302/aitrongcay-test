@@ -136,6 +136,10 @@ function aitrongcay_resolve_onboarding_plant_for_pot(array $pot): array
         'has_onboarding' => false,
     ];
 
+    if (trim((string) ($pot['plant_name'] ?? '')) === 'Cây chưa xác định') {
+        return $unknown;
+    }
+
     $match_sources_to_catalog = static function (array $sources) use ($unknown): array {
         $normalized_sources = [];
         foreach ($sources as $source) {

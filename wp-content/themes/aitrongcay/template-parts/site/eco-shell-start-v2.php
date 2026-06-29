@@ -31,6 +31,18 @@ $profile_links = is_user_logged_in()
         ['label' => 'Đăng nhập', 'url' => home_url('/dang-nhap/')],
         ['label' => 'Tạo tài khoản', 'url' => home_url('/onboarding/')],
     ];
+
+$header_avatar_html = '👤';
+if (is_user_logged_in()) {
+    $current_user_header = wp_get_current_user();
+    $header_avatar_id = (int) get_user_meta($current_user_header->ID, 'aitrongcay_avatar_id', true);
+    $header_avatar_url = $header_avatar_id ? (wp_get_attachment_image_url($header_avatar_id, 'thumbnail') ?: wp_get_attachment_url($header_avatar_id)) : '';
+    if ($header_avatar_url) {
+        $header_avatar_html = '<img src="' . esc_url($header_avatar_url) . '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;margin:0;padding:0;">';
+    } else {
+        $header_avatar_html = esc_html(mb_strtoupper(mb_substr($current_user_header->display_name ?: $current_user_header->user_login, 0, 1)));
+    }
+}
 ?>
 <style>
 .site-header,.account-menu{display:none !important}
@@ -40,7 +52,7 @@ $profile_links = is_user_logged_in()
 .eco-top-links{display:flex;align-items:center;gap:18px;flex-wrap:nowrap;min-width:0;margin-left:auto;overflow:auto;scrollbar-width:none}.eco-top-links::-webkit-scrollbar{display:none}.eco-top-links a{color:#e3e3de;transition:color .18s ease;white-space:nowrap}
 .eco-top-links a:hover{color:#6fdba8}
 .eco-top-search{display:flex;align-items:center;gap:10px;background:rgba(41,43,39,.72);border-radius:18px;padding:12px 16px;min-width:320px;border:1px solid rgba(111,219,168,.12)}.eco-top-search input{background:transparent;border:none;outline:none;width:100%;color:#e3e3de}
-.eco-top-right{display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:10px;padding:8px 10px;border-radius:20px;border:1px solid rgba(111,219,168,.14);background:rgba(18,20,17,.58);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 14px 30px rgba(0,0,0,.14)}.eco-top-avatar{width:42px;height:42px;border-radius:999px;display:grid;place-items:center;border:2px solid rgba(111,219,168,.3);background:#1a1c19}
+.eco-top-right{display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:10px;padding:8px 10px;border-radius:20px;border:1px solid rgba(111,219,168,.14);background:rgba(18,20,17,.58);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 14px 30px rgba(0,0,0,.14)}.eco-top-avatar{width:42px;height:42px;border-radius:999px;display:grid;place-items:center;border:2px solid rgba(111,219,168,.3);background:#1a1c19;overflow:hidden;color:#fff;font-weight:bold;padding:0;box-sizing:border-box}
 .eco-profile-trigger{cursor:pointer}.eco-profile-popup{position:absolute;top:74px;right:28px;min-width:240px;background:rgba(26,28,25,.96);border:1px solid rgba(255,255,255,.06);border-radius:22px;padding:10px;box-shadow:0 24px 52px rgba(0,0,0,.28);z-index:70}.eco-profile-popup[hidden]{display:none}.eco-profile-popup a{display:block;padding:12px 14px;border-radius:14px;color:#e3e3de}.eco-profile-popup a:hover{background:rgba(51,53,50,.56)}.eco-profile-popup a.is-danger{color:#ffb4ab}
 .eco-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;padding:24px 28px 36px}.eco-side{position:sticky;top:100px;align-self:start;background:rgba(7,33,24,.58);backdrop-filter:blur(24px);border-radius:30px;padding:24px 0;box-shadow:10px 0 30px rgba(0,0,0,.2)}
 .eco-side-head{padding:0 24px 22px;display:flex;align-items:center;gap:12px}.eco-side-badge{width:48px;height:48px;border-radius:18px;background:linear-gradient(135deg,#31a375,#6fdba8);display:grid;place-items:center;color:#062013}.eco-side-head h3{margin:0;font-size:14px;color:var(--primary);font-weight:800}.eco-side-head p{margin:4px 0 0;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(227,227,222,.58)}
@@ -73,7 +85,7 @@ $profile_links = is_user_logged_in()
       <?php endif; ?>
     </div>
     <div class="eco-top-right">
-      <button class="eco-top-avatar eco-profile-trigger" type="button" data-eco-profile-trigger aria-expanded="false" aria-haspopup="true">👤</button>
+      <button class="eco-top-avatar eco-profile-trigger" type="button" data-eco-profile-trigger aria-expanded="false" aria-haspopup="true"><?php echo $header_avatar_html; ?></button>
     </div>
     <div class="eco-profile-popup" data-eco-profile-popup hidden>
       <?php foreach ($profile_links as $link) : ?>

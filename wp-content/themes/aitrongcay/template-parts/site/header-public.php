@@ -10,6 +10,17 @@ $nav_items = [
 $current_user = wp_get_current_user();
 $is_logged_in = is_user_logged_in();
 $current_path = trim((string) wp_parse_url(home_url(add_query_arg([], $GLOBALS['wp']->request ?? '')), PHP_URL_PATH), '/');
+
+$header_avatar_html = '👤';
+if ($is_logged_in) {
+    $header_avatar_id = (int) get_user_meta($current_user->ID, 'aitrongcay_avatar_id', true);
+    $header_avatar_url = $header_avatar_id ? (wp_get_attachment_image_url($header_avatar_id, 'thumbnail') ?: wp_get_attachment_url($header_avatar_id)) : '';
+    if ($header_avatar_url) {
+        $header_avatar_html = '<img src="' . esc_url($header_avatar_url) . '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;margin:0;padding:0;">';
+    } else {
+        $header_avatar_html = esc_html(mb_strtoupper(mb_substr($current_user->display_name ?: $current_user->user_login, 0, 1)));
+    }
+}
 ?>
 <header class="site-header site-header--frontend-unified">
     <div class="container nav-row nav-row--frontend-unified">
@@ -31,11 +42,11 @@ $current_path = trim((string) wp_parse_url(home_url(add_query_arg([], $GLOBALS['
             <?php if ($is_logged_in) : ?>
                 <details class="account-menu frontend-account-menu">
                     <summary class="account-menu-toggle frontend-account-toggle" aria-haspopup="menu">
-                        <span class="account-menu-avatar frontend-account-avatar"><?php echo esc_html(mb_strtoupper(mb_substr($current_user->display_name ?: $current_user->user_login, 0, 1))); ?></span>
+                        <span class="account-menu-avatar frontend-account-avatar" style="padding:0;overflow:hidden"><?php echo $header_avatar_html; ?></span>
                     </summary>
                     <div class="account-menu-panel">
                         <div class="account-menu-head">
-                            <div class="account-menu-avatar large"><?php echo esc_html(mb_strtoupper(mb_substr($current_user->display_name ?: $current_user->user_login, 0, 1))); ?></div>
+                            <div class="account-menu-avatar large" style="padding:0;overflow:hidden"><?php echo $header_avatar_html; ?></div>
                             <div>
                                 <strong style="display:block"><?php echo esc_html($current_user->display_name ?: $current_user->user_login); ?></strong>
                                 <span class="subtle small"><?php echo esc_html($current_user->user_email); ?></span>

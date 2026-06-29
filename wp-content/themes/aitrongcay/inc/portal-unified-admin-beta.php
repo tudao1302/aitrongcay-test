@@ -228,15 +228,24 @@ function aitrongcay_handle_unified_admin_beta_actions(): void {
         $rack_id = absint($_POST['rack_id'] ?? 0);
         $blynk_token = sanitize_text_field((string) wp_unslash($_POST['rack_blynk_token'] ?? ''));
         if ($rack_id > 0) {
-            // Update rack blynk token, controller_label, and reset connectivity status to unknown
+            $rack_table = aitrongcay_garden_racks_table();
+            $old_token = $wpdb->get_var($wpdb->prepare("SELECT blynk_auth_token FROM {$rack_table} WHERE id = %d", $rack_id));
+            
+            $update_data = [
+                'blynk_auth_token' => $blynk_token, 
+                'controller_label' => $blynk_token,
+                'updated_at' => current_time('mysql')
+            ];
+            
+            // Only reset status to unknown if the token was changed
+            if ($old_token !== $blynk_token) {
+                $update_data['connectivity_status'] = 'unknown';
+            }
+
+            // Update rack blynk token, controller_label
             $wpdb->update(
-                aitrongcay_garden_racks_table(), 
-                [
-                    'blynk_auth_token' => $blynk_token, 
-                    'controller_label' => $blynk_token,
-                    'connectivity_status' => 'unknown',
-                    'updated_at' => current_time('mysql')
-                ], 
+                $rack_table, 
+                $update_data, 
                 ['id' => $rack_id]
             );
 
@@ -290,15 +299,81 @@ function aitrongcay_handle_unified_admin_beta_actions(): void {
                     // Also sync to active garden pot if it exists
                     $rack = function_exists('aitrongcay_get_rack_by_id') ? aitrongcay_get_rack_by_id($rack_id) : null;
                     $garden_key = $rack ? (string) ($rack['garden_key'] ?? '') : '';
+
                     if ($garden_key !== '' && $pot_code !== '' && function_exists('aitrongcay_garden_pots_table')) {
                         $pots_table = aitrongcay_garden_pots_table();
-                        $wpdb->update($pots_table, [
+                        // Resolve plant_id for update
+                        $plant_id = 0;
+                        if ($plant_name !== '' && $plant_name !== 'Cây chưa xác định') {
+                            $onboarding_table = $wpdb->prefix . 'aitr_onboarding_plants';
+                            $found_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$onboarding_table} WHERE public_name = %s LIMIT 1", $plant_name));
+                            if ($found_id) {
+                                $plant_id = (int)$found_id;
+                            }
+                        }
+
+                        $update_data = [
                             'pot_name' => $slot_name,
                             'plant_name' => $plant_name === '' ? 'Cây chưa xác định' : $plant_name,
                             'plant_id' => $plant_id,
                             'video_url' => $camera_url,
                             'updated_at' => current_time('mysql')
-                        ], ['garden_key' => $garden_key, 'pot_code' => $pot_code]);
+                        ];
+
+                        $updated = $wpdb->update($pots_table, $update_data, ['garden_key' => $garden_key, 'pot_code' => $pot_code]);
+
+                        if ($updated === 0) {
+                            $exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$pots_table} WHERE garden_key = %s AND pot_code = %s", $garden_key, $pot_code));
+                            if (!$exists) {
+                                // Try to find the plant_id if we have a plant_name
+                                $plant_id = 0;
+                                if ($plant_name !== '' && $plant_name !== 'Cây chưa xác định') {
+                                    $onboarding_table = $wpdb->prefix . 'aitr_onboarding_plants';
+                                    $found_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$onboarding_table} WHERE public_name = %s LIMIT 1", $plant_name));
+                                    if ($found_id) {
+                                        $plant_id = (int)$found_id;
+                                    }
+                                }
+
+                                if (function_exists('aitrongcay_upsert_db_pot')) {
+                                    aitrongcay_upsert_db_pot($garden_key, [
+                                        'pot_code' => $pot_code,
+                                        'pot_name' => $slot_name,
+                                        'plant_name' => $plant_name === '' ? 'Cây chưa xác định' : $plant_name,
+                                        'plant_id' => $plant_id,
+                                        'video_url' => $camera_url,
+                                        'status' => 'Đang theo dõi',
+                                        'status_summary' => 'Khoang vừa được cấu hình.',
+                                    ]);
+                                } else {
+                                    $wpdb->insert($pots_table, [
+                                        'garden_key' => $garden_key,
+                                        'pot_code' => $pot_code,
+                                        'pot_name' => $slot_name,
+                                        'plant_name' => $plant_name === '' ? 'Cây chưa xác định' : $plant_name,
+                                        'plant_id' => $plant_id,
+                                        'status' => 'Đang theo dõi',
+                                        'status_summary' => '',
+                                        'ph' => '',
+                                        'temperature' => '',
+                                        'humidity' => '',
+                                        'light_label' => '',
+                                        'light_device' => '',
+                                        'pump_label' => '',
+                                        'irrigation' => '',
+                                        'video_url' => $camera_url,
+                                        'image_url' => '',
+                                        'ai_note' => '',
+                                        'harvest_eta' => '',
+                                        'latest_analysis_color' => '',
+                                        'latest_analysis_label' => '',
+                                        'latest_analysis_current_stage' => '',
+                                        'created_at' => current_time('mysql'),
+                                        'updated_at' => current_time('mysql')
+                                    ]);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -800,24 +875,33 @@ function aitrongcay_render_unified_admin_beta_page(): void {
 
         .aitr-form-control {
             width: 100%;
-            background: #0f172a;
-            border: 1px solid #475569;
+            background: #0f172a !important;
+            border: 1px solid #475569 !important;
             border-radius: 8px;
             padding: 10px 14px;
-            color: #f1f5f9;
+            color: #ffffff !important;
             font-size: 14px;
             font-family: inherit;
         }
 
+        .aitr-form-control::placeholder {
+            color: #94a3b8 !important;
+            opacity: 1;
+        }
+
         .aitr-form-control:focus {
-            border-color: #10b981;
+            border-color: #10b981 !important;
             outline: none;
             box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
         }
 
+        select.aitr-form-control {
+            color: #ffffff !important;
+        }
+
         select.aitr-form-control option {
-            background: #1e293b;
-            color: #f1f5f9;
+            background: #1e293b !important;
+            color: #ffffff !important;
             padding: 10px;
         }
 
@@ -1115,6 +1199,19 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                 <div class="aitr-two-col">
                     <!-- Left Sidebar List of Gardens -->
                     <div class="aitr-list-sidebar">
+                        <div style="padding: 12px; border-bottom: 1px solid #334155; position: sticky; top: 0; background: #1e293b; z-index: 10; border-radius: 12px 12px 0 0;">
+                            <input type="text" id="aitrGardenSearch" class="aitr-form-control" placeholder="🔍 Tìm tên khách, email..." onkeyup="aitrFilterGardens()" style="font-size: 13px; padding: 8px 12px; background: #0f172a; border-radius: 6px;">
+                        </div>
+                        <script>
+                        function aitrFilterGardens() {
+                            var filter = document.getElementById('aitrGardenSearch').value.toLowerCase();
+                            var nodes = document.querySelectorAll('.aitr-list-sidebar .aitr-list-item');
+                            nodes.forEach(function(node) {
+                                var text = node.innerText.toLowerCase();
+                                node.style.display = text.includes(filter) ? '' : 'none';
+                            });
+                        }
+                        </script>
                         <?php
                         if (empty($gardens)):
                             echo '<p style="padding:20px;text-align:center;color:#64748b">Không tìm thấy khu vườn nào.</p>';
@@ -1476,6 +1573,15 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                                                     <input type="hidden" name="action" value="aitrongcay_delete_inventory_rack">
                                                     <input type="hidden" name="rack_id" value="<?php echo (int) ($rk['id'] ?? 0); ?>">
                                                     <button type="submit" class="aitr-btn aitr-btn-danger" style="padding:4px 8px;font-size:11px"><i class="fa-solid fa-trash"></i> Xóa</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <!-- Revoke Rack -->
+                                                <form method="post" style="display:inline" onsubmit="event.preventDefault(); aitrConfirmRevoke(this);">
+                                                    <?php wp_nonce_field('aitrongcay_beta_action_nonce'); ?>
+                                                    <input type="hidden" name="beta_action" value="release_rack">
+                                                    <input type="hidden" name="rack_id" value="<?php echo (int) ($rk['id'] ?? 0); ?>">
+                                                    <input type="hidden" name="garden_key" value="<?php echo esc_attr((string) ($rk['garden_key'] ?? '')); ?>">
+                                                    <button type="submit" class="aitr-btn aitr-btn-danger" style="padding:4px 8px;font-size:11px"><i class="fa-solid fa-arrow-right-left"></i> Thu hồi</button>
                                                 </form>
                                             <?php endif; ?>
                                         </div>

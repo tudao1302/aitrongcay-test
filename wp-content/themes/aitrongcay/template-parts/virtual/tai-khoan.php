@@ -22,6 +22,29 @@ $member_since = get_date_from_gmt($current_user->user_registered, 'd/m/Y');
 $avatar_id = (int) get_user_meta($current_user->ID, 'aitrongcay_avatar_id', true);
 $avatar_url = $avatar_id ? (wp_get_attachment_image_url($avatar_id, 'medium') ?: wp_get_attachment_url($avatar_id)) : '';
 $avatar_fallback = mb_strtoupper(mb_substr($current_user->display_name ?: $current_user->user_login, 0, 1));
+
+$active_plan = function_exists('aitrongcay_get_active_subscription_plan') ? aitrongcay_get_active_subscription_plan($current_user->ID) : ['id' => '', 'expiry' => 0];
+$plan_id = $active_plan['id'];
+$expiry_text = $active_plan['expiry'] > 0 ? 'Đáo hạn: ' . wp_date('d/m/Y', $active_plan['expiry']) : '';
+
+$plan_name = 'Free Account';
+$plan_desc = 'Bạn hiện chưa sử dụng dịch vụ nâng cao nào. Nâng cấp ngay để kích hoạt các tính năng của vườn số.';
+$plan_badge = 'Cơ bản';
+
+if ($plan_id === 'basic') {
+    $plan_name = 'Basic Seed';
+    $plan_desc = 'Gói khởi đầu không sử dụng camera, theo dõi qua dữ liệu cơ bản và hình ảnh.';
+    $plan_badge = 'Khởi đầu';
+} elseif ($plan_id === 'prime') {
+    $plan_name = 'Verdant Prime';
+    $plan_desc = 'Gói phổ biến nhất phù hợp cho một khu vườn gia đình với camera, dữ liệu cơ bản và AI đồng hành.';
+    $plan_badge = 'Hiện tại';
+} elseif ($plan_id === 'enterprise') {
+    $plan_name = 'Eco Enterprise';
+    $plan_desc = 'Dành cho quy mô trang trại lớn với hệ thống đa thiết bị, API tích hợp và chuyên gia tư vấn.';
+    $plan_badge = 'Chuyên nghiệp';
+}
+
 $account_nav_items = array_map(static function (array $item) {
     return ['key' => (string) ($item['key'] ?? ''), 'label' => (string) ($item['label'] ?? ''), 'url' => (string) ($item['url'] ?? '#')];
 }, aitrongcay_eco_nav_items());
@@ -64,7 +87,7 @@ get_template_part('template-parts/site/eco-hero');
           <div class="eco-account-grid">
             <section style="display:grid;gap:24px">
               <div class="eco-account-card eco-account-profile">
-                <div class="eco-account-avatar-wrap"><div class="eco-account-avatar"><?php if ($avatar_url) : ?><img src="<?php echo esc_url($avatar_url); ?>" alt="Avatar" style="width:100%;height:100%;object-fit:cover"><?php else : ?><?php echo esc_html($avatar_fallback); ?><?php endif; ?></div></div>
+                <div class="eco-account-avatar-wrap"><div class="eco-account-avatar" style="padding:0;overflow:hidden"><?php if ($avatar_url) : ?><img src="<?php echo esc_url($avatar_url); ?>" alt="Avatar" style="width:100%;height:100%;object-fit:cover;display:block;margin:0;padding:0"><?php else : ?><?php echo esc_html($avatar_fallback); ?><?php endif; ?></div></div>
                 <h3><?php echo esc_html($current_user->display_name ?: $current_user->user_login); ?></h3>
                 <div class="eco-account-rank">Hồ sơ khu vườn số</div>
                 <div style="display:grid;gap:12px;margin-top:22px">
@@ -96,7 +119,7 @@ get_template_part('template-parts/site/eco-hero');
                   <div class="eco-account-actions"><button class="eco-account-btn primary" type="submit">Lưu thông tin</button><a class="eco-account-btn secondary" href="<?php echo esc_url(home_url('/portal/dashboard-2/')); ?>">Khu vườn của tôi</a></div>
                 </form>
               </div>
-              <div class="eco-account-card eco-account-tier"><div class="eco-account-tier-badge">Gói hiện tại</div><h2 style="margin:14px 0 10px;font-family:'Noto Serif',serif;font-size:34px;color:#fff">Verdant Prime</h2><p style="color:#bdcac0;line-height:1.8">Gói hiện tại phù hợp cho một khu vườn gia đình với camera, dữ liệu cơ bản và AI đồng hành.</p><div class="eco-account-actions"><button class="eco-account-btn primary" type="button">Nâng cấp gói</button><a class="eco-account-btn secondary" href="<?php echo esc_url(aitrongcay_logout_url()); ?>">Đăng xuất</a></div></div>
+              <div class="eco-account-card eco-account-tier"><div class="eco-account-tier-badge"><?php echo esc_html($plan_badge); ?></div><h2 style="margin:14px 0 2px;font-family:'Noto Serif',serif;font-size:34px;color:#fff"><?php echo esc_html($plan_name); ?></h2><?php if($expiry_text): ?><div style="font-size:13px;color:#6fdba8;font-weight:600;margin-bottom:12px;letter-spacing:0.02em;"><?php echo esc_html($expiry_text); ?></div><?php else: ?><div style="height:12px"></div><?php endif; ?><p style="color:#bdcac0;line-height:1.8;margin-top:0"><?php echo esc_html($plan_desc); ?></p><div class="eco-account-actions"><a class="eco-account-btn primary" href="<?php echo esc_url(home_url('/nang-cap-goi/')); ?>" style="text-decoration:none">Nâng cấp gói</a><a class="eco-account-btn secondary" href="<?php echo esc_url(aitrongcay_logout_url()); ?>">Đăng xuất</a></div></div>
               <div class="eco-account-card"><h2 style="margin:0 0 18px;font-family:'Noto Serif',serif;font-size:28px;color:#fff">Đổi mật khẩu</h2><form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"><input type="hidden" name="action" value="aitrongcay_account_password_update"><?php wp_nonce_field('aitrongcay_account_password_submit', 'aitrongcay_account_password_nonce'); ?><div class="eco-account-form-grid"><div class="eco-account-field"><label for="account-new-password">Mật khẩu mới</label><input id="account-new-password" name="new_password" type="password" autocomplete="new-password"></div><div class="eco-account-field"><label for="account-confirm-password">Xác nhận mật khẩu mới</label><input id="account-confirm-password" name="confirm_password" type="password" autocomplete="new-password"></div></div><div class="eco-account-actions"><button class="eco-account-btn primary" type="submit">Cập nhật mật khẩu</button></div></form></div>
             </section>
           </div>

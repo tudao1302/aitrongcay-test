@@ -334,10 +334,16 @@ function aitrongcay_handle_place_order(): void {
             $name = $sit['name'];
             $qty = $sit['qty'];
             if ($name !== '' && $qty > 0) {
-                $stock = (int) $wpdb->get_var($wpdb->prepare("SELECT stock_quantity FROM {$supplies_table} WHERE name = %s LIMIT 1", $name));
-                if ($qty > $stock) {
-                    wp_send_json_error(['message' => 'Sản phẩm "' . esc_html($name) . '" chỉ còn ' . $stock . ' sản phẩm trong kho. Vui lòng giảm số lượng.']);
-                    return;
+                if (($sit['category'] ?? '') === 'Dịch vụ') {
+                    continue;
+                }
+                $row = $wpdb->get_row($wpdb->prepare("SELECT stock_quantity FROM {$supplies_table} WHERE name = %s LIMIT 1", $name), ARRAY_A);
+                if ($row !== null) {
+                    $stock = (int) $row['stock_quantity'];
+                    if ($qty > $stock) {
+                        wp_send_json_error(['message' => 'Sản phẩm "' . esc_html($name) . '" chỉ còn ' . $stock . ' sản phẩm trong kho. Vui lòng giảm số lượng.']);
+                        return;
+                    }
                 }
             }
         }
@@ -502,9 +508,82 @@ function aitrongcay_handle_order_update_status(): void {
     if ($order) {
         $order['status'] = $status;
         aitrongcay_send_order_status_email($order, $admin_note);
+        if ($is_newly_paid) {
+            aitrongcay_maybe_auto_upgrade_user_plan($order);
+        }
     }
 
     wp_send_json_success(['message' => 'Đã cập nhật.']);
+}
+
+function aitrongcay_get_active_subscription_plan(int $user_id): array {
+    $plan_id = (string) get_user_meta($user_id, 'aitrongcay_subscription_plan', true);
+    $expiry  = (int) get_user_meta($user_id, 'aitrongcay_subscription_expiry', true);
+    
+    if ($plan_id !== '' && $expiry > 0 && time() > $expiry) {
+        // Hết hạn -> Hạ cấp tự động
+        delete_user_meta($user_id, 'aitrongcay_subscription_plan');
+        delete_user_meta($user_id, 'aitrongcay_subscription_expiry');
+        $plan_id = '';
+        $expiry = 0;
+    }
+    
+    return [
+        'id'     => $plan_id,
+        'expiry' => $expiry,
+    ];
+}
+
+function aitrongcay_maybe_auto_upgrade_user_plan(array $order): void {
+    $user_id = (int) ($order['user_id'] ?? 0);
+    if ($user_id <= 0 && !empty($order['customer_email'])) {
+        $wp_user = get_user_by('email', sanitize_email((string) $order['customer_email']));
+        if ($wp_user instanceof WP_User) {
+            $user_id = $wp_user->ID;
+        }
+    }
+    if ($user_id <= 0) {
+        return;
+    }
+    
+    $items = json_decode((string) ($order['items'] ?? ''), true);
+    if (! is_array($items)) return;
+    
+    $plan_mapping = [
+        'basic seed'      => 'basic',
+        'verdant prime'   => 'prime',
+        'eco enterprise'  => 'enterprise',
+    ];
+    
+    foreach ($items as $it) {
+        $name = mb_strtolower(trim((string) ($it['name'] ?? '')));
+        $cat  = mb_strtolower(trim((string) ($it['category'] ?? '')));
+        if (str_contains($cat, 'dịch vụ') || str_contains($cat, 'service')) {
+            foreach ($plan_mapping as $keyword => $plan_id) {
+                if (str_contains($name, $keyword)) {
+                    $qty = (int) ($it['qty'] ?? 1);
+                    if ($qty < 1) $qty = 1;
+                    
+                    $duration_seconds = $qty * 30 * 86400; // Mặc định 1 qty = 30 ngày
+                    $current_plan = (string) get_user_meta($user_id, 'aitrongcay_subscription_plan', true);
+                    $current_expiry = (int) get_user_meta($user_id, 'aitrongcay_subscription_expiry', true);
+                    $now = time();
+                    
+                    if ($current_plan === $plan_id && $current_expiry > $now) {
+                        // Cộng dồn nếu mua tiếp gói đang dùng
+                        $new_expiry = $current_expiry + $duration_seconds;
+                    } else {
+                        // Thiết lập hạn mới từ đầu
+                        $new_expiry = $now + $duration_seconds;
+                    }
+                    
+                    update_user_meta($user_id, 'aitrongcay_subscription_plan', $plan_id);
+                    update_user_meta($user_id, 'aitrongcay_subscription_expiry', $new_expiry);
+                    return; // Upgrade applied
+                }
+            }
+        }
+    }
 }
 
 // ─── AJAX: Admin provision garden for order ───────────────────────────────────
@@ -709,6 +788,9 @@ function aitrongcay_handle_provision_garden(): void {
     $order['garden_key']     = $garden_key;
     $order['status']         = 'active';
     aitrongcay_send_order_status_email($order);
+    
+    // Auto-upgrade plan if this order includes a plan
+    aitrongcay_maybe_auto_upgrade_user_plan($order);
 
     wp_send_json_success([
         'garden_key' => $garden_key,
