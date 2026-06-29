@@ -87,7 +87,7 @@ function aitrongcay_do_timelapse_capture(): void {
                 if ($slug === '' || isset($garden_streams_map[$garden_key][$slug])) {
                     continue;
                 }
-                $snap_slug = $slug . '_snap';
+                $snap_slug = $slug;
                 $garden_streams_map[$garden_key][$slug] = [
                     'frame_url' => $scheme . '://' . $host . $port_str . '/api/frame.jpeg?src=' . rawurlencode($snap_slug),
                     'tray'      => array_merge(function_exists('aitrongcay_tray_defaults') ? aitrongcay_tray_defaults() : [], (array) $tray),
@@ -137,7 +137,7 @@ function aitrongcay_do_timelapse_capture(): void {
             if (isset($garden_streams_map[$safe_gk][$slug])) {
                 continue; // Already mapped from options
             }
-            $snap_slug = $slug . '_snap';
+            $snap_slug = $slug;
             $tray_defaults = function_exists('aitrongcay_tray_defaults') ? aitrongcay_tray_defaults() : [];
             $garden_streams_map[$safe_gk][$slug] = [
                 'frame_url' => $scheme . '://' . $host . $port_str . '/api/frame.jpeg?src=' . rawurlencode($snap_slug),
@@ -354,7 +354,7 @@ function aitrongcay_ajax_timelapse_capture_now(): void {
                 $scheme        = $parsed['scheme'] ?? 'http';
                 $host          = $parsed['host'] ?? '';
                 $port_str      = isset($parsed['port']) ? ':' . $parsed['port'] : '';
-                $frame_url     = $scheme . '://' . $host . $port_str . '/api/frame.jpeg?src=' . rawurlencode($stream_slug . '_snap');
+                $frame_url     = $scheme . '://' . $host . $port_str . '/api/frame.jpeg?src=' . rawurlencode($stream_slug);
                 $matched_tray  = function_exists('aitrongcay_tray_defaults')
                     ? array_merge(aitrongcay_tray_defaults(), (array) $tray)
                     : (array) $tray;
