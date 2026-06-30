@@ -114,6 +114,7 @@ function aitrongcay_do_timelapse_capture(): void {
         foreach ((array) $db_slots as $db_slot) {
             $gk         = trim((string) ($db_slot['garden_key'] ?? ''));
             $webcam_url = trim((string) ($db_slot['camera_stream_url'] ?? ''));
+            
             if ($gk === '' || $webcam_url === '' || ! str_contains($webcam_url, 'src=')) {
                 continue;
             }
@@ -133,9 +134,6 @@ function aitrongcay_do_timelapse_capture(): void {
             $safe_gk = sanitize_key($gk);
             if (! isset($garden_streams_map[$safe_gk])) {
                 $garden_streams_map[$safe_gk] = [];
-            }
-            if (isset($garden_streams_map[$safe_gk][$slug])) {
-                continue; // Already mapped from options
             }
             $snap_slug = $slug;
             $tray_defaults = function_exists('aitrongcay_tray_defaults') ? aitrongcay_tray_defaults() : [];
@@ -359,6 +357,52 @@ function aitrongcay_ajax_timelapse_capture_now(): void {
                     ? array_merge(aitrongcay_tray_defaults(), (array) $tray)
                     : (array) $tray;
                 break 2;
+            }
+        }
+    }
+
+    if ($frame_url === '') {
+        global $wpdb;
+        $racks_table = $wpdb->prefix . 'aitr_garden_racks';
+        $slots_table = $wpdb->prefix . 'aitr_rack_slots';
+        $tables_exist = $wpdb->get_var("SHOW TABLES LIKE '{$racks_table}'") === $racks_table
+            && $wpdb->get_var("SHOW TABLES LIKE '{$slots_table}'") === $slots_table;
+
+        if ($tables_exist) {
+            $db_slots = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT r.garden_key, s.camera_stream_url, s.slot_name
+                       FROM {$racks_table} r
+                       JOIN {$slots_table} s ON s.rack_id = r.id
+                      WHERE r.garden_key = %s AND s.camera_stream_url != ''",
+                    $_POST['garden_key'] ?? ''
+                ),
+                ARRAY_A
+            );
+            if (empty($db_slots)) {
+                $db_slots = $wpdb->get_results(
+                    "SELECT r.garden_key, s.camera_stream_url, s.slot_name
+                       FROM {$racks_table} r
+                       JOIN {$slots_table} s ON s.rack_id = r.id
+                      WHERE s.camera_stream_url != ''",
+                    ARRAY_A
+                );
+            }
+            foreach ((array) $db_slots as $db_slot) {
+                $webcam_url = trim((string) ($db_slot['camera_stream_url'] ?? ''));
+                $parsed = parse_url($webcam_url);
+                parse_str($parsed['query'] ?? '', $qp);
+                if (sanitize_key($qp['src'] ?? '') === $stream_slug) {
+                    $scheme        = $parsed['scheme'] ?? 'http';
+                    $host          = $parsed['host'] ?? '';
+                    $port_str      = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+                    $frame_url     = $scheme . '://' . $host . $port_str . '/api/frame.jpeg?src=' . rawurlencode($stream_slug);
+                    $matched_tray  = function_exists('aitrongcay_tray_defaults')
+                        ? array_merge(aitrongcay_tray_defaults(), ['webcam_url' => $webcam_url, 'name' => $db_slot['slot_name']])
+                        : ['webcam_url' => $webcam_url, 'name' => $db_slot['slot_name']];
+                    $garden_key    = $db_slot['garden_key'];
+                    break;
+                }
             }
         }
     }
