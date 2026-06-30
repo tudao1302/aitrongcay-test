@@ -251,8 +251,8 @@ $build_growth_journey = static function (int $plant_id, int $analysis_level = 2,
     'startedAt' => '',
     'stages' => [],
     'emptyMessage' => $detected_stage !== ''
-      ? 'AI phân tích khoang đang ở giai đoạn "' . $detected_stage . '", nhưng bạn chưa gán giống cây trồng nào cho khoang này nên không thể vẽ biểu đồ sinh trưởng. Hãy gán đúng tên loại cây để xem hành trình!'
-      : 'Khoang này hiện tại chưa có biểu đồ sinh trưởng. Vui lòng đảm bảo bạn đã gán đúng loại cây đang trồng trong Cài đặt Rack (VD: Rau cải xoong) và loại cây này đã được tạo trong mục Onboarding.',
+      ? 'AI phân tích khoang đang ở giai đoạn "' . $detected_stage . '", nhưng bạn chưa cập nhật giống cây trồng cho khoang này nên không thể vẽ biểu đồ sinh trưởng. Hãy bổ sung tên loại cây để xem hành trình nhé!'
+      : 'Khoang này hiện tại chưa có dữ liệu biểu đồ sinh trưởng. Bạn vui lòng cập nhật loại cây đang trồng để hệ thống AI bắt đầu theo dõi và thiết lập biểu đồ hành trình phát triển nhé!',
   ];
 
   if ($plant_id <= 0 || !function_exists('aitrongcay_plant_growth_stages')) {
@@ -1539,7 +1539,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       bottom: auto;
       left: auto;
       right: auto;
-      margin: 16px 16px 0;
+      margin: -24px 16px 16px;
+      z-index: 10;
     }
 
     .d2-no-rack-hint-text {
@@ -4326,7 +4327,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
               <?php else: ?>
                 <p class="d2-no-rack-hint-text" data-hint-text>📹 Bạn muốn xem khu vườn trực tiếp 24/7? Tiến hành lắp đặt Camera ngay.</p>
               <?php endif; ?>
-              <a class="d2-no-rack-hint-cta" href="<?php echo esc_url(add_query_arg('garden', $garden_key, home_url('/portal/kho-nong-cu-2/'))); ?>">Tới Kho nông cụ →</a>
+              <a class="d2-no-rack-hint-cta" href="<?php echo esc_url(add_query_arg('garden', $garden_key, home_url('/nang-cap-goi/'))); ?>">Nâng cấp gói →</a>
               <button type="button" class="d2-no-rack-hint-close" onclick="this.parentElement.style.display='none'">×</button>
             </div>
           <?php endif; ?>
@@ -4652,10 +4653,10 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             </label>
             <button type="button" class="d2-tl-load-btn" id="d2TlLoad">▷ Tải timelapse</button>
             <?php if ($is_admin_user): ?>
-              <button type="button" class="d2-tl-load-btn" id="d2TlCaptureNow" style="background:rgba(255,182,140,.18);color:#ffb68c" title="Admin: chụp ảnh ngay từ go2rtc và lưu vào thư viện">📷 Chụp ngay</button>
               <button type="button" class="d2-tl-load-btn" onclick="document.getElementById('d2RobotModal').style.display='flex'" style="background:rgba(111,219,168,.18);color:#6fdba8;border:1px solid rgba(111,219,168,.3)" title="Điều khiển Robot đến điểm chụp">🤖 ĐK Robot</button>
-              <span id="d2TlCaptureStatus" style="font-size:13px;color:var(--muted)"></span>
             <?php endif; ?>
+            <button type="button" class="d2-tl-load-btn" id="d2TlCaptureNow" style="background:rgba(255,182,140,.18);color:#ffb68c" title="Test: chụp ảnh ngay từ go2rtc và lưu vào thư viện">📷 Chụp ngay</button>
+            <span id="d2TlCaptureStatus" style="font-size:13px;color:var(--muted)"></span>
           </div>
           <div class="d2-tl-player">
             <div class="d2-tl-frame-wrap">
@@ -7358,6 +7359,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         if (tlCaptureBtn) {
           tlCaptureBtn.addEventListener('click', function () {
             var slug = tlStreamSel ? tlStreamSel.value : '';
+            var legacySlug = tlStreamSel && tlStreamSel.options[tlStreamSel.selectedIndex] ? tlStreamSel.options[tlStreamSel.selectedIndex].getAttribute('data-legacy') : '';
+            var finalStream = legacySlug ? legacySlug : slug;
             if (!slug) { if (tlCaptureStatus) tlCaptureStatus.textContent = 'Chọn camera trước.'; return; }
             tlCaptureBtn.disabled = true;
             tlCaptureBtn.textContent = '⏳ Đang chụp...';
@@ -7366,7 +7369,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             body.append('action', 'aitrongcay_timelapse_capture_now');
             body.append('nonce', AITR_AJAX_NONCE);
             body.append('garden_key', AITR_GARDEN_KEY || '');
-            body.append('stream', slug);
+            body.append('stream', finalStream);
             fetch(AITR_AJAX_URL, { method: 'POST', body: body, credentials: 'same-origin' })
               .then(function (r) { return r.json(); })
               .then(function (res) {

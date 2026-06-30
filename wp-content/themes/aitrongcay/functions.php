@@ -5937,7 +5937,12 @@ function aitrongcay_blynk_get_status_ajax(): void
         }
     }
 
-    $light_devices = ['light1', 'light2', 'light3', 'light4'];
+    $light_devices = [];
+    foreach ($vpins as $key => $v) {
+        if (strpos($key, 'light') === 0 && $v !== '') {
+            $light_devices[] = $key;
+        }
+    }
     $has_any_light = false;
     $light_requests = [];
     foreach ($light_devices as $device) {
@@ -5947,9 +5952,10 @@ function aitrongcay_blynk_get_status_ajax(): void
             continue;
         }
 
-        $token = aitrongcay_blynk_pot_token_for_device($garden_key, $device);
-        if ($token === '') {
-            $token = trim((string) ($cfg['token'] ?? ''));
+        $token = trim((string) ($cfg['token'] ?? ''));
+        $pot_specific = aitrongcay_blynk_pot_token_for_device($garden_key, $device);
+        if ($pot_specific !== '' && $pot_specific !== aitrongcay_blynk_effective_token($garden_key)) {
+            $token = $pot_specific;
         }
         if ($token === '') {
             $payload[$device] = null;
@@ -6076,11 +6082,12 @@ function aitrongcay_blynk_send_control(string $device, int $state, string $garde
         return new WP_Error('invalid_command', 'Thiết bị này chưa được map cho khu vườn đang chọn.');
     }
 
-    $token = $device === 'pump'
-        ? trim((string) ($cfg['token'] ?? ''))
-        : aitrongcay_blynk_pot_token_for_device($garden_key, $device);
-    if ($token === '') {
-        $token = trim((string) ($cfg['token'] ?? ''));
+    $token = trim((string) ($cfg['token'] ?? ''));
+    if ($device !== 'pump') {
+        $pot_specific = aitrongcay_blynk_pot_token_for_device($garden_key, $device);
+        if ($pot_specific !== '' && $pot_specific !== aitrongcay_blynk_effective_token($garden_key)) {
+            $token = $pot_specific;
+        }
     }
     if ($token === '') {
         return new WP_Error('missing_token', 'Thiết bị này chưa có Blynk token thật để gửi lệnh.');

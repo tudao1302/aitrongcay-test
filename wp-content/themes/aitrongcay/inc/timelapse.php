@@ -313,10 +313,10 @@ add_action('wp_ajax_aitrongcay_timelapse_capture_now', 'aitrongcay_ajax_timelaps
 
 function aitrongcay_ajax_timelapse_capture_now(): void {
     check_ajax_referer('aitrongcay_portal_actions', 'nonce');
-    if (! current_user_can('manage_options')) {
-        wp_send_json_error(['message' => 'Chỉ admin mới được dùng.']);
-        return;
-    }
+    // if (! current_user_can('manage_options')) {
+    //     wp_send_json_error(['message' => 'Chỉ admin mới được dùng.']);
+    //     return;
+    // }
 
     $garden_key  = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? ''));
     $stream_slug = sanitize_key((string) wp_unslash($_POST['stream'] ?? ''));
