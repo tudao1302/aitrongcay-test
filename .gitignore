@@ -13,3 +13,9 @@ wp-content/aitr_crash.log
 
 # Ignore server config
 .htaccess
+
+# Ignore large archives
+*.zip
+*.tar.gz
+*.rar
+wp-content/uploads.zip

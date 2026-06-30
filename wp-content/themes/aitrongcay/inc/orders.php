@@ -808,14 +808,6 @@ function aitrongcay_register_orders_admin_pages(): void {
         'aitrongcay-orders',
         'aitrongcay_render_orders_page'
     );
-    add_submenu_page(
-        'aitrongcay-unified-admin-beta',
-        'Cài đặt thanh toán',
-        'Thanh toán',
-        'manage_options',
-        'aitrongcay-payment-settings',
-        'aitrongcay_render_payment_settings_page'
-    );
 }
 add_action('admin_menu', 'aitrongcay_register_orders_admin_pages', 100);
 

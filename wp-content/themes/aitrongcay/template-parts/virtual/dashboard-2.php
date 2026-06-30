@@ -4979,7 +4979,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             captureFormData.append('action', 'aitrongcay_capture_photo_server');
             captureFormData.append('garden_key', data.garden_key || '');
             captureFormData.append('pot_code', data.pot_code || '');
-            captureFormData.append('robot_stream', 'https://determine-exchanges-modification-include.trycloudflare.com/api/frame.jpeg?src=vuon2');
+            captureFormData.append('robot_stream', '<?php echo esc_js(get_option('aitrongcay_robot_camera_url', 'https://determine-exchanges-modification-include.trycloudflare.com/api/frame.jpeg?src=vuon2')); ?>');
             captureFormData.append('nonce', typeof AITR_AJAX_NONCE !== 'undefined' ? AITR_AJAX_NONCE : '');
 
             fetch('<?php echo esc_url(admin_url('admin-ajax.php')); ?>', { method: 'POST', body: captureFormData })

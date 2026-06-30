@@ -508,16 +508,32 @@ function aitrongcay_handle_unified_admin_beta_actions(): void {
         }
 
         // Save Payments
-        $payment_rules = [
-            'bank_bin'      => sanitize_text_field((string) wp_unslash($_POST['bank_bin'] ?? '')),
-            'bank_acc'      => sanitize_text_field((string) wp_unslash($_POST['bank_acc'] ?? '')),
-            'bank_name'     => sanitize_text_field((string) wp_unslash($_POST['bank_name'] ?? '')),
-            'qr_template'   => sanitize_text_field((string) wp_unslash($_POST['qr_template'] ?? 'qr_only')),
-            'price_per_day' => max(0, (int) ($_POST['price_per_day'] ?? 20000)),
-        ];
-        update_option('aitrongcay_payment_rules', $payment_rules, false);
+        $allowed = ['VCB','TCB','MB','ACB','BIDV','VTB','VPB','TPB','STB','HDB','MSB','OCB','SEAB'];
+        $code    = strtoupper(sanitize_key((string) wp_unslash($_POST['bank_code'] ?? '')));
+        if (! in_array($code, $allowed, true)) {
+            $code = 'TCB';
+        }
+
+        update_option('aitrongcay_bank_settings', [
+            'bank_code'      => $code,
+            'bank_name'      => sanitize_text_field((string) wp_unslash($_POST['bank_name'] ?? '')),
+            'account_number' => sanitize_text_field((string) wp_unslash($_POST['account_number'] ?? '')),
+            'account_name'   => strtoupper(sanitize_text_field((string) wp_unslash($_POST['account_name'] ?? ''))),
+        ]);
+
+        // Removed aitrongcay_payment_rules since pricing is auto-generated
 
         wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'settings'], $redirect));
+        exit;
+    }
+
+    // Action 5: Save Robot Settings
+    if ($action === 'save_robot_settings') {
+        $robot_camera_url = esc_url_raw((string) wp_unslash($_POST['robot_camera_url'] ?? ''));
+        // Tự động sửa HTML stream sang JPEG frame API để curl hoạt động
+        $robot_camera_url = str_replace(['/stream.html', '/webrtc.html'], '/api/frame.jpeg', $robot_camera_url);
+        update_option('aitrongcay_robot_camera_url', $robot_camera_url);
+        wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'robot'], $redirect));
         exit;
     }
 }
@@ -557,13 +573,6 @@ function aitrongcay_render_unified_admin_beta_page(): void {
     $gemini_key = function_exists('aitrongcay_get_gemini_api_key') ? aitrongcay_get_gemini_api_key() : '';
     $gemini_masked = $gemini_key !== '' ? substr($gemini_key, 0, 6) . '...' . substr($gemini_key, -4) : '';
     $ai_config = function_exists('aitrongcay_ai_agent_config') ? aitrongcay_ai_agent_config() : [];
-    $payment_rules = get_option('aitrongcay_payment_rules', [
-        'bank_bin'      => '',
-        'bank_acc'      => '',
-        'bank_name'     => '',
-        'qr_template'   => 'qr_only',
-        'price_per_day' => 20000,
-    ]);
 
     ?>
     <!-- Google Fonts Outfit & Font-Awesome -->
@@ -1113,6 +1122,9 @@ function aitrongcay_render_unified_admin_beta_page(): void {
             </a>
             <a href="?page=aitrongcay-unified-admin-beta&tab=hydration" class="aitr-beta-tab-btn <?php echo $active_tab === 'hydration' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-droplet"></i> Cấu hình Hydration
+            </a>
+            <a href="?page=aitrongcay-unified-admin-beta&tab=robot" class="aitr-beta-tab-btn <?php echo $active_tab === 'robot' ? 'active' : ''; ?>">
+                <i class="fa-solid fa-robot"></i> Cài đặt Robot
             </a>
         </div>
 
@@ -1668,31 +1680,52 @@ function aitrongcay_render_unified_admin_beta_page(): void {
 
                         <!-- Right: VietQR payment settings -->
                         <div>
+                            <?php
+                                $bank = function_exists('aitrongcay_get_bank_settings') ? aitrongcay_get_bank_settings() : ['bank_code' => 'TCB', 'bank_name' => '', 'account_number' => '', 'account_name' => ''];
+                                $bank_options = [
+                                    'VCB'  => 'Vietcombank (VCB)',
+                                    'TCB'  => 'Techcombank (TCB)',
+                                    'MB'   => 'MB Bank',
+                                    'ACB'  => 'ACB',
+                                    'BIDV' => 'BIDV',
+                                    'VTB'  => 'Vietinbank (VTB)',
+                                    'VPB'  => 'VPBank',
+                                    'TPB'  => 'TPBank',
+                                    'STB'  => 'Sacombank',
+                                    'HDB'  => 'HDBank',
+                                    'MSB'  => 'MSB',
+                                    'OCB'  => 'OCB',
+                                    'SEAB' => 'SeABank',
+                                ];
+                            ?>
                             <h3 style="color:#10b981;font-size:15px;margin-top:0"><i class="fa-solid fa-credit-card"></i> Cấu hình VietQR & Thanh toán</h3>
                             <div class="aitr-form-group">
-                                <label>Mã ngân hàng (BIN ngân hàng):</label>
-                                <input type="text" name="bank_bin" class="aitr-form-control" value="<?php echo esc_attr((string) $payment_rules['bank_bin']); ?>" placeholder="Ví dụ: 970415 (Vietinbank)">
-                            </div>
-                            <div class="aitr-form-group">
-                                <label>Số tài khoản thụ hưởng:</label>
-                                <input type="text" name="bank_acc" class="aitr-form-control" value="<?php echo esc_attr((string) $payment_rules['bank_acc']); ?>" placeholder="Ví dụ: 10987182">
-                            </div>
-                            <div class="aitr-form-group">
-                                <label>Tên tài khoản (Không dấu):</label>
-                                <input type="text" name="bank_name" class="aitr-form-control" value="<?php echo esc_attr((string) $payment_rules['bank_name']); ?>" placeholder="Ví dụ: NGUYEN VAN A">
-                            </div>
-                            <div class="aitr-form-group">
-                                <label>Template tạo QR:</label>
-                                <select name="qr_template" class="aitr-form-control">
-                                    <option value="qr_only" <?php selected($payment_rules['qr_template'], 'qr_only'); ?>>Chỉ QR Code</option>
-                                    <option value="compact" <?php selected($payment_rules['qr_template'], 'compact'); ?>>Gọn (Compact)</option>
-                                    <option value="print" <?php selected($payment_rules['qr_template'], 'print'); ?>>Bản in (Print layout)</option>
+                                <label>Ngân hàng:</label>
+                                <select name="bank_code" class="aitr-form-control">
+                                    <?php foreach ($bank_options as $b_code => $b_label): ?>
+                                        <option value="<?php echo esc_attr($b_code); ?>" <?php selected($bank['bank_code'], $b_code); ?>><?php echo esc_html($b_label); ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="aitr-form-group">
-                                <label>Đơn giá thuê vườn (VNĐ / Ngày):</label>
-                                <input type="number" name="price_per_day" class="aitr-form-control" value="<?php echo esc_attr((string) $payment_rules['price_per_day']); ?>" min="0">
+                                <label>Tên hiển thị (Ngân hàng):</label>
+                                <input type="text" name="bank_name" class="aitr-form-control" value="<?php echo esc_attr((string) $bank['bank_name']); ?>" placeholder="VD: Techcombank">
                             </div>
+                            <div class="aitr-form-group">
+                                <label>Số tài khoản thụ hưởng:</label>
+                                <input type="text" name="account_number" class="aitr-form-control" value="<?php echo esc_attr((string) $bank['account_number']); ?>" placeholder="Ví dụ: 10987182">
+                            </div>
+                            <div class="aitr-form-group">
+                                <label>Tên chủ TK (Không dấu):</label>
+                                <input type="text" name="account_name" class="aitr-form-control" value="<?php echo esc_attr((string) $bank['account_name']); ?>" placeholder="Ví dụ: NGUYEN VAN A">
+                                <p style="font-size:11px;color:#94a3b8;margin-top:4px">Viết HOA không dấu theo chuẩn ngân hàng.</p>
+                            </div>
+                            <?php if ($bank['account_number'] !== '' && function_exists('aitrongcay_build_vietqr_url')): ?>
+                                <div style="margin-top:15px;text-align:center;padding:15px;background:#0f172a;border-radius:8px;border:1px solid #334155">
+                                    <img src="<?php echo esc_url(aitrongcay_build_vietqr_url($bank['bank_code'], $bank['account_number'], $bank['account_name'], 150000, 'AITRTEST001')); ?>" alt="QR mẫu" style="width:150px;height:150px;border-radius:12px;border:1px solid #475569">
+                                    <div style="font-size:11px;color:#94a3b8;margin-top:8px">Quét thử mã trên để kiểm tra bằng App Ngân Hàng</div>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -1750,6 +1783,77 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                     </tbody>
                 </table>
             </div>
+        <!-- Tab 6: Robot Panel -->
+        <?php elseif ($active_tab === 'robot'): ?>
+            <div class="aitr-panel">
+                <div class="aitr-panel-title">
+                    <span><i class="fa-solid fa-robot"></i> Cài đặt Robot & Camera</span>
+                </div>
+                
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <?php wp_nonce_field('aitrongcay_beta_action_nonce'); ?>
+                    <input type="hidden" name="beta_action" value="save_robot_settings">
+                    <input type="hidden" name="action" value="aitrongcay_beta_action">
+                    
+                    <div style="background:#0f172a; padding:20px; border-radius:12px; border:1px solid #334155; margin-bottom:20px;">
+                        <div class="aitr-form-group">
+                            <label>Link Stream Camera Robot (go2rtc jpeg/mjpeg):</label>
+                            <input type="url" name="robot_camera_url" id="aitr_robot_camera_url_input" class="aitr-form-control" value="<?php echo esc_attr(get_option('aitrongcay_robot_camera_url', '')); ?>" placeholder="https://.../api/frame.jpeg?src=vuon2" style="max-width:100%;">
+                            <p style="font-size:12px; color:#94a3b8; margin-top:6px;">Nhập đường dẫn ảnh tĩnh (JPEG) hoặc MJPEG từ luồng Cloudflare (hoặc local) để lưu ảnh tự động.</p>
+                        </div>
+                        
+                        <div style="margin-top:15px; display:flex; gap:10px;">
+                            <button type="submit" class="aitr-btn"><i class="fa-solid fa-save"></i> Lưu cấu hình</button>
+                            <button type="button" class="aitr-btn" style="background:#10b981;" onclick="testRobotCamera()"><i class="fa-solid fa-video"></i> Check camera</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Camera Check Modal -->
+            <div id="aitr-robot-cam-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:99999; backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+                <div style="background:#1e293b; border:1px solid #334155; border-radius:12px; width:100%; max-width:800px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); display:flex; flex-direction:column; overflow:hidden;">
+                    <div style="padding:16px 20px; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center; background:#1e293b;">
+                        <h3 style="margin:0; font-size:16px; color:#f8fafc;"><i class="fa-solid fa-video" style="color:#10b981"></i> Xem trước Camera Robot</h3>
+                        <button type="button" onclick="document.getElementById('aitr-robot-cam-modal').style.display='none'; document.getElementById('aitr-robot-cam-preview').src='';" style="background:transparent; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">&times;</button>
+                    </div>
+                    <div style="padding:20px; text-align:center; background:#000; min-height:400px; display:flex; align-items:center; justify-content:center; position:relative;">
+                        <img id="aitr-robot-cam-preview" src="" alt="Stream error" style="max-width:100%; max-height:600px; border-radius:8px; display:none;" onerror="this.style.display='none'; document.getElementById('aitr-robot-cam-error').style.display='block'; document.getElementById('aitr-robot-cam-loading').style.display='none';">
+                        <div id="aitr-robot-cam-loading" style="color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải luồng camera...</div>
+                        <div id="aitr-robot-cam-error" style="display:none; color:#ef4444; font-size:14px;"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi: Không thể tải được luồng. Kiểm tra link hoặc mạng!</div>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+            function testRobotCamera() {
+                var url = document.getElementById('aitr_robot_camera_url_input').value.trim();
+                if (!url) {
+                    alert('Vui lòng nhập link camera trước khi check!');
+                    return;
+                }
+                
+                // Tự động chuyển link dạng .html sang frame.jpeg vì thẻ <img> và PHP curl chỉ đọc được ảnh tĩnh
+                if (url.includes('/stream.html') || url.includes('/webrtc.html')) {
+                    url = url.replace('/stream.html', '/api/frame.jpeg').replace('/webrtc.html', '/api/frame.jpeg');
+                    document.getElementById('aitr_robot_camera_url_input').value = url; // Update input
+                }
+                
+                document.getElementById('aitr-robot-cam-error').style.display = 'none';
+                document.getElementById('aitr-robot-cam-loading').style.display = 'block';
+                document.getElementById('aitr-robot-cam-preview').style.display = 'none';
+                
+                var img = document.getElementById('aitr-robot-cam-preview');
+                img.src = url + (url.indexOf('?') !== -1 ? '&' : '?') + 't=' + new Date().getTime();
+                img.onload = function() {
+                    document.getElementById('aitr-robot-cam-loading').style.display = 'none';
+                    document.getElementById('aitr-robot-cam-error').style.display = 'none';
+                    img.style.display = 'block';
+                };
+                
+                document.getElementById('aitr-robot-cam-modal').style.display = 'flex';
+            }
+            </script>
         <?php endif; ?>
 
     </div>
