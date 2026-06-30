@@ -111,6 +111,7 @@ function aitrongcay_do_timelapse_capture(): void {
               WHERE s.camera_stream_url != '' AND s.camera_stream_url IS NOT NULL",
             ARRAY_A
         );
+        error_log("[TIMELAPSE CRON] Tìm thấy " . count($db_slots) . " luồng camera từ DB (aitr_rack_slots).");
         foreach ((array) $db_slots as $db_slot) {
             $gk         = trim((string) ($db_slot['garden_key'] ?? ''));
             $webcam_url = trim((string) ($db_slot['camera_stream_url'] ?? ''));
@@ -145,10 +146,12 @@ function aitrongcay_do_timelapse_capture(): void {
                 ]),
                 'garden_key_raw' => $gk, // preserve original for logging
             ];
+            error_log("[TIMELAPSE CRON] Chuẩn bị lấy ảnh cho: {$safe_gk} / {$slug} tại URL: " . $garden_streams_map[$safe_gk][$slug]['frame_url']);
         }
     }
 
     // ─── Process each garden / stream ───────────────────────────────────────
+    error_log("[TIMELAPSE CRON] Bắt đầu duyệt qua " . count($garden_streams_map) . " khu vườn có cấu hình camera.");
     foreach ($garden_streams_map as $garden_key => $streams) {
         if (empty($streams)) {
             continue;
@@ -159,22 +162,28 @@ function aitrongcay_do_timelapse_capture(): void {
 
         foreach ($streams as $slug => $stream) {
             $frame_url = $stream['frame_url'];
+            error_log("[TIMELAPSE CRON] Đang tải ảnh từ: {$frame_url}");
             $body = aitrongcay_timelapse_fetch_frame($frame_url);
             if ($body === null) {
+                error_log("[TIMELAPSE CRON] Lỗi lấy ảnh từ API go2rtc, thử qua ISAPI fallback...");
                 $parsed_base = parse_url($frame_url);
                 $origin      = ($parsed_base['scheme'] ?? 'http') . '://' . ($parsed_base['host'] ?? '') . (isset($parsed_base['port']) ? ':' . $parsed_base['port'] : '');
                 $rtsp_url    = aitrongcay_timelapse_get_rtsp_url($origin, $slug);
                 $body        = aitrongcay_timelapse_fetch_frame_isapi($rtsp_url);
             }
             if ($body === null) {
+                error_log("[TIMELAPSE CRON] ❌ Thất bại hoàn toàn khi lấy ảnh cho {$garden_key} / {$slug}. Bỏ qua.");
                 continue;
             }
+            error_log("[TIMELAPSE CRON] ✅ Tải ảnh thành công (" . strlen($body) . " bytes). Bắt đầu lưu file...");
             $safe_gk = sanitize_key($garden_key);
             $safe_sl = sanitize_key($slug);
             $dir = $base_dir . '/' . $safe_gk . '/' . $safe_sl . '/' . $date;
             wp_mkdir_p($dir);
+            $file_path = $dir . '/' . $time . '.jpg';
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-            file_put_contents($dir . '/' . $time . '.jpg', $body);
+            $bytes_written = file_put_contents($file_path, $body);
+            error_log("[TIMELAPSE CRON] Đã ghi " . ($bytes_written !== false ? $bytes_written : "LỖI") . " bytes vào file: {$file_path}");
             // Save sensor snapshot alongside the photo
             if (function_exists('aitrongcay_tray_read_sensors')) {
                 $sensors = aitrongcay_tray_read_sensors($stream['tray']);
