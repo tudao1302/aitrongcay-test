@@ -56,6 +56,7 @@ function aitrongcay_do_timelapse_capture(): void {
         } else {
             $garden_key = substr((string) $row['option_name'], strlen('aitrongcay_rack_cfg_'));
         }
+        $garden_key = urldecode($garden_key);
 
         if ($garden_key === '') {
             continue;
@@ -114,6 +115,7 @@ function aitrongcay_do_timelapse_capture(): void {
         error_log("[TIMELAPSE CRON] Tìm thấy " . count($db_slots) . " luồng camera từ DB (aitr_rack_slots).");
         foreach ((array) $db_slots as $db_slot) {
             $gk         = trim((string) ($db_slot['garden_key'] ?? ''));
+            $gk         = urldecode($gk);
             $webcam_url = trim((string) ($db_slot['camera_stream_url'] ?? ''));
             
             if ($gk === '' || $webcam_url === '' || ! str_contains($webcam_url, 'src=')) {
