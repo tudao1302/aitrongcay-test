@@ -1378,7 +1378,7 @@ if ($needs_photo_library) {
                                 <?php endif; ?>
                             </div>
 
-                            <form class="garden-ai-chat-form ai-agent-design-form" data-garden-ai-form data-session-id="<?php echo esc_attr((string) ((int) ($ai_sessions[0]['id'] ?? 0))); ?>"<?php echo $is_ai_onboarding ? ' data-ai-onboarding-form="1"' : ''; ?>>
+                            <form class="garden-ai-chat-form ai-agent-design-form" data-garden-ai-form data-session-id="<?php echo esc_attr((string) ((int) (!empty($ai_sessions[0]['id']) ? $ai_sessions[0]['id'] : 0))); ?>"<?php echo $is_ai_onboarding ? ' data-ai-onboarding-form="1"' : ''; ?>>
                                 <?php if (! $is_ai_onboarding) : ?>
                                     <div class="ai-agent-design-chips">
                                         <button class="ai-agent-design-chip" type="button" data-ai-fill="Báo cáo sức khỏe khu vườn của anh hôm nay.">Báo cáo sức khỏe</button>

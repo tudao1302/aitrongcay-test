@@ -41,6 +41,7 @@ function aitrongcay_get_rack_monitor_configs(string $garden_key = ''): array
         $assigned_racks = $wpdb->get_results($wpdb->prepare("SELECT id, garden_key, rack_name, rack_code, slot_count, blynk_auth_token FROM {$racks_table} WHERE garden_key = %s ORDER BY id ASC", $garden_key), ARRAY_A);
         
         $cloned_rack_ids = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
+        $cloned_rack_ids = is_array($cloned_rack_ids) ? $cloned_rack_ids : (is_string($cloned_rack_ids) && $cloned_rack_ids !== '' ? explode(',', $cloned_rack_ids) : (array) $cloned_rack_ids);
         if (!empty($cloned_rack_ids)) {
             $ids_placeholder = implode(',', array_fill(0, count($cloned_rack_ids), '%d'));
             $cloned_racks = $wpdb->get_results($wpdb->prepare("SELECT id, garden_key, rack_name, rack_code, slot_count, blynk_auth_token FROM {$racks_table} WHERE id IN ($ids_placeholder) ORDER BY id ASC", ...$cloned_rack_ids), ARRAY_A);

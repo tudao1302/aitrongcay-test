@@ -4537,6 +4537,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         $assigned_racks = $wpdb->get_results($wpdb->prepare("SELECT id, garden_key, slot_count FROM {$racks_table} WHERE garden_key = %s", $garden_key), ARRAY_A);
         
         $cloned_rack_ids = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
+        $cloned_rack_ids = is_array($cloned_rack_ids) ? $cloned_rack_ids : (is_string($cloned_rack_ids) && $cloned_rack_ids !== '' ? explode(',', $cloned_rack_ids) : (array) $cloned_rack_ids);
         if (!empty($cloned_rack_ids)) {
             $ids_placeholder = implode(',', array_fill(0, count($cloned_rack_ids), '%d'));
             $cloned_racks = $wpdb->get_results($wpdb->prepare("SELECT id, garden_key, slot_count FROM {$racks_table} WHERE id IN ($ids_placeholder)", ...$cloned_rack_ids), ARRAY_A);
@@ -6127,7 +6128,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         if (!frame) return;
         var currentVideo = frame.querySelector('[data-d2-hero-video]');
         var currentImage = frame.querySelector('[data-d2-hero-image]');
-        var upsell = frame.querySelector('[data-upsell-overlay]');
+        var upsell = document.querySelector('[data-upsell-overlay]');
         
         // Prevent re-mounting the same stream to avoid slow loading
         var currentMountedUrl = currentVideo ? currentVideo.getAttribute('data-stream-url') : (currentImage ? currentImage.getAttribute('data-d2-hero-mjpeg') : null);
@@ -6542,9 +6543,15 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             var _rUrl = new URL(window.location.href);
             _rUrl.searchParams.set('rack', rackKey);
             _rUrl.searchParams.delete('pot');
-            window.location.href = _rUrl.toString();
-          } catch (e) {
-            window.location.reload();
+            window.history.pushState({ rack: rackKey }, '', _rUrl.toString());
+          } catch (e) { }
+          
+          var _rk = rackMap[rackKey];
+          if (_rk && Array.isArray(_rk.pots) && _rk.pots.length) {
+            var _firstPot = _rk.pots.find(function(p) { return p && p.code && switcherPotMap[p.code]; });
+            if (_firstPot) {
+              applyHeroPot(switcherPotMap[_firstPot.code]);
+            }
           }
         });
       });
