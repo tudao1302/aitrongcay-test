@@ -373,7 +373,7 @@ function aitrongcay_portal_pots(string $garden_key = '', ?WP_User $viewer = null
     $pots = $fetch_pots_for_garden($garden_key);
 
     $cloned_rack_ids = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
-    $cloned_rack_ids = is_array($cloned_rack_ids) ? $cloned_rack_ids : (is_string($cloned_rack_ids) && $cloned_rack_ids !== '' ? explode(',', $cloned_rack_ids) : (array) $cloned_rack_ids);
+    $cloned_rack_ids = is_array($cloned_rack_ids) ? array_values($cloned_rack_ids) : (is_string($cloned_rack_ids) && $cloned_rack_ids !== '' ? explode(',', $cloned_rack_ids) : array_values((array) $cloned_rack_ids));
     if (!empty($cloned_rack_ids) && function_exists('aitrongcay_garden_racks_table')) {
         global $wpdb;
         $racks_table = aitrongcay_garden_racks_table();

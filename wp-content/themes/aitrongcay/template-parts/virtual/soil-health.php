@@ -268,7 +268,49 @@ unset($shared_top_link);
           </div>
           
           <div class="sh-card">
-            <h3 class="sh-card-title">⏳ Vòng đời Giá thể (Lifespan)</h3>
+            <?php
+            $pot_to_rack_id = [];
+            $rack_list = [];
+            if (function_exists('aitrongcay_get_rack_slots') && function_exists('aitrongcay_garden_racks_table')) {
+                global $wpdb;
+                $rack_slots = aitrongcay_get_rack_slots($garden_key);
+                $racks_table = aitrongcay_garden_racks_table();
+                $garden_racks = $wpdb->get_results($wpdb->prepare("SELECT id, rack_name, rack_code FROM {$racks_table} WHERE garden_key = %s", $garden_key), ARRAY_A) ?: [];
+                $rack_names = [];
+                foreach ($garden_racks as $r) {
+                    $rack_names[$r['id']] = $r['rack_name'] ?: $r['rack_code'];
+                }
+                foreach ($rack_slots as $slot) {
+                    $pc = $slot['pot_code'] ?? '';
+                    if ($pc !== '' && isset($slot['rack_id'])) {
+                        $pot_to_rack_id[$pc] = $slot['rack_id'];
+                    }
+                }
+                foreach ($pots as $pot) {
+                    $p_code = $pot['code'] ?? $pot['pot_code'] ?? '';
+                    $rack_id = $pot_to_rack_id[$p_code] ?? '0';
+                    if ($rack_id != '0' && !isset($rack_list[$rack_id]) && isset($rack_names[$rack_id])) {
+                        $rack_list[$rack_id] = $rack_names[$rack_id];
+                    }
+                }
+                // Sort rack names naturally so "Rack số 1" comes before "Rack số 2"
+                asort($rack_list, SORT_NATURAL | SORT_FLAG_CASE);
+            }
+            
+            reset($rack_list);
+            $first_rack_id = !empty($rack_list) ? (string) key($rack_list) : 'all';
+            ?>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 class="sh-card-title" style="margin-bottom: 0;">⏳ Vòng đời Giá thể (Lifespan)</h3>
+                <?php if (!empty($rack_list)): ?>
+                <select id="sh-rack-filter" style="background: #1a1c1a; color: #e3e3de; border: 1px solid rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; outline: none;" onchange="filterLifespanRacks(this.value)">
+                    <?php foreach($rack_list as $r_id => $r_name): ?>
+                        <option value="<?php echo esc_attr($r_id); ?>" <?php selected((string)$r_id, $first_rack_id); ?>><?php echo esc_html($r_name); ?></option>
+                    <?php endforeach; ?>
+                    <option value="all" <?php selected('all', $first_rack_id); ?>>Tất cả các kệ</option>
+                </select>
+                <?php endif; ?>
+            </div>
             <?php 
             if (empty($pots)) {
               echo '<div style="text-align: center; padding: 20px; color: var(--muted); font-size: 13px;">Chưa có dữ liệu khoang trồng.</div>';
@@ -276,6 +318,7 @@ unset($shared_top_link);
             foreach ($pots as $index => $pot): 
               $p_code = $pot['code'] ?? $pot['pot_code'] ?? '';
               $p_name = $pot['name'] ?? $pot['pot_name'] ?? 'Khoang chưa đặt tên';
+              $rack_id = (string) ($pot_to_rack_id[$p_code] ?? '0');
               
               // Giả lập tính toán vòng đời dựa trên thời gian tạo khoang
               $created_time = strtotime($pot['created_at'] ?? 'now');
@@ -296,8 +339,10 @@ unset($shared_top_link);
               } elseif ($percent > 40) {
                   $color = '#ffb68c';
               }
+              
+              $is_hidden = ($first_rack_id !== 'all' && $rack_id !== $first_rack_id);
             ?>
-            <div style="margin-bottom: 16px;">
+            <div class="sh-pot-row" data-rack-id="<?php echo esc_attr($rack_id); ?>" style="margin-bottom: 16px; transition: opacity 0.3s; <?php echo $is_hidden ? 'display: none; opacity: 0;' : 'display: block; opacity: 1;'; ?>">
               <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 8px;">
                 <span><?php echo esc_html($p_name); ?> (<?php echo esc_html($p_code); ?>)</span>
                 <span style="color: <?php echo $color; ?>;"><?php echo esc_html($status_text); ?></span>
@@ -312,6 +357,27 @@ unset($shared_top_link);
               <?php endif; ?>
             </div>
             <?php endforeach; ?>
+            
+            <script>
+            function filterLifespanRacks(rackId) {
+                const rows = document.querySelectorAll('.sh-pot-row');
+                rows.forEach(row => {
+                    if (rackId === 'all' || row.dataset.rackId === String(rackId)) {
+                        row.style.display = 'block';
+                        // Force reflow
+                        void row.offsetWidth;
+                        row.style.opacity = '1';
+                    } else {
+                        row.style.opacity = '0';
+                        setTimeout(() => {
+                            if (row.style.opacity === '0') {
+                                row.style.display = 'none';
+                            }
+                        }, 300);
+                    }
+                });
+            }
+            </script>
           <!-- Bác sĩ Đất -->
           <div class="sh-card" style="background: linear-gradient(145deg, rgba(22,26,22,0.9), rgba(111,219,168,0.05)); border-left: 3px solid #6fdba8;">
             <div style="display: flex; align-items: flex-start; gap: 12px;">

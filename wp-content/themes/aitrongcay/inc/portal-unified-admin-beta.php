@@ -1421,62 +1421,6 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                                     </div>
                                 <?php endif; ?>
 
-                                <!-- Box 4: Camera Setup -->
-                                <?php if (! empty($mapped_racks) && function_exists('aitrongcay_get_rack_slots_by_rack_id')): ?>
-                                    <div class="aitr-garden-meta-box">
-                                        <h3 class="aitr-garden-meta-title"><i class="fa-solid fa-video"></i> Cài đặt luồng Camera các khoang (Streams)</h3>
-                                        <form method="post">
-                                            <?php wp_nonce_field('aitrongcay_beta_action_nonce'); ?>
-                                            <input type="hidden" name="beta_action" value="save_camera_urls">
-                                            <input type="hidden" name="garden_key" value="<?php echo esc_attr($selected_garden_key); ?>">
-
-                                            <?php foreach ($mapped_racks as $mr): ?>
-                                                <?php 
-                                                    $slots = aitrongcay_get_rack_slots_by_rack_id((int) $mr['id']);
-                                                    // Auto-populate slots if missing
-                                                    if (empty($slots)) {
-                                                        $slot_count = max(1, (int) ($mr['slot_count'] ?? 3));
-                                                        if (function_exists('aitrongcay_garden_rack_slots_table')) {
-                                                            $slots_table = aitrongcay_garden_rack_slots_table();
-                                                            for ($i = 1; $i <= $slot_count; $i++) {
-                                                                $wpdb->insert($slots_table, [
-                                                                    'rack_id' => $mr['id'],
-                                                                    'slot_index' => $i,
-                                                                    'slot_code' => sprintf('%s-S%02d', $mr['rack_code'], $i),
-                                                                    'slot_name' => 'Khoang ' . $i,
-                                                                    'pot_code' => sprintf('P-%03d', $i),
-                                                                    'created_at' => current_time('mysql'),
-                                                                    'updated_at' => current_time('mysql'),
-                                                                ]);
-                                                            }
-                                                            $slots = aitrongcay_get_rack_slots_by_rack_id((int) $mr['id']);
-                                                        }
-                                                    }
-
-                                                    if (! empty($slots)):
-                                                ?>
-                                                    <div style="background:#0f172a; border: 1px solid #334155; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                                                        <h4 style="margin: 0 0 15px 0; font-size: 14px; color: #f1f5f9;"><?php echo esc_html($mr['rack_name'] ?: $mr['rack_code']); ?></h4>
-                                                        <?php foreach ($slots as $slot): ?>
-                                                            <div class="aitr-form-group" style="margin-bottom: 12px; display: flex; align-items: center; gap: 15px;">
-                                                                <label style="width: 150px; margin: 0; font-weight: 500; font-size: 13px;">
-                                                                    Khoang <?php echo (int) $slot['slot_index']; ?>
-                                                                    <?php if (!empty($slot['slot_name'])): ?><br><span style="color:#64748b; font-size: 11px;"><?php echo esc_html($slot['slot_name']); ?></span><?php endif; ?>
-                                                                </label>
-                                                                <input type="hidden" name="slot_ids[]" value="<?php echo (int) $slot['id']; ?>">
-                                                                <input type="url" name="camera_urls[<?php echo (int) $slot['id']; ?>]" class="aitr-form-control" style="flex:1" placeholder="Nhập link stream m3u8 hoặc luồng MJPEG..." value="<?php echo esc_attr((string) $slot['camera_stream_url']); ?>">
-                                                            </div>
-                                                        <?php endforeach; ?>
-                                                    </div>
-                                                <?php endif; ?>
-                                            <?php endforeach; ?>
-
-                                            <div style="margin-top:15px;text-align:right">
-                                                <button type="submit" class="aitr-btn aitr-btn-secondary"><i class="fa-solid fa-save"></i> Lưu luồng Camera</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                <?php endif; ?>
 
                             </div>
                         <?php endif; ?>
