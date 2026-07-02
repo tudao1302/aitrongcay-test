@@ -558,6 +558,68 @@ function aitrongcay_handle_unified_admin_beta_actions(): void {
         wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'robot'], $redirect));
         exit;
     }
+    // Action 6: Complete Reward Redemption
+    if ($action === 'complete_reward') {
+        $r_user_id = absint($_POST['user_id'] ?? 0);
+        $r_reward_id = sanitize_text_field((string) wp_unslash($_POST['reward_id'] ?? ''));
+        
+        if ($r_user_id > 0 && $r_reward_id !== '') {
+            $history = get_user_meta($r_user_id, '_aitrongcay_redeem_history', true);
+            $updated = false;
+            
+            if (is_array($history)) {
+                // Determine if it is array of arrays or single associative array
+                if (isset($history['id'])) {
+                    // Single associative array
+                    if ($history['id'] === $r_reward_id) {
+                        $history['status'] = 'completed';
+                        $updated = true;
+                    }
+                } else {
+                    // Array of arrays
+                    foreach ($history as $key => $record) {
+                        if (isset($record['id']) && $record['id'] === $r_reward_id) {
+                            $history[$key]['status'] = 'completed';
+                            $updated = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if ($updated) {
+                    update_user_meta($r_user_id, '_aitrongcay_redeem_history', $history);
+                    
+                    // Add notification to user
+                    if (function_exists('aitrongcay_add_notification')) {
+                        $reward_name = '';
+                        if (isset($history['id'])) {
+                            $reward_name = !empty($history['name']) ? $history['name'] : (!empty($history['reward_name']) ? $history['reward_name'] : '');
+                        } else {
+                            foreach ($history as $record) {
+                                if (isset($record['id']) && $record['id'] === $r_reward_id) {
+                                    $reward_name = !empty($record['name']) ? $record['name'] : (!empty($record['reward_name']) ? $record['reward_name'] : '');
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        aitrongcay_add_notification(
+                            $r_user_id,
+                            '✅ Yêu cầu đổi thưởng đã hoàn tất',
+                            "Phần thưởng <b>{$reward_name}</b> của bạn đã được xử lý và giao thành công!",
+                            home_url('/portal/doi-diem/')
+                        );
+                    }
+                    
+                    wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'rewards'], $redirect));
+                    exit;
+                }
+            }
+        }
+        
+        wp_safe_redirect(add_query_arg('beta_error', rawurlencode('Không tìm thấy yêu cầu đổi thưởng hợp lệ.'), $redirect));
+        exit;
+    }
 }
 
 // Render Page Content with Premium UI
@@ -1138,6 +1200,9 @@ function aitrongcay_render_unified_admin_beta_page(): void {
             </a>
             <a href="?page=aitrongcay-unified-admin-beta&tab=racks" class="aitr-beta-tab-btn <?php echo $active_tab === 'racks' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-cubes"></i> Quản lý Kho Racks
+            </a>
+            <a href="?page=aitrongcay-unified-admin-beta&tab=rewards" class="aitr-beta-tab-btn <?php echo $active_tab === 'rewards' ? 'active' : ''; ?>">
+                <i class="fa-solid fa-gift"></i> Quản lý Đổi thưởng
             </a>
             <a href="?page=aitrongcay-unified-admin-beta&tab=settings" class="aitr-beta-tab-btn <?php echo $active_tab === 'settings' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-sliders"></i> Cấu hình Hệ thống
@@ -1820,6 +1885,99 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                 document.getElementById('aitr-robot-cam-modal').style.display = 'flex';
             }
             </script>
+        <?php elseif ($active_tab === 'rewards'): ?>
+            <div class="aitr-panel">
+                <div class="aitr-panel-title">
+                    <span><i class="fa-solid fa-gift"></i> Quản lý Lịch sử Đổi thưởng</span>
+                </div>
+                <table class="aitr-table">
+                    <thead>
+                        <tr>
+                            <th>Khách hàng</th>
+                            <th>Phần thưởng</th>
+                            <th>Điểm đã trừ</th>
+                            <th>Thời gian</th>
+                            <th>Trạng thái</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $histories = [];
+                        $users = get_users();
+                        foreach ($users as $u) {
+                            $records = get_user_meta($u->ID, '_aitrongcay_redeem_history', true);
+                            if (is_array($records)) {
+                                if (isset($records['id'])) {
+                                    $records['user'] = $u;
+                                    $records['_meta_index'] = -1;
+                                    $histories[] = $records;
+                                } else {
+                                    foreach ($records as $index => $record) {
+                                        if (is_array($record)) {
+                                            $record['user'] = $u;
+                                            $record['_meta_index'] = $index;
+                                            $histories[] = $record;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        usort($histories, function($a, $b) {
+                            $timeA = is_numeric($a['time']) ? (int) $a['time'] : strtotime($a['time']);
+                            $timeB = is_numeric($b['time']) ? (int) $b['time'] : strtotime($b['time']);
+                            return $timeB <=> $timeA;
+                        });
+
+                        if (empty($histories)):
+                        ?>
+                            <tr><td colspan="6" style="text-align:center;color:#64748b">Chưa có lịch sử đổi thưởng nào.</td></tr>
+                        <?php
+                        else:
+                            foreach ($histories as $h):
+                                $status = $h['status'] ?? 'pending';
+                                $status_html = $status === 'pending' ? '<span class="aitr-badge aitr-badge-warn">Chờ xử lý</span>' : '<span class="aitr-badge aitr-badge-online">Hoàn thành</span>';
+                                $reward_name = !empty($h['name']) ? $h['name'] : (!empty($h['reward_name']) ? $h['reward_name'] : '');
+                                $icon = !empty($h['icon']) ? $h['icon'] . ' ' : '';
+                                $points = !empty($h['points']) ? $h['points'] : (!empty($h['points_cost']) ? $h['points_cost'] : 0);
+                                $timestamp = is_numeric($h['time']) ? (int) $h['time'] : strtotime($h['time']);
+                        ?>
+                            <tr>
+                                <td>
+                                    <strong><?php echo esc_html($h['user']->display_name); ?></strong><br>
+                                    <span style="font-size:11px;color:#94a3b8"><?php echo esc_html($h['user']->user_email); ?></span>
+                                    <?php if (!empty($h['recipient']['name'])): ?>
+                                        <div style="font-size:11px; margin-top:4px; padding:4px; background:rgba(255,255,255,0.05); border-radius:4px;">
+                                            <i class="fa-solid fa-truck"></i> <?php echo esc_html($h['recipient']['name']); ?> - <?php echo esc_html($h['recipient']['phone']); ?><br>
+                                            <span style="color:#64748b"><?php echo esc_html($h['recipient']['address']); ?></span>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?php echo $icon . esc_html($reward_name); ?></td>
+                                <td style="color:#10b981;font-weight:bold">-<?php echo esc_html((string)$points); ?></td>
+                                <td><?php echo esc_html(date_i18n('d/m/Y H:i', $timestamp)); ?></td>
+                                <td><?php echo $status_html; ?></td>
+                                <td>
+                                    <?php if ($status === 'pending'): ?>
+                                        <form method="post" style="display:inline">
+                                            <?php wp_nonce_field('aitrongcay_beta_action_nonce'); ?>
+                                            <input type="hidden" name="beta_action" value="complete_reward">
+                                            <input type="hidden" name="user_id" value="<?php echo esc_attr($h['user']->ID); ?>">
+                                            <input type="hidden" name="reward_id" value="<?php echo esc_attr($h['id']); ?>">
+                                            <button type="submit" class="aitr-btn" style="padding:4px 8px;font-size:11px;background:#10b981"><i class="fa-solid fa-check"></i> Hoàn thành</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <span style="color:#64748b;font-size:11px;"><i class="fa-solid fa-check-double"></i> Đã xử lý</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php
+                            endforeach;
+                        endif;
+                        ?>
+                    </tbody>
+                </table>
+            </div>
         <?php endif; ?>
 
     </div>

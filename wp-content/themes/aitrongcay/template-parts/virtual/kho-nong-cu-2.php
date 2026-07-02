@@ -18,9 +18,11 @@ $market_url = add_query_arg(array_filter(['garden' => $garden_key]), home_url('/
 $warehouse_url = add_query_arg(array_filter(['garden' => $garden_key]), home_url('/portal/kho-nong-cu-2/'));
 $friends_url = add_query_arg(array_filter(['garden' => $garden_key]), home_url('/portal/hang-xom/'));
 $shared_top_links = [
-    ['key' => 'cho-que', 'label' => 'Chợ quê', 'url' => add_query_arg(array_filter(['garden' => $garden_key]), home_url('/cho-que/'))],
-    ['key' => 'kho-nong-cu', 'label' => 'Kho nông cụ', 'url' => $warehouse_url],
-    ['key' => 'hang-xom', 'label' => 'Hàng xóm', 'url' => $friends_url],
+    ['key' => 'doi-diem', 'label' => 'Đổi điểm', 'url' => home_url('/portal/doi-diem/')],
+    ['key' => 'cho-que', 'label' => 'Chợ quê', 'url' => home_url('/cho-que/')],
+    ['key' => 'kho-nong-cu', 'label' => 'Kho nông cụ', 'url' => home_url('/portal/kho-nong-cu-2/')],
+    ['key' => 'hang-xom', 'label' => 'Hàng xóm', 'url' => home_url('/portal/hang-xom/')],
+    ['key' => 'dashboard-2', 'label' => 'Vào khu vườn của tôi', 'url' => home_url('/portal/dashboard-2/')],
 ];
 $can_manage_catalog = function_exists('aitrongcay_can_manage_onboarding_catalog') ? aitrongcay_can_manage_onboarding_catalog(wp_get_current_user()) : current_user_can('manage_options');
 $catalog_access_state = isset($_GET['catalog_access']) ? sanitize_key((string) ($_GET['catalog_access'] ?? '')) : '';
@@ -420,7 +422,7 @@ set_query_var('aitr_eco_shell', [
       <div class="eco-warehouse-garden-name"><a href="<?php echo esc_url($dashboard_url); ?>"><span style="color:#6fdba8;font-weight:900">AI</span> <span style="color:#ffffff;font-weight:700">trồng cây</span></a></div>
       <nav class="eco-warehouse-top-links">
         <?php foreach ($shared_top_links as $top_link) : ?>
-          <?php if ($top_link['key'] === 'kho-nong-cu') { continue; } ?>
+          <?php if ($top_link['key'] === 'kho-nong-cu' || ($top_link['key'] === 'dashboard-2' && $garden_key === '')) { continue; } ?>
           <a href="<?php echo esc_url($top_link['url']); ?>"><?php echo esc_html($top_link['label']); ?></a>
         <?php endforeach; ?>
       </nav>

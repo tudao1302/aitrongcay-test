@@ -22,7 +22,7 @@ if (! defined('ABSPATH')) { exit; }
 .eco-noti-body { font-size: 12px; color: #a9b5ab; line-height: 1.4; }
 .eco-noti-time { font-size: 11px; color: #7a827b; margin-top: 6px; }
 @media (max-width:820px) {
-  .eco-noti-popup { right: 16px; width: auto; left: 16px; }
+  .eco-noti-popup { position: fixed; top: 70px; right: 16px; left: 16px; width: calc(100vw - 32px); }
 }
 </style>
 <button class="eco-top-bell" id="eco-notification-bell" data-has-new="false" title="Thông báo">

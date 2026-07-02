@@ -184,10 +184,10 @@ $market_compose_url = add_query_arg(['compose' => '1', 'garden' => $garden_key],
 $friends_url = $garden_key !== '' ? add_query_arg('garden', rawurlencode($garden_key), home_url('/portal/hang-xom/')) : home_url('/portal/hang-xom/');
 $shared_top_links = [
   ['key' => 'doi-diem', 'label' => 'Đổi điểm', 'url' => home_url('/portal/doi-diem/')],
-  ['key' => 'cho-que', 'label' => 'Chợ quê', 'url' => $garden_key !== '' ? add_query_arg('garden', rawurlencode($garden_key), home_url('/cho-que/')) : home_url('/cho-que/')],
-  ['key' => 'kho-nong-cu', 'label' => 'Kho nông cụ', 'url' => $garden_key !== '' ? add_query_arg('garden', rawurlencode($garden_key), home_url('/portal/kho-nong-cu-2/')) : home_url('/portal/kho-nong-cu-2/')],
-  ['key' => 'hang-xom', 'label' => 'Hàng xóm', 'url' => $friends_url],
-  ['key' => 'dashboard-2', 'label' => 'Vào khu vườn của tôi', 'url' => $old_dashboard_url],
+  ['key' => 'cho-que', 'label' => 'Chợ quê', 'url' => home_url('/cho-que/')],
+  ['key' => 'kho-nong-cu', 'label' => 'Kho nông cụ', 'url' => home_url('/portal/kho-nong-cu-2/')],
+  ['key' => 'hang-xom', 'label' => 'Hàng xóm', 'url' => home_url('/portal/hang-xom/')],
+  ['key' => 'dashboard-2', 'label' => 'Vào khu vườn của tôi', 'url' => home_url('/portal/dashboard-2/')],
 ];
 $active_pot_code = isset($_GET['pot']) ? sanitize_text_field((string) wp_unslash($_GET['pot'])) : '';
 if ($active_pot_code !== '') {
@@ -1541,7 +1541,9 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       bottom: auto;
       left: auto;
       right: auto;
-      margin: -24px 16px 16px;
+      margin: -24px auto 16px 16px;
+      width: calc(100% - 32px);
+      box-sizing: border-box;
       z-index: 10;
     }
 
@@ -1995,7 +1997,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       bottom: auto;
       top: 16px;
       left: auto;
-      right: 16px;
+      right: auto;
       max-width: 380px;
     }
     
@@ -4135,9 +4137,13 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     
     @media (max-width:820px) {
       .d2-top-actions .eco-noti-popup {
-        right: 0;
+        right: -10px;
+        left: auto;
+        width: 340px;
+        max-width: calc(100vw - 20px);
       }
     }
+    
   </style>
   <div class="d2-shell">
     <aside class="d2-side">
@@ -4205,7 +4211,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         </div>
         <div class="d2-top-links">
           <?php foreach ($shared_top_links as $top_link): ?>
-            <?php if ($top_link['key'] === 'dashboard-2') {
+            <?php if ($top_link['key'] === 'dashboard-2' && $garden_key === '') {
               continue;
             } ?>
             <a href="<?php echo esc_url($top_link['url']); ?>"><?php echo esc_html($top_link['label']); ?></a>
@@ -4337,7 +4343,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           </div>
           
           <?php if (!$has_rack): ?>
-            <div class="d2-no-rack-hint is-inline" id="d2NoRackHint">
+            <div class="d2-no-rack-hint is-inline" id="d2NoRackHint" style="top: 16px; max-width: 380px;">
               <p class="d2-no-rack-hint-text">🌱 Bạn chưa có rack. Hãy tiến hành thuê rack để bắt đầu trồng cây!</p>
               <a class="d2-no-rack-hint-cta" href="<?php echo esc_url($rent_rack_url); ?>">Đặt dịch vụ →</a>
               <button type="button" class="d2-no-rack-hint-close" onclick="this.parentElement.style.display='none'">×</button>
@@ -6821,7 +6827,10 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           if (dot) dot.classList.add('is-loading');
           post('aitrongcay_tray_sensors', { garden_key: AITR_GARDEN_KEY, rack_index: ri, tray_index: ti })
             .then(function (res) {
-              if (!res || !res.success) return;
+              if (!res || !res.success) {
+                window.setTimeout(function() { fetchTray(ri, ti); }, POLL_INTERVAL);
+                return;
+              }
               var sensors = res.data || {};
               updateTrayUI(laneId, ri, ti, sensors);
               // Update per-pot sensor cache so hero area stays in sync when switching pots
@@ -6837,9 +6846,11 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
                   }
                 }
               }
+              window.setTimeout(function() { fetchTray(ri, ti); }, POLL_INTERVAL);
             })
             .catch(function () {
               if (dot) dot.className = 'd2-tray-dot is-err';
+              console.warn('Đã dừng cập nhật cảm biến cho rack ' + ri + ' khay ' + ti + ' để tránh rác console.');
             });
         }
 
@@ -6852,7 +6863,6 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             if (!trays[_ti].hasToken) continue;
             (function (ri, ti, delay) {
               window.setTimeout(function () { fetchTray(ri, ti); }, delay);
-              window.setInterval(function () { fetchTray(ri, ti); }, POLL_INTERVAL);
             })(_ri, _ti, stagger * 2000);
             stagger++;
           }

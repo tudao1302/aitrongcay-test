@@ -18,12 +18,7 @@ $shared_top_links = [
     ['key' => 'hang-xom', 'label' => 'Hàng xóm', 'url' => home_url('/portal/hang-xom/')],
     ['key' => 'dashboard-2', 'label' => 'Vào khu vườn của tôi', 'url' => home_url('/portal/dashboard-2/')],
 ];
-foreach ($shared_top_links as &$shared_top_link) {
-    if ($garden_query_value !== '' && in_array($shared_top_link['key'], ['cho-que', 'kho-nong-cu', 'hang-xom', 'dashboard-2'], true)) {
-        $shared_top_link['url'] = add_query_arg('garden', $garden_query_value, $shared_top_link['url']);
-    }
-}
-unset($shared_top_link);
+// Removed garden query forwarding for top links to allow escaping neighbor context
 $profile_links = is_user_logged_in()
     ? [
         ['label' => 'Quản lý tài khoản', 'url' => home_url('/tai-khoan/')],
@@ -83,7 +78,7 @@ if (is_user_logged_in()) {
 .eco-noti-body { font-size: 12px; color: #a9b5ab; line-height: 1.4; }
 .eco-noti-time { font-size: 11px; color: #7a827b; margin-top: 6px; }
 @media (max-width:1100px){.eco-layout{grid-template-columns:1fr;padding:18px}.eco-side{position:static}}
-@media (max-width:820px){.eco-shell{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}.eco-top{padding:14px 16px;gap:12px;flex-wrap:nowrap;align-items:center}.eco-top-left{min-width:0;flex-wrap:nowrap;gap:12px}.eco-top-title{font-size:28px;flex:0 0 auto}.eco-top-links{flex:1 1 auto;margin-left:0;padding-bottom:0}.eco-top-search{min-width:0;width:100%}.eco-top-right{flex:0 0 auto;padding:6px 8px;border-radius:18px}.eco-layout{padding:18px 14px 14px}.eco-side{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));top:auto;z-index:65;padding:11px 12px calc(11px + env(safe-area-inset-bottom,0px));border-radius:26px;background:rgba(7,33,24,.88);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);box-shadow:0 20px 44px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.06)}.eco-side-head{display:none}.eco-side nav{margin-top:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.eco-side nav a{flex-direction:column;justify-content:center;text-align:center;padding:10px 8px;border-radius:18px;font-size:11px;line-height:1.15;color:rgba(227,227,222,.74);gap:5px;font-weight:700}.eco-side nav a.is-desktop-only,.eco-side-link-label{display:none}.eco-side-link-short{display:block}.eco-side-link-icon{font-size:20px}.eco-side nav a.active{border-radius:18px;background:linear-gradient(180deg,rgba(111,219,168,.24),rgba(49,163,117,.92));color:#f7fff9;font-weight:800;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 22px rgba(49,163,117,.22)}.eco-side nav a:not(.active):hover{transform:none}.eco-main{max-width:none}.eco-hero h1{font-size:40px}}
+@media (max-width:820px){.eco-noti-popup{position:fixed;top:70px;right:16px;left:16px;width:auto;max-width:none}.eco-shell{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}.eco-top{padding:14px 16px;gap:12px;flex-wrap:nowrap;align-items:center}.eco-top-left{min-width:0;flex-wrap:nowrap;gap:12px}.eco-top-title{font-size:28px;flex:0 0 auto}.eco-top-links{flex:1 1 auto;margin-left:0;padding-bottom:0}.eco-top-search{min-width:0;width:100%}.eco-top-right{flex:0 0 auto;padding:6px 8px;border-radius:18px}.eco-layout{padding:18px 14px 14px}.eco-side{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));top:auto;z-index:65;padding:11px 12px calc(11px + env(safe-area-inset-bottom,0px));border-radius:26px;background:rgba(7,33,24,.88);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);box-shadow:0 20px 44px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.06)}.eco-side-head{display:none}.eco-side nav{margin-top:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.eco-side nav a{flex-direction:column;justify-content:center;text-align:center;padding:10px 8px;border-radius:18px;font-size:11px;line-height:1.15;color:rgba(227,227,222,.74);gap:5px;font-weight:700}.eco-side nav a.is-desktop-only,.eco-side-link-label{display:none}.eco-side-link-short{display:block}.eco-side-link-icon{font-size:20px}.eco-side nav a.active{border-radius:18px;background:linear-gradient(180deg,rgba(111,219,168,.24),rgba(49,163,117,.92));color:#f7fff9;font-weight:800;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 22px rgba(49,163,117,.22)}.eco-side nav a:not(.active):hover{transform:none}.eco-main{max-width:none}.eco-hero h1{font-size:40px}}
 </style>
 <div class="eco-shell">
   <header class="eco-top">
@@ -91,7 +86,15 @@ if (is_user_logged_in()) {
       <div class="eco-top-title"><?php if ($use_brand_title) : ?><span class="eco-top-title-brand"><span class="brand-ai">AI</span><span class="brand-rest">trồng cây</span></span><?php else : ?><?php echo esc_html($title); ?><?php endif; ?></div>
       <nav class="eco-top-links" aria-label="Điều hướng nhanh">
         <?php foreach ($shared_top_links as $top_link) : ?>
-          <?php if ($active === $top_link['key']) { continue; } ?>
+          <?php 
+          if ($active === $top_link['key']) { 
+              if ($top_link['key'] === 'dashboard-2' && $garden_query_value !== '') {
+                  // Show it so they can return to their own garden
+              } else {
+                  continue; 
+              }
+          } 
+          ?>
           <a href="<?php echo esc_url($top_link['url']); ?>"><?php echo esc_html($top_link['label']); ?></a>
         <?php endforeach; ?>
       </nav>
