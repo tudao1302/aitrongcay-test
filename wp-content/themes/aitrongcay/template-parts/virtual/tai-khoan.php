@@ -17,6 +17,7 @@ $district = (string) get_user_meta($current_user->ID, 'aitrongcay_district', tru
 $account_note = (string) get_user_meta($current_user->ID, 'aitrongcay_account_note', true);
 $notify_email = (string) get_user_meta($current_user->ID, 'aitrongcay_notify_email', true) !== '0';
 $notify_sms = (string) get_user_meta($current_user->ID, 'aitrongcay_notify_sms', true) === '1';
+$notify_zalo = (string) get_user_meta($current_user->ID, 'aitrongcay_notify_zalo', true) === '1';
 $notify_harvest = (string) get_user_meta($current_user->ID, 'aitrongcay_notify_harvest', true) !== '0';
 $member_since = get_date_from_gmt($current_user->user_registered, 'd/m/Y');
 $avatar_id = (int) get_user_meta($current_user->ID, 'aitrongcay_avatar_id', true);
@@ -91,13 +92,39 @@ get_template_part('template-parts/site/eco-hero');
                 <h3><?php echo esc_html($current_user->display_name ?: $current_user->user_login); ?></h3>
                 <div class="eco-account-rank">Hồ sơ khu vườn số</div>
                 <div style="display:grid;gap:12px;margin-top:22px">
-                  <div class="eco-account-stat"><span>Mức tài khoản</span><strong>LVL 42</strong></div>
+                  <?php
+                    $current_points = (int) get_user_meta($current_user->ID, '_aitrongcay_eco_points', true);
+                    $current_level = function_exists('aitrongcay_calculate_level') ? aitrongcay_calculate_level($current_points) : 1;
+                    
+                    // Progress to next level calculation
+                    $points_for_current_level = function_exists('aitrongcay_points_for_level') ? aitrongcay_points_for_level($current_level) : 0;
+                    $points_for_next_level = function_exists('aitrongcay_points_for_level') ? aitrongcay_points_for_level($current_level + 1) : 100;
+                    
+                    $points_needed = $points_for_next_level - $points_for_current_level;
+                    $points_gained = $current_points - $points_for_current_level;
+                    $level_progress_percent = $points_needed > 0 ? min(100, round(($points_gained / $points_needed) * 100)) : 0;
+                  ?>
+                  <div class="eco-account-stat"><span>Mức tài khoản</span><strong>LVL <?php echo esc_html($current_level); ?></strong></div>
+                  <div class="eco-account-stat"><span>Eco Points (Điểm)</span><strong style="color:#ffe16d"><?php echo esc_html($current_points); ?> 🍃</strong></div>
                   <div class="eco-account-stat"><span>Thành viên từ</span><strong><?php echo esc_html($member_since); ?></strong></div>
                 </div>
-                <div class="eco-account-progress"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px"><span style="color:#bdcac0">Mức hoàn thiện hồ sơ</span><span style="color:#6FDBA8">82%</span></div><div class="eco-account-progress-bar"><div></div></div></div>
+                <div class="eco-account-progress">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">
+                        <span style="color:#bdcac0">Tiến trình lên LVL <?php echo esc_html($current_level + 1); ?></span>
+                        <span style="color:#6FDBA8"><?php echo esc_html($points_gained); ?> / <?php echo esc_html($points_needed); ?></span>
+                    </div>
+                    <div class="eco-account-progress-bar"><div style="width:<?php echo esc_attr($level_progress_percent); ?>%"></div></div>
+                </div>
                 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data" style="display:grid;gap:10px;margin-top:22px"><input type="hidden" name="action" value="aitrongcay_account_avatar_update"><?php wp_nonce_field('aitrongcay_account_avatar_submit', 'aitrongcay_account_avatar_nonce'); ?><input id="account-avatar" type="file" name="avatar" accept="image/*"><button class="eco-account-btn secondary" type="submit">Cập nhật ảnh</button></form>
               </div>
-              <div class="eco-account-card"><h2 style="font-size:24px">Chỉ số tài khoản</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="eco-account-stat" style="display:block"><span style="display:block;margin-bottom:6px">Khu vườn theo dõi</span><strong style="color:#6FDBA8">01</strong></div><div class="eco-account-stat" style="display:block"><span style="display:block;margin-bottom:6px">Nhắc việc đang bật</span><strong style="color:#6FDBA8"><?php echo $notify_email || $notify_sms || $notify_harvest ? '03' : '00'; ?></strong></div></div></div>
+              <div class="eco-account-card"><h2 style="font-size:24px">Chỉ số tài khoản</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="eco-account-stat" style="display:block"><span style="display:block;margin-bottom:6px">Khu vườn theo dõi</span><strong style="color:#6FDBA8">01</strong></div><div class="eco-account-stat" style="display:block"><span style="display:block;margin-bottom:6px">Nhắc việc đang bật</span><strong style="color:#6FDBA8"><?php
+$active_notifs = 0;
+if ($notify_email) $active_notifs++;
+if ($notify_sms) $active_notifs++;
+if ($notify_zalo) $active_notifs++;
+if ($notify_harvest) $active_notifs++;
+echo sprintf('%02d', $active_notifs);
+?></strong></div></div></div>
             </section>
             <section style="display:grid;gap:24px">
               <div class="eco-account-card eco-account-form-card">
@@ -115,7 +142,12 @@ get_template_part('template-parts/site/eco-hero');
                     <div class="eco-account-field"><label for="account-ward">Phường / Xã</label><input id="account-ward" name="ward" value="<?php echo esc_attr($ward); ?>"></div>
                     <div class="eco-account-field" style="grid-column:1/-1"><label for="account-note">Ghi chú tài khoản</label><textarea id="account-note" name="account_note"><?php echo esc_textarea($account_note); ?></textarea></div>
                   </div>
-                  <div style="display:grid;gap:10px;margin-top:18px"><label><input type="checkbox" name="notify_email" value="1" <?php checked($notify_email); ?>> Nhận thông báo qua email</label><label><input type="checkbox" name="notify_sms" value="1" <?php checked($notify_sms); ?>> Nhận thông báo qua SMS</label><label><input type="checkbox" name="notify_harvest" value="1" <?php checked($notify_harvest); ?>> Nhắc thu hoạch</label></div>
+                  <div style="display:grid;gap:12px;margin-top:24px">
+                    <label style="display:flex;align-items:center;gap:10px;color:#bdcac0;font-size:14px;cursor:pointer;"><input type="checkbox" name="notify_email" value="1" <?php checked($notify_email); ?> style="width:18px;height:18px;margin:0;"> Nhận thông báo qua email</label>
+                    <label style="display:flex;align-items:center;gap:10px;color:#bdcac0;font-size:14px;cursor:pointer;"><input type="checkbox" name="notify_sms" value="1" <?php checked($notify_sms); ?> style="width:18px;height:18px;margin:0;"> Nhận thông báo qua SMS</label>
+                    <label style="display:flex;align-items:center;gap:10px;color:#bdcac0;font-size:14px;cursor:pointer;"><input type="checkbox" name="notify_zalo" value="1" <?php checked($notify_zalo); ?> style="width:18px;height:18px;margin:0;"> Nhận thông báo qua Zalo</label>
+                    <label style="display:flex;align-items:center;gap:10px;color:#bdcac0;font-size:14px;cursor:pointer;"><input type="checkbox" name="notify_harvest" value="1" <?php checked($notify_harvest); ?> style="width:18px;height:18px;margin:0;"> Nhắc thu hoạch</label>
+                  </div>
                   <div class="eco-account-actions"><button class="eco-account-btn primary" type="submit">Lưu thông tin</button><a class="eco-account-btn secondary" href="<?php echo esc_url(home_url('/portal/dashboard-2/')); ?>">Khu vườn của tôi</a></div>
                 </form>
               </div>

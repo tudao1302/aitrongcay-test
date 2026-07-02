@@ -29,7 +29,7 @@ if (! is_array($card) || empty($card['title'])) { return; }
       <p data-market-content-render class="market-card-excerpt"><?php echo esc_html((string) ($card['excerpt'] ?? '')); ?></p>
       <div class="eco-market-actions">
         <div class="eco-market-actions-left">
-          <a class="eco-market-btn primary" href="<?php echo esc_url((string) ($card['zalo_url'] ?? '#')); ?>">💬 Zalo</a>
+          <a class="eco-market-btn primary" href="<?php echo esc_url((string) ($card['zalo_url'] ?? '#')); ?>" data-open-market-zalo="<?php echo esc_attr((string) ($card['id'] ?? '')); ?>">💬 Zalo</a>
           <button class="eco-market-btn" type="button" data-toggle-market-detail="<?php echo esc_attr((string) ($card['id'] ?? '')); ?>" aria-expanded="false">👁 <span data-detail-toggle-label>Xem chi tiết</span></button>
         </div>
         <div class="eco-market-actions-right">
@@ -79,7 +79,14 @@ if (! is_array($card) || empty($card['title'])) { return; }
           <div class="market-compose-title-wrap"><input type="text" maxlength="140" value="<?php echo esc_attr((string) ($card['title'] ?? '')); ?>" data-inline-market-title></div>
           <div class="market-structured-grid" style="margin-top:14px"><div><select data-inline-market-category><option value="">Danh mục</option><option<?php selected(($card['category'] ?? ''), 'Hạt giống'); ?>>Hạt giống</option><option<?php selected(($card['category'] ?? ''), 'Cây giống'); ?>>Cây giống</option><option<?php selected(($card['category'] ?? ''), 'Dinh dưỡng cho cây'); ?>>Dinh dưỡng cho cây</option><option<?php selected(($card['category'] ?? ''), 'Các loại rau'); ?>>Các loại rau</option><option<?php selected(($card['category'] ?? ''), 'Hoa'); ?>>Hoa</option></select></div><div><select data-inline-market-offer-type><option value="">Hình thức</option><option<?php selected(($card['offer_type'] ?? ''), 'Bán'); ?>>Bán</option><option<?php selected(($card['offer_type'] ?? ''), 'Trao đổi'); ?>>Trao đổi</option><option<?php selected(($card['offer_type'] ?? ''), 'Chia sẻ'); ?>>Chia sẻ</option><option<?php selected(($card['offer_type'] ?? ''), 'Nhận đặt trước'); ?>>Nhận đặt trước</option></select></div><div><input type="text" value="<?php echo esc_attr((string) ($card['quantity'] ?? '')); ?>" placeholder="Số lượng" data-inline-market-quantity></div><div><input type="text" value="<?php echo esc_attr((string) ($card['area'] ?? '')); ?>" placeholder="Khu vực" data-inline-market-area></div><div><input type="text" value="<?php echo esc_attr((string) ($card['availability'] ?? '')); ?>" placeholder="Thời gian nhận/giao" data-inline-market-availability></div><div><input type="text" value="<?php echo esc_attr((string) ($card['contact'] ?? '')); ?>" placeholder="Liên hệ" data-inline-market-contact></div></div>
           <div class="market-compose-body-wrap" style="margin-top:14px"><textarea data-inline-market-content><?php echo esc_textarea((string) ($card['content'] ?? '')); ?></textarea></div>
-          <div class="market-compose-toolbar" style="margin-top:14px"><label class="market-compose-upload"><span>＋</span><strong>Thêm ảnh</strong><input type="file" accept="image/*" multiple data-inline-market-files hidden></label><div class="small subtle" data-inline-market-save-status>Sẵn sàng chỉnh sửa</div></div>
+          <div class="market-compose-toolbar" style="margin-top:14px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <label class="market-compose-upload"><span>＋</span><strong>Thêm ảnh</strong><input type="file" accept="image/*" multiple data-inline-market-files hidden></label>
+                <div class="small subtle" data-inline-market-save-status>Sẵn sàng chỉnh sửa</div>
+            </div>
+            <button class="btn btn-primary" type="button" data-inline-market-save-btn style="padding:8px 16px; font-size:14px">Lưu lại</button>
+            <input type="hidden" data-inline-market-existing-photos value="<?php echo esc_attr(wp_json_encode(wp_list_pluck((array) ($card['gallery'] ?? []), 'id'))); ?>">
+          </div>
           <div class="market-compose-preview" data-inline-market-preview></div>
         </div>
       <?php endif; ?>

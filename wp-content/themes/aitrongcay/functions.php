@@ -18,12 +18,14 @@ require_once get_template_directory() . '/inc/portal-gemini-analysis.php';
 require_once get_template_directory() . '/inc/tray-config.php';
 require_once get_template_directory() . '/inc/timelapse.php';
 require_once get_template_directory() . '/inc/auto-pump.php';
+require_once get_template_directory() . '/inc/api-settings.php';
 require_once get_template_directory() . '/inc/orders.php';
 require_once get_template_directory() . '/inc/supplies-admin.php';
 require_once get_template_directory() . '/inc/portal-unified-admin-beta.php';
 require_once get_template_directory() . '/inc/blynk-webhook.php';
 require_once get_template_directory() . '/inc/portal-robot-api.php';
-
+require_once get_template_directory() . '/inc/notifications.php';
+require_once get_template_directory() . '/inc/rack-handoff.php';
 function aitrongcay_theme_setup(): void
 {
     add_theme_support('title-tag');
@@ -1196,6 +1198,7 @@ function aitrongcay_handle_account_update(): void
     $note = sanitize_textarea_field(wp_unslash($_POST['account_note'] ?? ''));
     $notify_email = isset($_POST['notify_email']) ? '1' : '0';
     $notify_sms = isset($_POST['notify_sms']) ? '1' : '0';
+    $notify_zalo = isset($_POST['notify_zalo']) ? '1' : '0';
     $notify_harvest = isset($_POST['notify_harvest']) ? '1' : '0';
 
     if ($email !== '' && ! is_email($email)) {
@@ -1231,6 +1234,7 @@ function aitrongcay_handle_account_update(): void
     update_user_meta($user_id, 'aitrongcay_account_note', $note);
     update_user_meta($user_id, 'aitrongcay_notify_email', $notify_email);
     update_user_meta($user_id, 'aitrongcay_notify_sms', $notify_sms);
+    update_user_meta($user_id, 'aitrongcay_notify_zalo', $notify_zalo);
     update_user_meta($user_id, 'aitrongcay_notify_harvest', $notify_harvest);
 
     $status = ($email !== '' && $email !== $current->user_email) ? 'email-pending' : 'updated';
@@ -5074,15 +5078,19 @@ function aitrongcay_release_rack_to_inventory(int $rack_id): array
     if ($current_status === 'inventory') {
         return ['rack' => $rack, 'already_inventory' => true];
     }
-    $inventory_key = aitrongcay_build_inventory_rack_key((string) ($rack['rack_code'] ?? ''));
+    $inventory_key   = aitrongcay_build_inventory_rack_key((string) ($rack['rack_code'] ?? ''));
     $from_garden_key = (string) ($rack['garden_key'] ?? '');
+
+    // ── DATA HANDOFF: Đóng gói dữ liệu của KH cũ TRƯỚC khi thu hồi ──────────
+    do_action('aitrongcay_before_rack_release', $rack_id, $from_garden_key);
+
     $updated = false !== $wpdb->update(
         aitrongcay_garden_racks_table(),
         [
-            'garden_key' => $inventory_key,
-            'owner_user_id' => 0,
-            'status' => 'inventory',
-            'updated_at' => current_time('mysql'),
+            'garden_key'   => $inventory_key,
+            'owner_user_id'=> 0,
+            'status'       => 'inventory',
+            'updated_at'   => current_time('mysql'),
         ],
         ['id' => $rack_id],
         ['%s','%d','%s','%s'],
@@ -5095,8 +5103,8 @@ function aitrongcay_release_rack_to_inventory(int $rack_id): array
         aitrongcay_garden_rack_assignments_table(),
         [
             'released_at' => current_time('mysql'),
-            'status' => 'released',
-            'notes' => 'Thu hồi rack về kho',
+            'status'      => 'released',
+            'notes'       => 'Thu hồi rack về kho',
         ],
         ['rack_id' => $rack_id, 'status' => 'active'],
         ['%s','%s','%s'],
@@ -5201,6 +5209,9 @@ function aitrongcay_assign_inventory_rack_to_garden(string $garden_key, int $use
 
     aitrongcay_move_blynk_config_key($from_garden_key, $garden_key);
     aitrongcay_log_rack_inventory_event($rack_id, 'assign', (string) ($inventory_rack['status'] ?? 'inventory'), 'assigned', $user_id, 'Cấp rack từ kho sang khu vườn ' . $garden_key, $user_id);
+
+    // ── DATA HANDOFF: Chuẩn bị luồng dữ liệu sạch cho KH mới ─────────────────
+    do_action('aitrongcay_after_rack_assign', $rack_id, $garden_key, $from_garden_key);
 
     $rack = aitrongcay_get_rack_record($garden_key);
     return ['rack' => $rack ?: $inventory_rack, 'assigned' => true];
@@ -6195,7 +6206,7 @@ function aitrongcay_capture_photo_ajax(): void
     if ($garden_key === '' || $pot_code === '') {
         wp_send_json_error(['message' => 'Thiếu thông tin khoang để lưu ảnh.'], 400);
     }
-    if (! aitrongcay_user_can_view_garden($garden_key, get_current_user_id())) {
+    if (! aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
         wp_send_json_error(['message' => 'Không có quyền chụp ảnh cho khu vườn này.'], 403);
     }
 
@@ -6267,7 +6278,7 @@ function aitrongcay_capture_photo_server_ajax(): void
     if ($garden_key === '' || $pot_code === '') {
         wp_send_json_error(['message' => 'Thiếu thông tin khoang.'], 400);
     }
-    if (! aitrongcay_user_can_view_garden($garden_key, get_current_user_id())) {
+    if (! aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
         wp_send_json_error(['message' => 'Không có quyền chụp ảnh.'], 403);
     }
 
@@ -6633,14 +6644,7 @@ function aitrongcay_create_market_post_ajax(): void
         wp_send_json_error(['message' => 'Thiếu tiêu đề hoặc nội dung tin đăng.'], 400);
     }
 
-    if (function_exists('mb_strlen')) {
-        if (mb_strlen($title) < 12) {
-            wp_send_json_error(['message' => 'Tiêu đề hơi ngắn. Anh/chị nên viết rõ hơn để người xem hiểu ngay tin đăng nói về gì.'], 400);
-        }
-        if (mb_strlen(wp_strip_all_tags($content)) < 24) {
-            wp_send_json_error(['message' => 'Nội dung còn quá ngắn. Anh/chị nên thêm số lượng, khu vực hoặc cách liên hệ.'], 400);
-        }
-    }
+
 
     $post_id = wp_insert_post([
         'post_type' => 'aitr_market_post',
@@ -6692,14 +6696,7 @@ function aitrongcay_update_market_post_ajax(): void
     if ($title === '' || $content === '') {
         wp_send_json_error(['message' => 'Anh/chị vui lòng nhập đủ tiêu đề và nội dung tin đăng.'], 400);
     }
-    if (function_exists('mb_strlen')) {
-        if (mb_strlen($title) < 12) {
-            wp_send_json_error(['message' => 'Tiêu đề hơi ngắn. Anh/chị nên viết rõ hơn để người xem hiểu ngay tin đăng nói về gì.'], 400);
-        }
-        if (mb_strlen(wp_strip_all_tags($content)) < 24) {
-            wp_send_json_error(['message' => 'Nội dung còn quá ngắn. Anh/chị nên thêm số lượng, khu vực hoặc cách liên hệ.'], 400);
-        }
-    }
+
 
     $final_photo_ids = array_values(array_filter(array_merge($existing_photo_ids, $new_photo_ids)));
 
@@ -6773,6 +6770,11 @@ function aitrongcay_normalize_phone_digits(string $phone): string
     if (str_starts_with($digits, '0')) {
         return '84' . substr($digits, 1);
     }
+    // Trường hợp người dùng gõ thiếu số 0 ở đầu (VD: 369497545)
+    // Số điện thoại di động VN sau khi bỏ số 0 có 9 chữ số.
+    if (strlen($digits) === 9) {
+        return '84' . $digits;
+    }
     return $digits;
 }
 
@@ -6791,8 +6793,20 @@ function aitrongcay_market_zalo_link_for_post(int $post_id): string
     if (! $post || $post->post_type !== 'aitr_market_post') {
         return '';
     }
-    $phone = aitrongcay_user_zalo_phone((int) $post->post_author);
-    if ($phone === '') {
+    
+    // Ưu tiên lấy số điện thoại người dùng điền trong form bài đăng (trường Liên hệ)
+    $structured = function_exists('aitrongcay_get_market_structured_data') ? aitrongcay_get_market_structured_data($post_id) : [];
+    $post_contact = (string) ($structured['contact_text'] ?? '');
+    $post_phone = aitrongcay_normalize_phone_digits($post_contact);
+    
+    // Nếu trong bài có số điện thoại hợp lệ, dùng số đó. Nếu không, lấy số từ Profile của tài khoản.
+    if (strlen($post_phone) >= 9) {
+        $phone = $post_phone;
+    } else {
+        $phone = aitrongcay_user_zalo_phone((int) $post->post_author);
+    }
+
+    if ($phone === '' || strlen($phone) < 9) {
         return '';
     }
     return 'https://zalo.me/' . rawurlencode($phone);
@@ -8811,6 +8825,7 @@ function aitrongcay_accept_garden_invite_ajax(): void
         'status' => 'active',
         'updated_at' => current_time('mysql'),
     ], ['id' => $id]);
+
     aitrongcay_remember_selected_garden_key(get_current_user_id(), (string) ($row['garden_key'] ?? ''));
     wp_send_json_success(['message' => 'Đã tham gia khu vườn.', 'garden_key' => $row['garden_key'] ?? '']);
 }
@@ -8978,6 +8993,9 @@ add_action('wp_ajax_aitrongcay_resolve_robot_node', function() {
     $target_rack = $racks[$rackIndex] ?? null;
     
     if (!$target_rack) {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permission denied for unassigned rack');
+        }
         wp_send_json_success([
             'garden_key' => '',
             'pot_code' => sprintf('P-%03d', $slotIndex)
@@ -8986,6 +9004,12 @@ add_action('wp_ajax_aitrongcay_resolve_robot_node', function() {
     }
     
     $garden_key = $target_rack['garden_key'] ?? '';
+    
+    if (!current_user_can('manage_options')) {
+        if ($garden_key === '' || !aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
+            wp_send_json_error('Permission denied for this garden');
+        }
+    }
     
     // Find slot
     $pot_code = sprintf('P-%03d', $slotIndex);
@@ -9019,3 +9043,212 @@ function aitrongcay_dismiss_notice() {
     }
     wp_send_json_success();
 }
+
+add_filter('comment_post_redirect', function ($location, $comment) {
+    if (empty($comment->comment_post_ID)) return $location;
+    $post = get_post($comment->comment_post_ID);
+    if ($post && $post->post_type === 'aitr_market_post') {
+        $referer = wp_get_referer();
+        if ($referer) {
+            $referer = preg_replace('/#.*/', '', $referer);
+            return $referer . '#comment-' . $comment->comment_ID;
+        }
+
+        $garden_key = get_post_meta($post->ID, '_aitrongcay_market_garden_key', true);
+        $url = home_url('/cho-que/');
+        if ($garden_key) {
+            $url = add_query_arg('garden', $garden_key, $url);
+        }
+        return $url . '#comment-' . $comment->comment_ID;
+    }
+    return $location;
+}, 10, 2);
+
+add_action('wp_ajax_aitrongcay_water_friend_garden', function() {
+    $current_user_id = get_current_user_id();
+    if (!$current_user_id) {
+        wp_send_json_error(['message' => 'Bạn cần đăng nhập.']);
+    }
+    $friend_id = isset($_POST['friend_id']) ? (int) $_POST['friend_id'] : 0;
+    if (!$friend_id) {
+        wp_send_json_error(['message' => 'Lỗi xác định hàng xóm.']);
+    }
+    
+    // Ensure they are actually friends
+    $is_friend = false;
+    $friends = aitrongcay_get_user_friends($current_user_id);
+    foreach ($friends as $f) {
+        if ($f['requester_user_id'] == $friend_id || $f['addressee_user_id'] == $friend_id) {
+            $is_friend = true;
+            break;
+        }
+    }
+    if (!$is_friend) {
+        wp_send_json_error(['message' => 'Chỉ có thể tưới nước cho hàng xóm đã kết nối.']);
+    }
+    
+    // Rate limit: 1 time per day per friend
+    $last_water_key = "_aitrongcay_watered_{$friend_id}_" . gmdate('Ymd');
+    $has_watered = get_user_meta($current_user_id, $last_water_key, true);
+    if ($has_watered) {
+        wp_send_json_error(['message' => 'Bạn đã tưới nước cho vườn này hôm nay rồi!']);
+    }
+    
+    update_user_meta($current_user_id, $last_water_key, 1);
+
+    // Create a notification for the neighbor
+    if (function_exists('aitrongcay_add_notification')) {
+        $sender = get_user_by('id', $current_user_id);
+        $sender_name = $sender ? ($sender->display_name ?: $sender->user_login) : 'Một người hàng xóm';
+        
+        $msg_title = '💦 Tưới nước hộ';
+        $msg_body = 'Hàng xóm <b>' . esc_html($sender_name) . '</b> vừa ghé thăm và tặng 1 gáo nước mát cho khu vườn của bạn trên ứng dụng!';
+        
+        aitrongcay_add_notification(
+            $friend_id,
+            $msg_title,
+            $msg_body,
+            home_url('/portal/hang-xom/')
+        );
+        
+        // Push to Email if enabled (remind them of their REAL plants)
+        $friend_user = get_user_by('id', $friend_id);
+        $wants_email = (string) get_user_meta($friend_id, 'aitrongcay_notify_email', true) !== '0';
+        
+        if ($friend_user && $wants_email) {
+            $email_subject = '[Ai trồng cây] Hàng xóm vừa ghé thăm khu vườn của bạn!';
+            $email_content = "Chào " . ($friend_user->display_name ?: 'bạn') . ",\n\n"
+                           . "Hàng xóm " . $sender_name . " vừa ghé thăm và tưới nước ảo cho khu vườn của bạn.\n"
+                           . "Hành động này mang ý nghĩa nhắc nhở: Những chậu cây thật của bạn ngoài đời có đang khát nước không? Đừng quên ra thăm và tưới cho chúng nhé!\n\n"
+                           . "Xem chi tiết tại: " . home_url('/portal/hang-xom/');
+            wp_mail($friend_user->user_email, $email_subject, $email_content);
+        }
+    }
+    
+    // Track watered count for the receiver's garden
+    $watered_count = (int) get_user_meta($friend_id, '_aitrongcay_garden_watered_count', true);
+    update_user_meta($friend_id, '_aitrongcay_garden_watered_count', $watered_count + 1);
+    
+    // Add 10 Eco Points
+    $points = 10;
+    $current_points = (int) get_user_meta($current_user_id, '_aitrongcay_eco_points', true);
+    update_user_meta($current_user_id, '_aitrongcay_eco_points', $current_points + $points);
+    
+    wp_send_json_success(['message' => 'Tưới nước thành công!', 'points' => $points]);
+});
+
+/**
+ * Gamification functions for Eco Points
+ */
+function aitrongcay_calculate_level(int $points): int {
+    // RPG curve: Points = 50 * L * (L-1)
+    // L=1(0pts), L=2(100pts), L=3(300pts), L=4(600pts), L=5(1000pts)...
+    $level = floor( (1 + sqrt(1 + 8 * $points / 100)) / 2 );
+    return max(1, (int)$level);
+}
+
+function aitrongcay_points_for_level(int $level): int {
+    if ($level <= 1) return 0;
+    return 50 * $level * ($level - 1);
+}
+
+// ─── Eco Points: Reward Catalogue ────────────────────────────────────────────
+function aitrongcay_eco_reward_catalogue(): array {
+    return [
+        'rau_baby_mix'  => ['name' => 'Rau Baby Mix 200g',      'icon' => '🥗', 'points' => 150, 'stock' => 20],
+        'rau_cai_xanh'  => ['name' => 'Cải xanh 500g',          'icon' => '🥬', 'points' => 200, 'stock' => 15],
+        'rau_xalach'    => ['name' => 'Xà lách Romaine 300g',   'icon' => '🫛', 'points' => 180, 'stock' => 10],
+        'goi_combo_vuon'=> ['name' => 'Combo Vườn Xanh',        'icon' => '🧺', 'points' => 400, 'stock' => 5],
+        'voucher_10k'   => ['name' => 'Voucher Giảm 10.000đ',   'icon' => '🎟️', 'points' => 100, 'stock' => 99],
+        'voucher_50k'   => ['name' => 'Voucher Giảm 50.000đ',   'icon' => '🎫', 'points' => 450, 'stock' => 30],
+    ];
+}
+
+// ─── AJAX: Redeem Eco Points ─────────────────────────────────────────────────
+add_action('wp_ajax_aitrongcay_redeem_points', function (): void {
+    if (! is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Bạn cần đăng nhập để đổi thưởng.'], 401);
+    }
+
+    check_ajax_referer('aitrongcay_redeem_points', 'aitrongcay_redeem_nonce');
+
+    $user_id   = get_current_user_id();
+    $reward_id = sanitize_key((string) ($_POST['reward_id'] ?? ''));
+    $catalogue = aitrongcay_eco_reward_catalogue();
+
+    if (! isset($catalogue[$reward_id])) {
+        wp_send_json_error(['message' => 'Phần thưởng không tồn tại.'], 400);
+    }
+
+    $reward         = $catalogue[$reward_id];
+    $current_points = (int) get_user_meta($user_id, '_aitrongcay_eco_points', true);
+
+    if ($current_points < $reward['points']) {
+        wp_send_json_error(['message' => sprintf('Bạn không đủ điểm. Cần %d điểm, hiện có %d điểm.', $reward['points'], $current_points)], 400);
+    }
+
+    // Validate required fields
+    $recipient_name    = sanitize_text_field((string) ($_POST['recipient_name'] ?? ''));
+    $recipient_phone   = sanitize_text_field((string) ($_POST['recipient_phone'] ?? ''));
+    $recipient_address = sanitize_textarea_field((string) ($_POST['recipient_address'] ?? ''));
+    $note              = sanitize_text_field((string) ($_POST['note'] ?? ''));
+
+    if ($recipient_name === '' || $recipient_phone === '' || $recipient_address === '') {
+        wp_send_json_error(['message' => 'Vui lòng điền đầy đủ họ tên, số điện thoại và địa chỉ.'], 400);
+    }
+
+    // Deduct points
+    $new_points = $current_points - $reward['points'];
+    update_user_meta($user_id, '_aitrongcay_eco_points', $new_points);
+
+    // Save redemption history
+    $history   = (array) get_user_meta($user_id, '_aitrongcay_redeem_history', true);
+    $history[] = [
+        'id'        => uniqid('rdm_', true),
+        'reward_id' => $reward_id,
+        'name'      => $reward['name'],
+        'icon'      => $reward['icon'],
+        'points'    => $reward['points'],
+        'time'      => time(),
+        'status'    => 'pending',
+        'recipient' => [
+            'name'    => $recipient_name,
+            'phone'   => $recipient_phone,
+            'address' => $recipient_address,
+            'note'    => $note,
+        ],
+    ];
+    update_user_meta($user_id, '_aitrongcay_redeem_history', $history);
+
+    // Notify admin via email
+    $admin_email   = get_option('admin_email');
+    $user          = get_user_by('id', $user_id);
+    $user_display  = $user instanceof WP_User ? ($user->display_name ?: $user->user_login) : "User #{$user_id}";
+    $email_subject = '[Ai trồng cây] Yêu cầu đổi thưởng mới: ' . $reward['name'];
+    $email_body    = "Có yêu cầu đổi thưởng mới!\n\n"
+        . "Người dùng: {$user_display} (ID: {$user_id})\n"
+        . "Phần thưởng: {$reward['icon']} {$reward['name']}\n"
+        . "Điểm dùng: {$reward['points']} điểm\n"
+        . "Điểm còn lại của họ: {$new_points} điểm\n\n"
+        . "--- Thông tin giao hàng ---\n"
+        . "Người nhận: {$recipient_name}\n"
+        . "Điện thoại: {$recipient_phone}\n"
+        . "Địa chỉ: {$recipient_address}\n"
+        . ($note !== '' ? "Ghi chú: {$note}\n" : '');
+    wp_mail($admin_email, $email_subject, $email_body);
+
+    // In-app notification to user
+    if (function_exists('aitrongcay_add_notification')) {
+        aitrongcay_add_notification(
+            $user_id,
+            '🎁 Đổi thưởng thành công!',
+            "Yêu cầu đổi <b>{$reward['icon']} {$reward['name']}</b> đã được ghi nhận. Chúng tôi sẽ liên hệ sớm!",
+            home_url('/portal/doi-diem/')
+        );
+    }
+
+    wp_send_json_success([
+        'message'          => "Yêu cầu đổi {$reward['name']} đã được ghi nhận! Chúng tôi sẽ liên hệ với bạn trong vòng 24 giờ.",
+        'remaining_points' => $new_points,
+    ]);
+});

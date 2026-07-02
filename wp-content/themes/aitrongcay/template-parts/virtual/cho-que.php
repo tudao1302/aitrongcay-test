@@ -45,7 +45,7 @@ if ($market_post && $market_post->post_type === 'aitr_market_post') {
                     <?php endif; ?>
                 </div>
                 <div class="inline-list">
-                    <a class="btn btn-primary" href="<?php echo esc_url(aitrongcay_market_zalo_action_url((int) $market_post->ID)); ?>" style="display:inline-flex;align-items:center;gap:8px"><span>💬</span><span><?php echo esc_html(aitrongcay_page_text('cho_que', 'detail_contact_label')); ?></span></a>
+                    <a class="btn btn-primary" href="<?php echo esc_url(aitrongcay_market_zalo_action_url((int) $market_post->ID)); ?>" data-open-market-zalo="<?php echo esc_attr((string) $market_post->ID); ?>" style="display:inline-flex;align-items:center;gap:8px"><span>💬</span><span><?php echo esc_html(aitrongcay_page_text('cho_que', 'detail_contact_label')); ?></span></a>
                     <a class="btn btn-secondary" href="<?php echo esc_url($market_list_url); ?>"><?php echo esc_html(aitrongcay_page_text('cho_que', 'detail_back_label')); ?></a>
                     <?php if (is_user_logged_in()) : ?>
                         <button class="btn btn-secondary" type="button" data-like-market-post="<?php echo esc_attr((string) $market_post->ID); ?>"><span data-like-label><?php echo esc_html($detail_liked ? aitrongcay_page_text('cho_que', 'listing_liked_label') : aitrongcay_page_text('cho_que', 'listing_like_label')); ?></span> · <span data-like-count><?php echo esc_html((string) count($detail_likes)); ?></span></button>
@@ -101,7 +101,13 @@ get_template_part('template-parts/site/eco-hero');
 .eco-market-filters{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px}.eco-market-filterbox{display:flex;align-items:center;gap:10px;background:rgba(26,28,25,.88);border-radius:18px;padding:12px 16px;min-width:280px;border:1px solid rgba(111,219,168,.12)}.eco-market-chips{display:flex;gap:8px;flex-wrap:wrap}.eco-market-chip{padding:10px 16px;border-radius:999px;background:rgba(51,53,50,.54);font-size:12px;font-weight:800;color:rgba(227,227,222,.64);text-decoration:none;cursor:pointer}.eco-market-chip.active{background:rgba(111,219,168,.12);color:var(--primary);border:1px solid rgba(111,219,168,.24)}.eco-market-chip:hover:not(.active){background:rgba(51,53,50,.8);color:rgba(227,227,222,.88)}
 .eco-market-feed{display:grid;gap:24px}.eco-market-post{background:rgba(26,28,25,.94);border-radius:34px;overflow:hidden;box-shadow:0 22px 48px rgba(0,0,0,.22);transition:.35s}.eco-market-post:hover{transform:translateY(-4px)}
 .eco-market-post-head{padding:24px 24px 18px;display:flex;justify-content:space-between;align-items:center;gap:16px}.eco-market-author{display:flex;align-items:center;gap:14px}.eco-market-author-thumb{width:50px;height:50px;border-radius:999px;background:#1a1c19;border:2px solid rgba(255,225,109,.3);display:grid;place-items:center}.eco-market-tier{display:inline-flex;padding:6px 10px;border-radius:10px;background:#ffe16d;color:#221b00;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
-.eco-market-post-body{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:0}.eco-market-post-copy{padding:0 24px 24px}.eco-market-post-copy h3{margin:0 0 10px;font-family:'Noto Serif',serif;font-size:34px;line-height:1.08;color:#fff}.eco-market-post-copy p{color:rgba(227,227,222,.76);line-height:1.7}.eco-market-meta{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 16px}.eco-market-meta span{padding:8px 12px;border-radius:999px;background:rgba(51,53,50,.5);font-size:12px;color:#ffb68c}.eco-market-media{background:rgba(18,20,17,.92);aspect-ratio:16/9;align-self:start;overflow:hidden}.eco-market-media img{width:100%;height:100%;object-fit:cover}.market-detail-image-wrap{border-radius:24px;overflow:hidden;background:#0b120e}.market-detail-image{display:block;width:100%;height:auto;max-height:none;object-fit:contain}.market-card-excerpt{transition:opacity .22s ease,max-height .28s ease,margin .22s ease;max-height:10em;overflow:hidden}.eco-market-inline-detail{padding:0 24px 24px;display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s ease,padding-top .28s ease}.eco-market-inline-detail[hidden]{display:grid !important}.eco-market-inline-detail-inner{min-height:0;overflow:hidden;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)}.eco-market-post.is-expanded .eco-market-inline-detail{grid-template-rows:1fr}.eco-market-post.is-expanded .eco-market-post-body{grid-template-columns:1fr}.eco-market-post.is-expanded .eco-market-media{display:none}.eco-market-post.is-expanded .market-card-excerpt{opacity:0;max-height:0;margin:0}.market-copy-clean,.market-copy-clean p{color:#e8efe9;opacity:1}.market-gallery-slider{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}.market-gallery-viewport{position:relative;overflow:hidden;touch-action:pan-y;cursor:grab}.market-gallery-viewport.is-dragging{cursor:grabbing}.market-gallery-track{display:flex;transition:transform .34s ease,opacity .22s ease;opacity:1}.market-gallery-track.is-fading{opacity:.7}.market-gallery-slide{min-width:100%}.market-gallery-slide-image{display:block;width:100%;height:auto;max-height:620px;object-fit:contain;border-radius:18px;background:#0b120e}.market-gallery-counter{position:absolute;right:14px;bottom:14px;padding:6px 10px;border-radius:999px;background:rgba(11,18,14,.72);color:#f5f7f3;font-size:12px;font-weight:700;backdrop-filter:blur(8px)}.market-gallery-nav{width:42px;height:42px;border:none;border-radius:999px;background:rgba(51,53,50,.78);color:#fff;font-size:28px;line-height:1;display:grid;place-items:center}.market-gallery-nav[disabled]{opacity:.35;cursor:not-allowed}.market-gallery-dots{grid-column:1/-1;display:flex;justify-content:center;gap:8px;margin-top:10px}.market-gallery-dot{width:10px;height:10px;border-radius:999px;border:none;background:rgba(255,255,255,.24)}.market-gallery-dot.is-active{background:#6fdba8;transform:scale(1.15)}.market-inline-editor{margin-top:22px;padding:18px;border:1px solid rgba(255,255,255,.07);border-radius:22px;background:rgba(255,255,255,.03)}.market-inline-editor input,.market-inline-editor textarea,.market-inline-editor select{width:100%;background:#292b27;border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;color:#e3e3de;outline:none}.market-inline-editor textarea{min-height:150px;resize:vertical}.eco-market-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:18px;flex-wrap:wrap}.eco-market-actions-left,.eco-market-actions-right{display:flex;gap:10px;flex-wrap:wrap}.eco-market-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 14px;border-radius:999px;background:rgba(51,53,50,.5);color:#e3e3de;border:1px solid rgba(111,219,168,.08)}.eco-market-btn.primary{background:linear-gradient(135deg,#31a375,#6fdba8);color:#062013;border:none}.eco-market-empty{padding:32px;border-radius:28px;background:rgba(41,43,39,.42);color:rgba(227,227,222,.7)}
+.eco-market-post-body{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:0}.eco-market-post-copy{padding:0 24px 24px}.eco-market-post-copy h3{margin:0 0 10px;font-family:'Noto Serif',serif;font-size:34px;line-height:1.08;color:#fff}.eco-market-post-copy p{color:rgba(227,227,222,.76);line-height:1.7}.eco-market-meta{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 16px}.eco-market-meta span{padding:8px 12px;border-radius:999px;background:rgba(51,53,50,.5);font-size:12px;color:#ffb68c}.eco-market-media{background:rgba(18,20,17,.92);aspect-ratio:16/9;align-self:start;overflow:hidden}.eco-market-media img{width:100%;height:100%;object-fit:cover}.market-detail-image-wrap{border-radius:24px;overflow:hidden;background:#0b120e}.market-detail-image{display:block;width:100%;height:auto;max-height:none;object-fit:contain}.market-card-excerpt{transition:opacity .22s ease,max-height .28s ease,margin .22s ease;max-height:10em;overflow:hidden}.eco-market-inline-detail{padding:0 24px 24px;display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s ease,padding-top .28s ease}.eco-market-inline-detail[hidden]{display:grid !important}.eco-market-inline-detail-inner{min-height:0;overflow:hidden;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)}.eco-market-post.is-expanded .eco-market-inline-detail{grid-template-rows:1fr}.eco-market-post.is-expanded .eco-market-post-body{grid-template-columns:1fr}.eco-market-post.is-expanded .eco-market-media{display:none}.eco-market-post.is-expanded .market-card-excerpt{opacity:0;max-height:0;margin:0}.market-copy-clean,.market-copy-clean p{color:#e8efe9;opacity:1}.market-gallery-slider{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}.market-gallery-viewport{position:relative;overflow:hidden;touch-action:pan-y;cursor:grab}.market-gallery-viewport.is-dragging{cursor:grabbing}.market-gallery-track{display:flex;transition:transform .34s ease,opacity .22s ease;opacity:1}.market-gallery-track.is-fading{opacity:.7}.market-gallery-slide{min-width:100%}.market-gallery-slide-image{display:block;width:100%;height:auto;max-height:620px;object-fit:contain;border-radius:18px;background:#0b120e}.market-gallery-counter{position:absolute;right:14px;bottom:14px;padding:6px 10px;border-radius:999px;background:rgba(11,18,14,.72);color:#f5f7f3;font-size:12px;font-weight:700;backdrop-filter:blur(8px)}.market-gallery-nav{width:42px;height:42px;border:none;border-radius:999px;background:rgba(51,53,50,.78);color:#fff;font-size:28px;line-height:1;display:grid;place-items:center}.market-gallery-nav[disabled]{opacity:.35;cursor:not-allowed}.market-gallery-dots{grid-column:1/-1;display:flex;justify-content:center;gap:8px;margin-top:10px}.market-gallery-dot{width:10px;height:10px;border-radius:999px;border:none;background:rgba(255,255,255,.24)}.market-gallery-dot.is-active{background:#6fdba8;transform:scale(1.15)}.market-inline-editor{margin-top:22px;padding:18px;border:1px solid rgba(255,255,255,.07);border-radius:22px;background:rgba(255,255,255,.03)}.market-inline-editor input,.market-inline-editor textarea,.market-inline-editor select{width:100%;background:#292b27;border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;color:#e3e3de;outline:none}.market-inline-editor textarea{min-height:150px;resize:vertical}.eco-market-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:18px;flex-wrap:wrap}.eco-market-actions-left,.eco-market-actions-right{display:flex;gap:10px;flex-wrap:wrap}.eco-market-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 14px;border-radius:999px;background:rgba(51,53,50,.5);color:#e3e3de;border:1px solid rgba(111,219,168,.08);transition:all .2s ease;cursor:pointer}.eco-market-btn:hover{background:rgba(71,73,70,.7);color:#fff}.eco-market-btn.primary{background:linear-gradient(135deg,#31a375,#6fdba8);color:#062013;border:none}.eco-market-empty{padding:32px;border-radius:28px;background:rgba(41,43,39,.42);color:rgba(227,227,222,.7)}
+
+.market-comments-block .comment { color: #111; }
+.market-comments-block .comment p, .market-comments-block .comment .small.subtle, .market-comments-block .comment strong { color: #222 !important; }
+.market-comments-block h3, .market-comments-block .logged-in-as, .market-comments-block .comment-form label, .market-comments-block .comment-notes { color: rgba(255,255,255,0.8); }
+.market-comments-block a { color: #3b82f6; text-decoration: none; }
+.market-comments-block a:hover { text-decoration: underline; }
 @media (max-width:1100px){.eco-market-post-body{grid-template-columns:1fr}.eco-market-media{aspect-ratio:16/9}}
 @media (max-width:820px){.eco-market-compose{padding:18px}.eco-market-compose-row{display:grid;grid-template-columns:1fr}.eco-market-compose-avatar{display:none}.eco-market-filters{display:grid}.eco-market-filterbox{min-width:0;width:100%}}
 </style>
@@ -200,7 +206,7 @@ get_template_part('template-parts/site/eco-hero');
     $inline_comments = get_comments(['post_id' => get_the_ID(), 'status' => 'approve']);
     ob_start();
     ?>
-    <div class="market-comments-block" style="margin-top:28px"><h3 style="margin-bottom:14px"><?php echo esc_html(aitrongcay_page_text('cho_que', 'detail_comments_title')); ?></h3><?php if ($inline_comments) : ?><div class="comment-list"><?php foreach ($inline_comments as $comment_item) : ?><div class="comment"><strong><?php echo esc_html($comment_item->comment_author); ?></strong><div class="small subtle"><?php echo esc_html(get_date_from_gmt($comment_item->comment_date_gmt, 'd/m/Y H:i')); ?></div><p style="margin-top:8px"><?php echo esc_html($comment_item->comment_content); ?></p></div><?php endforeach; ?></div><?php endif; ?><?php if (is_user_logged_in()) : ?><?php comment_form(['title_reply' => aitrongcay_page_text('cho_que', 'detail_comment_form_title'), 'label_submit' => aitrongcay_page_text('cho_que', 'detail_comment_submit_label')], get_the_ID()); ?><?php else : ?><div class="notice"><?php echo esc_html(aitrongcay_page_text('cho_que', 'detail_comment_login_notice')); ?></div><?php endif; ?></div>
+    <div class="market-comments-block" style="margin-top:28px"><h3 style="margin-bottom:14px"><?php echo esc_html(aitrongcay_page_text('cho_que', 'detail_comments_title')); ?></h3><?php if ($inline_comments) : ?><div class="comment-list"><?php foreach ($inline_comments as $comment_item) : ?><div class="comment"><strong><?php echo esc_html($comment_item->comment_author); ?></strong><div class="small subtle"><?php echo esc_html(gmdate('d/m/Y H:i', strtotime($comment_item->comment_date_gmt) + 7 * 3600)); ?></div><p style="margin-top:8px"><?php echo esc_html($comment_item->comment_content); ?></p></div><?php endforeach; ?></div><?php endif; ?><?php if (is_user_logged_in()) : ?><?php comment_form(['title_reply' => aitrongcay_page_text('cho_que', 'detail_comment_form_title'), 'label_submit' => aitrongcay_page_text('cho_que', 'detail_comment_submit_label')], get_the_ID()); ?><?php else : ?><div class="notice"><?php echo esc_html(aitrongcay_page_text('cho_que', 'detail_comment_login_notice')); ?></div><?php endif; ?></div>
     <?php
     $inline_comments_html = (string) ob_get_clean();
     set_query_var('aitr_market_card', [
@@ -277,13 +283,30 @@ endwhile; wp_reset_postdata(); else : ?>
       if (card.classList.contains('is-expanded')) collapse(card); else expand(card);
     });
   });
+  if (window.location.hash && window.location.hash.indexOf('#comment-') === 0) {
+    var commentEl = document.querySelector(window.location.hash);
+    if (commentEl) {
+      var card = commentEl.closest('[data-market-card]');
+      if (card) {
+        expand(card);
+        window.setTimeout(function() { commentEl.scrollIntoView({behavior: 'smooth', block: 'center'}); }, 350);
+      }
+    }
+  }
   document.querySelectorAll('[data-toggle-market-editor]').forEach(function(btn){
     btn.addEventListener('click', function(){
       var card = btn.closest('[data-market-card]');
       if (!card) return;
-      if (!card.classList.contains('is-expanded')) expand(card);
       var editor = card.querySelector('[data-market-inline-editor]');
-      if (editor) editor.hidden = !editor.hidden;
+      if (!editor) return;
+      
+      if (editor.hidden) {
+          if (!card.classList.contains('is-expanded')) expand(card);
+          editor.hidden = false;
+      } else {
+          editor.hidden = true;
+          collapse(card);
+      }
     });
   });
   document.querySelectorAll('[data-market-inline-editor]').forEach(function(editor){
@@ -299,6 +322,8 @@ endwhile; wp_reset_postdata(); else : ?>
     var contact = editor.querySelector('[data-inline-market-contact]');
     var filesInput = editor.querySelector('[data-inline-market-files]');
     var saveStatus = editor.querySelector('[data-inline-market-save-status]');
+    var saveBtn = editor.querySelector('[data-inline-market-save-btn]');
+    var existingPhotosInput = editor.querySelector('[data-inline-market-existing-photos]');
     var preview = editor.querySelector('[data-inline-market-preview]');
     var timer = null;
     function renderPreview(){
@@ -314,14 +339,21 @@ endwhile; wp_reset_postdata(); else : ?>
       var contentValue = (content?.value || '').trim();
       var validationError = validateMarketPostInput({ title: titleValue, content: contentValue, structured: structured });
       if (validationError) { if (saveStatus) saveStatus.textContent = validationError; return; }
-      if (saveStatus) saveStatus.textContent = 'Đang tự lưu...';
+      if (saveStatus) saveStatus.textContent = 'Đang lưu...';
+      if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Đang lưu...'; }
       try {
         var photoIds = filesInput && filesInput.files && filesInput.files.length ? await uploadMarketFiles(Array.from(filesInput.files)) : [];
+        var existingPhotoIds = [];
+        try { if (existingPhotosInput && existingPhotosInput.value) existingPhotoIds = JSON.parse(existingPhotosInput.value); } catch(e){}
+        
         var body = new URLSearchParams({ action: 'aitrongcay_update_market_post', nonce: ajaxNonce, post_id: postId, title: titleValue, content: contentValue, category: structured.category, offer_type: structured.offer_type, quantity: structured.quantity, area: structured.area, availability: structured.availability, contact_text: structured.contact_text });
         photoIds.forEach(function(id){ body.append('photo_ids[]', String(id)); });
+        existingPhotoIds.forEach(function(id){ body.append('existing_photo_ids[]', String(id)); });
+        
         var response = await fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: body });
         var result = await response.json();
-        if (!result.success) throw new Error((result.data && result.data.message) || 'Không tự lưu được.');
+        if (!result.success) throw new Error((result.data && result.data.message) || 'Không lưu được.');
+        
         var titleEl = card && card.querySelector('[data-market-title-render]');
         var excerptEl = card && card.querySelector('[data-market-content-render]');
         var imageEl = card && card.querySelector('.eco-market-media img');
@@ -330,16 +362,27 @@ endwhile; wp_reset_postdata(); else : ?>
         if (imageEl && result.data && result.data.imageUrl) imageEl.src = result.data.imageUrl;
         var detailText = card && card.querySelector('.market-copy-clean');
         if (detailText) detailText.innerHTML = '<p>' + contentValue.replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
+        
+        // Update existing photos so next save includes new photos properly
+        if (result.data && result.data.gallery) {
+            var newGalleryIds = result.data.gallery.map(function(item){ return item.id; });
+            if (existingPhotosInput) existingPhotosInput.value = JSON.stringify(newGalleryIds);
+        }
+        
         if (filesInput) filesInput.value = '';
         renderPreview();
-        if (saveStatus) saveStatus.textContent = 'Đã tự lưu';
+        if (saveStatus) saveStatus.textContent = 'Đã lưu thành công';
+        if (card && typeof collapse === 'function') collapse(card);
       } catch (error) {
-        if (saveStatus) saveStatus.textContent = error.message || 'Không tự lưu được';
+        if (saveStatus) saveStatus.textContent = error.message || 'Lỗi khi lưu';
+      } finally {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Lưu lại'; }
       }
     }
     function queueSave(){ if (timer) clearTimeout(timer); if (saveStatus) saveStatus.textContent = 'Đang chờ tự lưu...'; timer = window.setTimeout(saveNow, 900); }
     [title, content, category, offerType, quantity, area, availability, contact].forEach(function(field){ if (field) field.addEventListener('input', queueSave); if (field && field.tagName === 'SELECT') field.addEventListener('change', queueSave); });
     if (filesInput) filesInput.addEventListener('change', function(){ renderPreview(); queueSave(); });
+    if (saveBtn) saveBtn.addEventListener('click', function(e){ e.preventDefault(); if (timer) clearTimeout(timer); saveNow(); });
   });
   document.querySelectorAll('[data-market-gallery-slider]').forEach(function(slider){
     var track = slider.querySelector('.market-gallery-track');
@@ -402,29 +445,29 @@ endwhile; wp_reset_postdata(); else : ?>
     <form class="market-compose-form" data-market-compose-form>
       <div class="market-compose-surface">
         <div class="market-compose-title-wrap">
-          <input type="text" maxlength="140" placeholder="Listing title (at least 12 characters)" aria-label="Title" data-market-compose-title>
+          <input type="text" maxlength="140" placeholder="Tiêu đề tin đăng" aria-label="Title" data-market-compose-title>
         </div>
         <div class="market-structured-grid">
           <div>
             <select aria-label="Category" data-market-compose-category>
-              <option value="">Category</option>
+              <option value="">Danh mục</option>
               <option>Hạt giống</option><option>Cây giống</option>
               <option>Dinh dưỡng cho cây</option><option>Các loại rau</option><option>Hoa</option>
             </select>
           </div>
           <div>
             <select aria-label="Offer type" data-market-compose-offer-type>
-              <option value="">Offer Type</option>
+              <option value="">Hình thức</option>
               <option>Bán</option><option>Trao đổi</option><option>Chia sẻ</option><option>Nhận đặt trước</option>
             </select>
           </div>
-          <div><input type="text" placeholder="Quantity" aria-label="Quantity" data-market-compose-quantity></div>
-          <div><input type="text" placeholder="Location" aria-label="Location" data-market-compose-area></div>
-          <div><input type="text" placeholder="Pickup / delivery time" aria-label="Availability" data-market-compose-availability></div>
-          <div><input type="text" placeholder="Contact (Phone / Zalo)" aria-label="Contact" data-market-compose-contact></div>
+          <div><input type="text" placeholder="Số lượng" aria-label="Quantity" data-market-compose-quantity></div>
+          <div><input type="text" placeholder="Khu vực" aria-label="Location" data-market-compose-area></div>
+          <div><input type="text" placeholder="Thời gian nhận/giao" aria-label="Availability" data-market-compose-availability></div>
+          <div><input type="text" placeholder="Liên hệ (SĐT / Zalo)" aria-label="Contact" data-market-compose-contact></div>
         </div>
         <div class="market-compose-body-wrap">
-          <textarea placeholder="Describe your listing: quantity, plant condition, trade terms… (at least 24 characters)" aria-label="Description" data-market-compose-content></textarea>
+          <textarea placeholder="Mô tả chi tiết: tình trạng cây, điều kiện giao dịch..." aria-label="Description" data-market-compose-content></textarea>
         </div>
         <div class="market-compose-toolbar">
           <label class="market-compose-upload" for="market-compose-photo-input"><span>＋</span><strong>Add Photo</strong></label>

@@ -763,8 +763,6 @@ const marketStructuredSummaryLine = (data) => [data.offer_type, data.quantity, d
 
 const validateMarketPostInput = ({ title, content, structured }) => {
   if (!title || !content) return 'Anh/chị vui lòng nhập đủ tiêu đề và nội dung tin đăng.';
-  if (title.length < 12) return 'Tiêu đề hơi ngắn. Anh/chị nên viết rõ hơn để người xem hiểu ngay tin đăng nói về gì.';
-  if (content.length < 24) return 'Nội dung còn quá ngắn. Anh/chị nên thêm số lượng, khu vực hoặc cách liên hệ.';
   if (!structured.category) return 'Anh/chị nên chọn danh mục cho tin đăng để bài rõ ràng hơn.';
   if (!structured.offer_type) return 'Anh/chị nên chọn hình thức như Bán, Trao đổi hoặc Chia sẻ.';
   return '';
@@ -1072,7 +1070,8 @@ document.querySelectorAll('[data-delete-market-post]').forEach(button => {
 });
 
 document.querySelectorAll('[data-open-market-zalo]').forEach(button => {
-  button.addEventListener('click', async () => {
+  button.addEventListener('click', async (e) => {
+    e.preventDefault();
     const originalText = button.textContent;
     const isTextButton = button.classList.contains('btn') || button.textContent.trim() !== '';
     if (isTextButton) button.textContent = 'Đang mở Zalo...';

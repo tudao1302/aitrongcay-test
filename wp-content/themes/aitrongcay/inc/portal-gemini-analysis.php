@@ -458,7 +458,7 @@ function aitrongcay_analyze_timelapse_gemini_ajax(): void
     if ($garden_key === '' || $pot_code === '') {
         wp_send_json_error(['message' => 'Thiếu garden_key hoặc pot_code.'], 400);
     }
-    if (!aitrongcay_user_can_view_garden($garden_key, (int) $user->ID)) {
+    if (!aitrongcay_user_can_control_garden($garden_key, (int) $user->ID)) {
         wp_send_json_error(['message' => 'Không có quyền xem vườn này.'], 403);
     }
 
@@ -625,63 +625,6 @@ function aitrongcay_analyze_timelapse_gemini_ajax(): void
 }
 add_action('wp_ajax_aitrongcay_analyze_timelapse_gemini', 'aitrongcay_analyze_timelapse_gemini_ajax');
 
-// ── Admin settings: Gemini API key ───────────────────────────────────────────
-
-function aitrongcay_gemini_settings_page(): void
-{
-    if (!current_user_can('manage_options')) {
-        return;
-    }
-    if (isset($_POST['aitrongcay_gemini_save']) && check_admin_referer('aitrongcay_gemini_settings')) {
-        $key = sanitize_text_field((string) wp_unslash($_POST['aitrongcay_gemini_api_key'] ?? ''));
-        if ($key !== '') {
-            update_option('aitrongcay_gemini_api_key', $key);
-        }
-        echo '<div class="notice notice-success"><p>Đã lưu Gemini API key.</p></div>';
-    }
-    $current_key = aitrongcay_get_gemini_api_key();
-    $masked = $current_key !== ''
-        ? substr($current_key, 0, 6) . str_repeat('*', max(0, strlen($current_key) - 10)) . substr($current_key, -4)
-        : '';
-    ?>
-    <div class="wrap">
-        <h1>Gemini API Key</h1>
-        <p>Dùng để phân tích ảnh live camera / timelapse bằng Google Gemini Vision. <a
-                href="https://aistudio.google.com/app/apikey" target="_blank">Lấy API key miễn phí tại Google AI Studio</a>.
-        </p>
-        <form method="post">
-            <?php wp_nonce_field('aitrongcay_gemini_settings'); ?>
-            <table class="form-table">
-                <tr>
-                    <th>Gemini API Key</th>
-                    <td>
-                        <input type="text" autocomplete="off" name="aitrongcay_gemini_api_key" class="regular-text"
-                            placeholder="<?php echo esc_attr($masked !== '' ? $masked : 'AIza...'); ?>" value="">
-                        <?php if ($current_key !== ''): ?>
-                            <p class="description" style="color:#2a9d5c">✓ Key hiện tại: <?php echo esc_html($masked); ?></p>
-                        <?php else: ?>
-                            <p class="description" style="color:#c0392b">Chưa có key — AI phân tích sẽ không hoạt động.</p>
-                        <?php endif; ?>
-                        <p class="description">Để trống nếu không muốn thay đổi key đã lưu.</p>
-                    </td>
-                </tr>
-            </table>
-            <?php submit_button('Lưu API Key', 'primary', 'aitrongcay_gemini_save'); ?>
-        </form>
-    </div>
-    <?php
-}
-
-add_action('admin_menu', static function (): void {
-    add_submenu_page(
-        'aitrongcay-unified-admin-beta',
-        'Gemini API Key',
-        'Gemini API Key',
-        'manage_options',
-        'aitrongcay-gemini-key',
-        'aitrongcay_gemini_settings_page'
-    );
-}, 100);
 
 // ── TASK 3.4: Reset vụ mùa (Bắt đầu vụ trồng mới) ─────────────────────────
 function aitrongcay_reset_pot_crop_ajax(): void

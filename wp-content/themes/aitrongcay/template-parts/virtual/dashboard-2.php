@@ -12,6 +12,7 @@ $current_user = wp_get_current_user();
 $is_logged_in = is_user_logged_in();
 
 $garden_key = $is_logged_in ? aitrongcay_resolve_active_garden_key($current_user instanceof WP_User ? $current_user : null) : '';
+$can_control_garden = $is_logged_in && function_exists('aitrongcay_user_can_control_garden') ? aitrongcay_user_can_control_garden($garden_key, (int) $current_user->ID) : false;
 $active_profile = $is_logged_in ? aitrongcay_portal_profile_for_garden_context($garden_key, $current_user instanceof WP_User ? $current_user : null) : null;
 $pots = aitrongcay_portal_pots($garden_key, $current_user instanceof WP_User ? $current_user : null);
 $rack_record = $is_logged_in && function_exists('aitrongcay_get_rack_record') ? aitrongcay_get_rack_record($garden_key) : null;
@@ -105,7 +106,7 @@ $format_media_badge = static function (string $stream_url = '', string $captured
   return 'Ảnh chụp';
 };
 $hero_image = wp_make_link_relative((string) ($hero_pot['image'] ?? '')) ?: (get_template_directory_uri() . '/assets/images/hero-greenhouse.svg');
-$hero_stream_url = function_exists('aitrongcay_hls_stream_url') ? aitrongcay_hls_stream_url($garden_key, (string) ($hero_pot['code'] ?? '')) : '';
+$hero_stream_url = $can_control_garden && function_exists('aitrongcay_hls_stream_url') ? aitrongcay_hls_stream_url($garden_key, (string) ($hero_pot['code'] ?? '')) : '';
 $hero_snapshot_at = trim((string) ($hero_pot['latest_photo_at'] ?? ''));
 $hero_media_badge = $format_media_badge($hero_stream_url, $hero_snapshot_at);
 $hero_name = trim((string) ($hero_pot['name'] ?? 'Khoang trung tâm'));
@@ -182,6 +183,7 @@ $init_rack_url = wp_nonce_url(admin_url('admin-post.php?action=aitrongcay_init_r
 $market_compose_url = add_query_arg(['compose' => '1', 'garden' => $garden_key], home_url('/cho-que/'));
 $friends_url = $garden_key !== '' ? add_query_arg('garden', rawurlencode($garden_key), home_url('/portal/hang-xom/')) : home_url('/portal/hang-xom/');
 $shared_top_links = [
+  ['key' => 'doi-diem', 'label' => 'Đổi điểm', 'url' => home_url('/portal/doi-diem/')],
   ['key' => 'cho-que', 'label' => 'Chợ quê', 'url' => $garden_key !== '' ? add_query_arg('garden', rawurlencode($garden_key), home_url('/cho-que/')) : home_url('/cho-que/')],
   ['key' => 'kho-nong-cu', 'label' => 'Kho nông cụ', 'url' => $garden_key !== '' ? add_query_arg('garden', rawurlencode($garden_key), home_url('/portal/kho-nong-cu-2/')) : home_url('/portal/kho-nong-cu-2/')],
   ['key' => 'hang-xom', 'label' => 'Hàng xóm', 'url' => $friends_url],
@@ -196,7 +198,7 @@ if ($active_pot_code !== '') {
     }
   }
   $hero_image = (wp_make_link_relative((string) ($hero_pot['image'] ?? ''))) ?: $hero_image;
-  $hero_stream_url = function_exists('aitrongcay_hls_stream_url') ? aitrongcay_hls_stream_url($garden_key, (string) ($hero_pot['code'] ?? '')) : $hero_stream_url;
+  $hero_stream_url = $can_control_garden && function_exists('aitrongcay_hls_stream_url') ? aitrongcay_hls_stream_url($garden_key, (string) ($hero_pot['code'] ?? '')) : $hero_stream_url;
   $hero_snapshot_at = trim((string) ($hero_pot['latest_photo_at'] ?? $hero_snapshot_at));
   $hero_media_badge = $format_media_badge($hero_stream_url, $hero_snapshot_at);
   $hero_name = trim((string) ($hero_pot['name'] ?? $hero_name));
@@ -556,9 +558,9 @@ foreach ($rack_configs as $_ri => $_rack) {
   }
 }
 
-$switcher_pot_payload = array_values(array_map(static function (array $pot_item) use ($garden_key, $pot_notes, $photo_library_url, $hero_image, $build_growth_journey, $rack_configs, $rack_slot_webcam_map, $rack_slot_tray_name_map, $tray_name_to_lane, $pot_snap_map, $pot_latest_tl_map): array {
+$switcher_pot_payload = array_values(array_map(static function (array $pot_item) use ($garden_key, $can_control_garden, $pot_notes, $photo_library_url, $hero_image, $build_growth_journey, $rack_configs, $rack_slot_webcam_map, $rack_slot_tray_name_map, $tray_name_to_lane, $pot_snap_map, $pot_latest_tl_map): array {
   $pot_code = (string) ($pot_item['code'] ?? '');
-  $stream_url = function_exists('aitrongcay_hls_stream_url') ? aitrongcay_hls_stream_url($garden_key, $pot_code) : '';
+  $stream_url = $can_control_garden && function_exists('aitrongcay_hls_stream_url') ? aitrongcay_hls_stream_url($garden_key, $pot_code) : '';
 
   // Fallback 1: dùng slot_index map (chính xác)
   if ($stream_url === '' && isset($rack_slot_webcam_map[$pot_code])) {
@@ -4125,6 +4127,17 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
     .d2-custom-modal-btn.confirm:hover {
       background: rgba(255, 182, 140, 0.25);
     }
+    
+    .d2-top-actions .eco-noti-popup {
+      top: calc(100% + 14px);
+      right: 50px;
+    }
+    
+    @media (max-width:820px) {
+      .d2-top-actions .eco-noti-popup {
+        right: 0;
+      }
+    }
   </style>
   <div class="d2-shell">
     <aside class="d2-side">
@@ -4146,8 +4159,10 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             class="bottom-nav-label">Hydration</span><span class="bottom-nav-short">Nước</span></a>
         <a href="<?php echo esc_url(add_query_arg(['garden' => $garden_key], home_url('/portal/soil-health/'))); ?>"><span class="bottom-nav-icon" aria-hidden="true">🌿</span><span class="bottom-nav-label">Soil
             Health</span><span class="bottom-nav-short">Giá thể</span></a>
+        <?php if ($can_control_garden): ?>
         <a href="#" data-tl-nav-link><span class="bottom-nav-icon" aria-hidden="true">📽</span><span
             class="bottom-nav-label">Timelapse</span><span class="bottom-nav-short">TL</span></a>
+        <?php endif; ?>
         <a href="<?php echo esc_url($flower_bio_url); ?>"><span class="bottom-nav-icon"
             aria-hidden="true">🍃</span><span class="bottom-nav-label">Bách thảo</span><span
             class="bottom-nav-short">Bách thảo</span></a>
@@ -4183,7 +4198,9 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           <input type="text" class="d2-garden-input"
             value="<?php echo esc_attr($garden_title !== '' ? $garden_title : 'Khu vườn của bạn'); ?>"
             data-garden-inline-input hidden>
+          <?php if ($can_control_garden): ?>
           <button class="d2-garden-edit" type="button" data-garden-inline-edit aria-label="Đổi tên khu vườn">✏️</button>
+          <?php endif; ?>
           <span class="d2-garden-status" data-garden-inline-status hidden>Nhấn Enter hoặc click ra ngoài để lưu</span>
         </div>
         <div class="d2-top-links">
@@ -4199,6 +4216,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             <button class="d2-icon-btn d2-tray-settings-btn" type="button" title="Cài đặt sensor 3 khoang"
               data-tray-settings-open>⚙️</button>
           <?php endif; ?>
+          <?php get_template_part('template-parts/site/eco-notification-bell'); ?>
           <button class="d2-profile-trigger" type="button" data-d2-profile-trigger aria-expanded="false"><?php echo $header_avatar_html; ?></button>
           <div class="d2-profile-popup" data-d2-profile-popup hidden>
             <a href="<?php echo esc_url(home_url('/tai-khoan/')); ?>">Quản lý tài khoản</a>
@@ -4221,8 +4239,10 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
               <h3 class="d2-pot-name pot-inline-name-text" data-d2-hero-name><?php echo esc_html($hero_name); ?></h3>
               <input type="text" class="d2-pot-input pot-inline-input" value="<?php echo esc_attr($hero_name); ?>"
                 data-pot-inline-input hidden>
+              <?php if ($can_control_garden): ?>
               <button class="d2-pot-edit pot-inline-name-edit" type="button" data-pot-inline-edit
                 aria-label="Đổi tên khoang <?php echo esc_attr($hero_pot_code); ?>">✏️</button>
+              <?php endif; ?>
               <span class="d2-pot-status pot-inline-save-status" data-pot-inline-status hidden>Nhấn Enter hoặc click ra
                 ngoài để lưu</span>
             </div>
@@ -4280,6 +4300,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
                   </div>
                 </div>
                 <div class="d2-blynk-notice" data-d2-blynk-notice hidden></div>
+                <?php if ($can_control_garden): ?>
                 <button class="d2-icon-btn" type="button" title="Chụp ảnh khoang hiện tại" data-d2-capture-photo
                   data-pot-code="<?php echo esc_attr($hero_pot_code); ?>">📷</button>
                 <button class="d2-icon-btn" type="button" title="Phân tích ảnh mới nhất" data-analyze-latest-photo
@@ -4310,6 +4331,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
                       data-d2-mist-label><?php echo esc_html($hero_has_mist ? 'Phun sương' : 'Chưa có phun sương'); ?></strong>
                   </div>
                 </button>
+                <?php endif; ?>
               </div>
             </div>
           </div>
@@ -4410,7 +4432,9 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
               <div class="label" data-d2-journal-label style="background: rgba(111, 219, 168, 0.15); border: 1px solid rgba(111, 219, 168, 0.3);">
                 <span style="margin-right: 6px">📖</span> Nhật ký sinh trưởng AI
               </div>
+              <?php if ($can_control_garden): ?>
               <button class="d2-pot-journal-edit" type="button" title="Ghi chú thủ công" data-d2-journal-edit>✍️</button>
+              <?php endif; ?>
             </div>
             
             <div class="d2-ai-daily-logs" style="margin-bottom: 16px; max-height: 300px; overflow-y: auto; padding-right: 8px;">
@@ -4783,7 +4807,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       </div>
     <?php endif; ?>
 
-    <?php if ($is_admin_user): ?>
+    <?php if ($is_admin_user || $can_control_garden): ?>
       <!-- ROBOT CONTROL MODAL -->
       <div class="d2-tray-settings-overlay" id="d2RobotModal" style="display:none; align-items:center; justify-content:center; z-index: 10000; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);">
         <div class="d2-tray-settings-box" style="max-width: 800px; width: 95%; padding: 24px; position: relative; max-height: 95vh; overflow-y: auto;">
@@ -7228,64 +7252,91 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         if (tlScrub) tlScrub.addEventListener('input', function () { tlStop(); tlIndex = parseInt(this.value, 10); tlRender(); });
         if (tlSpeedSel) tlSpeedSel.addEventListener('change', function () { if (tlPlaying) { tlStop(); tlPlay(); } });
 
+        // Hàm tạo video Blob từ frames để dùng chung cho Tải về & Chia sẻ
+        function tlGenerateVideoBlob(cb, onProgress) {
+          if (!tlFrames.length) { alert('Tải timelapse trước rồi mới xuất video được.'); cb(null); return; }
+          if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
+            alert('Trình duyệt không hỗ trợ tính năng này. Vui lòng dùng Chrome hoặc Edge.'); cb(null); return;
+          }
+          var fps = tlSpeedSel ? parseInt(tlSpeedSel.value, 10) : 10;
+          var canvas = document.createElement('canvas');
+          var ctx = canvas.getContext('2d');
+          var firstImg = tlImages[tlFrames[0].url];
+          canvas.width  = (firstImg && firstImg.naturalWidth)  ? firstImg.naturalWidth  : 640;
+          canvas.height = (firstImg && firstImg.naturalHeight) ? firstImg.naturalHeight : 480;
+
+          var mimeType = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']
+            .find(function (m) { return MediaRecorder.isTypeSupported(m); }) || 'video/webm';
+          var recorder = new MediaRecorder(canvas.captureStream(fps), { mimeType: mimeType, videoBitsPerSecond: 16000000 });
+          var chunks = [];
+          recorder.ondataavailable = function (e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
+          recorder.onstop = function () {
+            var blob = new Blob(chunks, { type: 'video/webm' });
+            var fileName = 'timelapse-' + (tlFrames[0].date || 'video') + '.webm';
+            cb(blob, fileName);
+          };
+
+          recorder.start();
+
+          var i = 0; var total = tlFrames.length; var ms = Math.round(1000 / fps);
+          function drawWatermarkedFrame(imgObj, frameData) {
+            ctx.drawImage(imgObj, 0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(0,0,0,.55)';
+            ctx.fillRect(0, canvas.height - 36, canvas.width, 36);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 13px "Manrope",sans-serif';
+            ctx.fillText('🌿 Ai trồng cây  |  ' + (frameData.date || '') + '  ' + (frameData.time || ''), 12, canvas.height - 13);
+          }
+
+          function nextFrame() {
+            if (i >= total) { recorder.stop(); return; }
+            var frameData = tlFrames[i];
+            var img = tlImages[frameData.url];
+            if (img && img.complete && img.naturalWidth) {
+              drawWatermarkedFrame(img, frameData);
+            } else {
+              var tmp = new Image();
+              tmp.onload = function () { drawWatermarkedFrame(tmp, frameData); };
+              tmp.src = frameData.url;
+            }
+            if (onProgress) onProgress(i + 1, total);
+            i++;
+            setTimeout(nextFrame, ms);
+          }
+          nextFrame();
+        }
+
         // Tải video: ghép frames → WebM qua Canvas + MediaRecorder
         var tlDownloadBtn = document.getElementById('d2TlDownload');
         var tlDownloadStatus = document.getElementById('d2TlDownloadStatus');
         if (tlDownloadBtn) {
           tlDownloadBtn.addEventListener('click', function () {
-            if (!tlFrames.length) { alert('Tải timelapse trước rồi mới tải video được.'); return; }
-            if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
-              alert('Trình duyệt không hỗ trợ tính năng này. Vui lòng dùng Chrome hoặc Edge.'); return;
-            }
-            var fps = tlSpeedSel ? parseInt(tlSpeedSel.value, 10) : 10;
-            var canvas = document.createElement('canvas');
-            var ctx = canvas.getContext('2d');
-            var firstImg = tlImages[tlFrames[0].url];
-            canvas.width  = (firstImg && firstImg.naturalWidth)  ? firstImg.naturalWidth  : 640;
-            canvas.height = (firstImg && firstImg.naturalHeight) ? firstImg.naturalHeight : 480;
-
-            var mimeType = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']
-              .find(function (m) { return MediaRecorder.isTypeSupported(m); }) || 'video/webm';
-            var recorder = new MediaRecorder(canvas.captureStream(fps), { mimeType: mimeType, videoBitsPerSecond: 16000000 });
-            var chunks = [];
-            recorder.ondataavailable = function (e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
-            recorder.onstop = function () {
-              var blob = new Blob(chunks, { type: 'video/webm' });
-              var a = document.createElement('a');
-              a.href = URL.createObjectURL(blob);
-              a.download = 'timelapse-' + (tlFrames[0].date || 'video') + '.webm';
-              document.body.appendChild(a); a.click(); document.body.removeChild(a);
-              URL.revokeObjectURL(a.href);
-              tlDownloadBtn.disabled = false;
-              tlDownloadBtn.textContent = '⬇ Tải video';
-              if (tlDownloadStatus) { tlDownloadStatus.textContent = '✓ Đã tải xong!'; setTimeout(function () { tlDownloadStatus.textContent = ''; }, 3000); }
-            };
-
             tlDownloadBtn.disabled = true;
             tlDownloadBtn.textContent = '⏳ Đang tạo...';
             if (tlDownloadStatus) tlDownloadStatus.textContent = '';
-            recorder.start();
 
-            var i = 0; var total = tlFrames.length; var ms = Math.round(1000 / fps);
-            function nextFrame() {
-              if (i >= total) { recorder.stop(); return; }
-              var img = tlImages[tlFrames[i].url];
-              if (img && img.complete && img.naturalWidth) {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              } else {
-                var tmp = new Image();
-                tmp.onload = function () { ctx.drawImage(tmp, 0, 0, canvas.width, canvas.height); };
-                tmp.src = tlFrames[i].url;
+            tlGenerateVideoBlob(function (blob, fileName) {
+              if (!blob) {
+                tlDownloadBtn.disabled = false;
+                tlDownloadBtn.textContent = '⬇ Tải video';
+                return;
               }
-              if (tlDownloadStatus) tlDownloadStatus.textContent = (i + 1) + ' / ' + total;
-              i++;
-              setTimeout(nextFrame, ms);
-            }
-            nextFrame();
+              var a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = fileName;
+              document.body.appendChild(a); a.click(); document.body.removeChild(a);
+              URL.revokeObjectURL(a.href);
+              
+              tlDownloadBtn.disabled = false;
+              tlDownloadBtn.textContent = '⬇ Tải video';
+              if (tlDownloadStatus) { tlDownloadStatus.textContent = '✓ Đã tải xong!'; setTimeout(function () { tlDownloadStatus.textContent = ''; }, 3000); }
+            }, function (current, total) {
+              if (tlDownloadStatus) tlDownloadStatus.textContent = current + ' / ' + total;
+            });
           });
         }
 
-        // ── Share: lưu ảnh hiện tại + chia sẻ lên mạng xã hội ──────────────────
+        // ── Share: lưu ảnh / video hiện tại + chia sẻ lên mạng xã hội ──────────────────
         var tlShareRow    = document.getElementById('d2TlShareRow');
         var tlSaveFrameBtn = document.getElementById('d2TlSaveFrame');
         var tlShareFbBtn   = document.getElementById('d2TlShareFb');
@@ -7325,23 +7376,33 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
         }
 
-        // Web Share API (mobile) với fallback tải ảnh + mở trang
-        function tlShareTo(platform) {
-          tlGetCurrentFrameBlob(function (blob, fileName) {
-            var f   = tlFrames[tlIndex] || {};
+        // Web Share API (mobile) với fallback tải video + mở trang
+        function tlShareTo(platform, btn) {
+          var originalText = btn ? btn.textContent : '';
+          if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang tạo video...'; }
+          
+          tlGenerateVideoBlob(function (blob, fileName) {
+            if (btn) { btn.disabled = false; btn.textContent = originalText; }
+            if (!blob) return;
+
+            var f = tlFrames[tlIndex] || {};
             var shareText = '🌿 Vườn rau thủy canh của tôi — Ai trồng cây (' + (f.date || '') + ')';
-            var file = new File([blob], fileName, { type: 'image/jpeg' });
+            var file = new File([blob], fileName, { type: 'video/webm' });
+            
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
               navigator.share({ files: [file], title: 'Vườn rau của tôi', text: shareText })
                 .catch(function () {});
               return;
             }
-            // Fallback desktop: tải ảnh rồi mở nền tảng để user đăng thủ công
+            
+            // Fallback desktop: tải video rồi mở nền tảng để user đăng thủ công
             tlDownloadBlob(blob, fileName);
             var urls = { fb: 'https://www.facebook.com/', zalo: 'https://chat.zalo.me/' };
             if (urls[platform]) {
               setTimeout(function () { window.open(urls[platform], '_blank'); }, 700);
             }
+          }, function (current, total) {
+            if (btn) btn.textContent = '⏳ ' + Math.round((current/total)*100) + '%';
           });
         }
 
@@ -7351,13 +7412,13 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           });
         }
         if (tlShareFbBtn) {
-          tlShareFbBtn.addEventListener('click', function () { tlShareTo('fb'); });
+          tlShareFbBtn.addEventListener('click', function () { tlShareTo('fb', this); });
         }
         if (tlShareZaloBtn) {
-          tlShareZaloBtn.addEventListener('click', function () { tlShareTo('zalo'); });
+          tlShareZaloBtn.addEventListener('click', function () { tlShareTo('zalo', this); });
         }
         if (tlShareNativeBtn) {
-          tlShareNativeBtn.addEventListener('click', function () { tlShareTo(''); });
+          tlShareNativeBtn.addEventListener('click', function () { tlShareTo('', this); });
         }
 
         // Admin: chụp ảnh ngay

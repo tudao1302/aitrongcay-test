@@ -14,13 +14,23 @@ if (! defined('ABSPATH')) {
 add_action('admin_menu', 'aitrongcay_register_unified_admin_beta_menu');
 function aitrongcay_register_unified_admin_beta_menu(): void {
     add_menu_page(
-        '🌿 AI Trồng Cây (BETA)',
-        '🌿 AI Trồng Cây (BETA)',
+        '🌿 Ai Trồng Cây',
+        '🌿 Ai Trồng Cây',
         'manage_options',
         'aitrongcay-unified-admin-beta',
         'aitrongcay_render_unified_admin_beta_page',
         'dashicons-superhero',
         30
+    );
+
+    // Override the first default submenu so it's not a duplicate name
+    add_submenu_page(
+        'aitrongcay-unified-admin-beta',
+        'Bảng điều khiển',
+        'Bảng điều khiển',
+        'manage_options',
+        'aitrongcay-unified-admin-beta',
+        'aitrongcay_render_unified_admin_beta_page'
     );
 }
 
@@ -121,6 +131,9 @@ function aitrongcay_handle_unified_admin_beta_actions(): void {
                     aitrongcay_log_rack_inventory_event($rack_id, 'assign', 'inventory', 'assigned', $owner_user_id, 'Giao vườn qua trang quản lý hợp nhất BETA', get_current_user_id());
                 }
 
+                // ── DATA HANDOFF: Chuẩn bị luồng dữ liệu sạch cho KH mới ─────
+                do_action('aitrongcay_after_rack_assign', $rack_id, $garden_key, $from_gk);
+
                 // Add notification to garden
                 $rack_name = $rack['rack_name'] ?: $rack['rack_code'];
                 $notices = get_option('aitr_garden_notices_' . $garden_key, []);
@@ -131,6 +144,15 @@ function aitrongcay_handle_unified_admin_beta_actions(): void {
                     'time' => current_time('mysql')
                 ];
                 update_option('aitr_garden_notices_' . $garden_key, $notices);
+                
+                if (function_exists('aitrongcay_add_notification') && $owner_user_id > 0) {
+                    aitrongcay_add_notification(
+                        $owner_user_id, 
+                        'Giao vườn', 
+                        'Bạn đã được giao rack ' . esc_html($rack_name) . ' bởi chủ khu vườn.',
+                        home_url('/portal/dashboard-2/?garden=' . rawurlencode($garden_key))
+                    );
+                }
 
                 wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'gardens', 'selected_garden' => $garden_key], $redirect));
                 exit;

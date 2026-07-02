@@ -36,6 +36,7 @@ function aitrongcay_virtual_pages(): array
         'portal/giam-sat-khoang' => ['title' => 'Rack Monitor – 3 khoang trồng', 'template' => 'template-parts/virtual/giam-sat-khoang.php'],
         'portal/hang-xom' => ['title' => 'Hàng xóm', 'template' => 'template-parts/virtual/portal.php'],
         'portal/ban-be' => ['title' => 'Hàng xóm (cũ)', 'template' => 'template-parts/virtual/portal.php'],
+        'portal/doi-diem'  => ['title' => 'Cửa hàng đổi điểm', 'template' => 'template-parts/virtual/doi-diem.php'],
         'portal/chia-se-khu-vuon' => ['title' => 'Chia sẻ khu vườn', 'template' => 'template-parts/virtual/portal.php'],
     ];
 }

@@ -402,6 +402,15 @@ function aitrongcay_handle_place_order(): void {
 
     aitrongcay_send_order_confirmation_email($order);
     aitrongcay_send_admin_order_email($order);
+    
+    if (function_exists('aitrongcay_add_notification') && $user_id > 0) {
+        aitrongcay_add_notification(
+            $user_id,
+            'Đặt hàng thành công',
+            'Đơn hàng ' . esc_html($order_id) . ' đã được ghi nhận. Chúng tôi sẽ sớm liên hệ lại với bạn!',
+            '#'
+        );
+    }
 
     $bank   = aitrongcay_get_bank_settings();
     $qr_url = '';
@@ -510,6 +519,17 @@ function aitrongcay_handle_order_update_status(): void {
         aitrongcay_send_order_status_email($order, $admin_note);
         if ($is_newly_paid) {
             aitrongcay_maybe_auto_upgrade_user_plan($order);
+        }
+        
+        if (function_exists('aitrongcay_add_notification') && !empty($order['user_id'])) {
+            $labels = aitrongcay_order_status_labels();
+            $label  = $labels[$status] ?? $status;
+            aitrongcay_add_notification(
+                (int)$order['user_id'],
+                'Cập nhật đơn hàng',
+                'Đơn hàng ' . esc_html($order_id) . ' của bạn vừa được cập nhật trạng thái: ' . esc_html($label),
+                '#'
+            );
         }
     }
 

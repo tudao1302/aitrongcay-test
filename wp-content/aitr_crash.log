@@ -206,3 +206,133 @@ Error: Out of memory (allocated 52428800) (tried to allocate 2621440 bytes)
 Memory peak: 52,428,800 bytes
 ?:0  {closure}()
 ---
+2026-07-01 04:44:12
+Error: Uncaught Error: Failed opening required 'D:\laragon\www\aitrongcay/wp-content/themes/aitrongcay/inc/notifications.php' (include_path='.;D:/laragon/etc/php/pear') in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-settings.php(739): include()
+#1 D:\laragon\www\aitrongcay\wp-config.php(54): require_once('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-load.php(50): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-admin\admin-ajax.php(22): require_once('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-07-01 04:44:12
+Error: Uncaught Error: Failed opening required 'D:\laragon\www\aitrongcay/wp-content/themes/aitrongcay/inc/notifications.php' (include_path='.;D:/laragon/etc/php/pear') in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-settings.php(739): include()
+#1 D:\laragon\www\aitrongcay\wp-config.php(54): require_once('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-load.php(50): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-admin\admin-ajax.php(22): require_once('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-07-01 04:44:12
+Error: Uncaught Error: Failed opening required 'D:\laragon\www\aitrongcay/wp-content/themes/aitrongcay/inc/notifications.php' (include_path='.;D:/laragon/etc/php/pear') in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-settings.php(739): include()
+#1 D:\laragon\www\aitrongcay\wp-config.php(54): require_once('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-load.php(50): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-admin\admin-ajax.php(22): require_once('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-07-01 04:44:12
+Error: Uncaught Error: Failed opening required 'D:\laragon\www\aitrongcay/wp-content/themes/aitrongcay/inc/notifications.php' (include_path='.;D:/laragon/etc/php/pear') in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-settings.php(739): include()
+#1 D:\laragon\www\aitrongcay\wp-config.php(54): require_once('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-load.php(50): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-admin\admin-ajax.php(22): require_once('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-07-01 04:44:12
+Error: Uncaught Error: Failed opening required 'D:\laragon\www\aitrongcay/wp-content/themes/aitrongcay/inc/notifications.php' (include_path='.;D:/laragon/etc/php/pear') in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-settings.php(739): include()
+#1 D:\laragon\www\aitrongcay\wp-config.php(54): require_once('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-load.php(50): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-admin\admin-ajax.php(22): require_once('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-07-01 04:44:12
+Error: Uncaught Error: Failed opening required 'D:\laragon\www\aitrongcay/wp-content/themes/aitrongcay/inc/notifications.php' (include_path='.;D:/laragon/etc/php/pear') in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-settings.php(739): include()
+#1 D:\laragon\www\aitrongcay\wp-config.php(54): require_once('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-load.php(50): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-admin\admin-ajax.php(22): require_once('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Memory peak: 56,623,104 bytes
+?:0  {closure}()
+---
+2026-07-01 04:44:12
+Error: Uncaught Error: Failed opening required 'D:\laragon\www\aitrongcay/wp-content/themes/aitrongcay/inc/notifications.php' (include_path='.;D:/laragon/etc/php/pear') in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-settings.php(739): include()
+#1 D:\laragon\www\aitrongcay\wp-config.php(54): require_once('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-load.php(50): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-admin\admin-ajax.php(22): require_once('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---
+2026-07-01 04:44:12
+Error: Uncaught Error: Failed opening required 'D:\laragon\www\aitrongcay/wp-content/themes/aitrongcay/inc/notifications.php' (include_path='.;D:/laragon/etc/php/pear') in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-settings.php(739): include()
+#1 D:\laragon\www\aitrongcay\wp-config.php(54): require_once('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-load.php(50): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-admin\admin-ajax.php(22): require_once('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---
+2026-07-01 04:44:12
+Error: Uncaught Error: Failed opening required 'D:\laragon\www\aitrongcay/wp-content/themes/aitrongcay/inc/notifications.php' (include_path='.;D:/laragon/etc/php/pear') in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-settings.php(739): include()
+#1 D:\laragon\www\aitrongcay\wp-config.php(54): require_once('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-load.php(50): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-admin\admin-ajax.php(22): require_once('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---
+2026-07-01 04:44:13
+Error: Uncaught Error: Failed opening required 'D:\laragon\www\aitrongcay/wp-content/themes/aitrongcay/inc/notifications.php' (include_path='.;D:/laragon/etc/php/pear') in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Stack trace:
+#0 D:\laragon\www\aitrongcay\wp-settings.php(739): include()
+#1 D:\laragon\www\aitrongcay\wp-config.php(54): require_once('D:\\laragon\\www\\...')
+#2 D:\laragon\www\aitrongcay\wp-load.php(50): require_once('D:\\laragon\\www\\...')
+#3 D:\laragon\www\aitrongcay\wp-admin\admin-ajax.php(22): require_once('D:\\laragon\\www\\...')
+#4 {main}
+  thrown
+  in D:\laragon\www\aitrongcay\wp-content\themes\aitrongcay\functions.php:26
+Memory peak: 52,428,800 bytes
+?:0  {closure}()
+---

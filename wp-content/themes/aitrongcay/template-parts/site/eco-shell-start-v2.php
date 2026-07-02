@@ -60,6 +60,26 @@ if (is_user_logged_in()) {
 .eco-main{min-width:0;max-width:1040px;margin:0 auto}.eco-hero{margin-bottom:24px}.eco-hero h1{margin:0 0 10px;font-family:'Noto Serif',serif;font-size:60px;line-height:1.03;color:var(--primary);font-style:italic;text-shadow:0 0 15px rgba(111,219,168,.25)}.eco-hero p{max-width:860px;color:rgba(189,202,192,.78);font-size:18px;line-height:1.8}
 .eco-card{background:rgba(51,53,50,.42);backdrop-filter:blur(20px);border-radius:32px;padding:28px;box-shadow:0 24px 52px rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05)}
 .eco-kicker{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(111,219,168,.08);color:var(--primary);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:14px}
+.eco-top-right{display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:12px;padding:6px 12px;border-radius:28px;border:1px solid rgba(111,219,168,.14);background:rgba(18,20,17,.58);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 14px 30px rgba(0,0,0,.14)}
+.eco-top-bell, .eco-top-settings {background: #252824; border: 1px solid rgba(255,255,255,0.05); color: #9da89f; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; position: relative; transition: .2s;}
+.eco-top-bell:hover, .eco-top-settings:hover { background: #323531; color: #fff; }
+.eco-top-bell[data-has-new="true"] { color: #f5a623; }
+.eco-bell-dot { position: absolute; top: 8px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: #ff4757; display: none; box-shadow: 0 0 0 2px #121411; }
+.eco-top-bell[data-has-new="true"] .eco-bell-dot { display: block; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+@keyframes ping { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); } 70% { transform: scale(1.5); box-shadow: 0 0 0 6px rgba(255, 71, 87, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); } }
+.eco-noti-popup { position: absolute; top: 74px; right: 80px; width: 340px; background: rgba(26,28,25,.96); border: 1px solid rgba(255,255,255,.06); border-radius: 22px; padding: 0; box-shadow: 0 24px 52px rgba(0,0,0,.4); z-index: 70; overflow: hidden; display: flex; flex-direction: column; max-height: 400px; }
+.eco-noti-popup[hidden] { display: none; }
+.eco-noti-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,.05); }
+.eco-noti-header h4 { margin: 0; font-size: 16px; color: #fff; }
+.eco-noti-list { overflow-y: auto; flex: 1; padding: 8px; }
+.eco-noti-list::-webkit-scrollbar { width: 4px; }
+.eco-noti-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.eco-noti-item { padding: 12px; border-radius: 12px; transition: .2s; margin-bottom: 4px; cursor: pointer; text-decoration: none; display: block; color: #e3e3de; }
+.eco-noti-item:hover { background: rgba(51,53,50,.56); }
+.eco-noti-item.unread { background: rgba(111,219,168,.08); border-left: 3px solid #6fdba8; }
+.eco-noti-title { font-weight: bold; font-size: 14px; margin-bottom: 4px; color: #fff; }
+.eco-noti-body { font-size: 12px; color: #a9b5ab; line-height: 1.4; }
+.eco-noti-time { font-size: 11px; color: #7a827b; margin-top: 6px; }
 @media (max-width:1100px){.eco-layout{grid-template-columns:1fr;padding:18px}.eco-side{position:static}}
 @media (max-width:820px){.eco-shell{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}.eco-top-left{display:contents}.eco-top{padding:14px 16px;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:flex-start}.eco-top-title{font-size:28px;flex:1 1 0;min-width:0;order:1}.eco-top-right{flex:0 0 auto;padding:6px 8px;border-radius:18px;order:2}.eco-top-links{order:3;flex:0 0 100%;margin-left:0;padding-bottom:4px;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}.eco-top-search{order:4;min-width:0;width:100%;flex:0 0 100%}.eco-layout{padding:18px 14px 14px}.eco-side{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));top:auto;z-index:65;padding:11px 12px calc(11px + env(safe-area-inset-bottom,0px));border-radius:26px;background:rgba(7,33,24,.88);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);box-shadow:0 20px 44px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.06)}.eco-side-head{display:none}.eco-side nav{margin-top:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.eco-side nav a{flex-direction:column;justify-content:center;text-align:center;padding:10px 8px;border-radius:18px;font-size:11px;line-height:1.15;color:rgba(227,227,222,.74);gap:5px;font-weight:700}.eco-side nav a.is-desktop-only,.eco-side-link-label{display:none}.eco-side-link-short{display:block}.eco-side-link-icon{font-size:20px}.eco-side nav a.active{border-radius:18px;background:linear-gradient(180deg,rgba(111,219,168,.24),rgba(49,163,117,.92));color:#f7fff9;font-weight:800;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 22px rgba(49,163,117,.22)}.eco-side nav a:not(.active):hover{transform:none}.eco-main{max-width:none}.eco-hero h1{font-size:40px}}
 </style>
@@ -85,7 +105,25 @@ if (is_user_logged_in()) {
       <?php endif; ?>
     </div>
     <div class="eco-top-right">
+      <?php if (is_user_logged_in()) : ?>
+      <button class="eco-top-bell" id="eco-notification-bell" data-has-new="false" title="Thông báo">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span class="eco-bell-dot"></span>
+      </button>
+      <a class="eco-top-settings" href="<?php echo esc_url(home_url('/tai-khoan/')); ?>" title="Cài đặt">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      </a>
+      <?php endif; ?>
       <button class="eco-top-avatar eco-profile-trigger" type="button" data-eco-profile-trigger aria-expanded="false" aria-haspopup="true"><?php echo $header_avatar_html; ?></button>
+    </div>
+    <div class="eco-noti-popup" id="eco-noti-popup" hidden>
+      <div class="eco-noti-header">
+        <h4>Thông báo</h4>
+        <button type="button" id="eco-noti-mark-read" style="background:none;border:none;color:#6fdba8;cursor:pointer;font-size:12px">Đánh dấu đã đọc</button>
+      </div>
+      <div class="eco-noti-list" id="eco-noti-list">
+         <div style="padding: 16px; text-align:center; color:#999">Đang tải...</div>
+      </div>
     </div>
     <div class="eco-profile-popup" data-eco-profile-popup hidden>
       <?php foreach ($profile_links as $link) : ?>
@@ -97,11 +135,83 @@ if (is_user_logged_in()) {
     (function(){
       var trigger=document.querySelector('[data-eco-profile-trigger]');
       var popup=document.querySelector('[data-eco-profile-popup]');
-      if(!trigger||!popup) return;
-      function close(){ popup.hidden=true; trigger.setAttribute('aria-expanded','false'); }
-      trigger.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var open=popup.hidden===false; popup.hidden=open; trigger.setAttribute('aria-expanded', open ? 'false':'true'); });
-      document.addEventListener('click', function(e){ if(!popup.hidden && !popup.contains(e.target) && e.target!==trigger){ close(); } });
-      document.addEventListener('keydown', function(e){ if(e.key==='Escape') close(); });
+      var notiTrigger = document.getElementById('eco-notification-bell');
+      var notiPopup = document.getElementById('eco-noti-popup');
+
+      function closeProfile(){ if(popup) { popup.hidden=true; trigger.setAttribute('aria-expanded','false'); } }
+      function closeNoti(){ if(notiPopup) { notiPopup.hidden=true; } }
+
+      if(trigger && popup) {
+          trigger.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var open=popup.hidden===false; closeNoti(); popup.hidden=open; trigger.setAttribute('aria-expanded', open ? 'false':'true'); });
+      }
+
+      if (notiTrigger && notiPopup) {
+          notiTrigger.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var open=notiPopup.hidden===false; closeProfile(); notiPopup.hidden=open; });
+      }
+
+      document.addEventListener('click', function(e){ 
+          if(popup && !popup.hidden && !popup.contains(e.target) && e.target!==trigger){ closeProfile(); } 
+          if(notiPopup && !notiPopup.hidden && !notiPopup.contains(e.target) && e.target!==notiTrigger && !notiTrigger.contains(e.target)){ closeNoti(); } 
+      });
+      document.addEventListener('keydown', function(e){ if(e.key==='Escape') { closeProfile(); closeNoti(); } });
+
+      if (notiTrigger && typeof aitrongcayTheme !== 'undefined') {
+          var ajaxUrl = aitrongcayTheme.ajaxUrl;
+          function fetchNotifications() {
+              fetch(ajaxUrl + '?action=aitrongcay_get_notifications', {cache: 'no-store'})
+                  .then(r => r.json())
+                  .then(res => {
+                      if (res.success && res.data) {
+                          updateNotificationUI(res.data);
+                      }
+                  });
+          }
+
+          function timeAgo(ts) {
+              var seconds = Math.floor(Date.now()/1000) - ts;
+              if (seconds < 60) return "Vừa xong";
+              if (seconds < 3600) return Math.floor(seconds/60) + " phút trước";
+              if (seconds < 86400) return Math.floor(seconds/3600) + " giờ trước";
+              return Math.floor(seconds/86400) + " ngày trước";
+          }
+
+          function updateNotificationUI(data) {
+              var count = data.unread_count || 0;
+              if (count > 0) {
+                  notiTrigger.setAttribute('data-has-new', 'true');
+              } else {
+                  notiTrigger.setAttribute('data-has-new', 'false');
+              }
+              
+              var list = document.getElementById('eco-noti-list');
+              if (data.notifications && data.notifications.length > 0) {
+                  var html = '';
+                  data.notifications.forEach(n => {
+                      var cls = n.read ? 'eco-noti-item' : 'eco-noti-item unread';
+                      var href = n.link ? n.link : '#';
+                      html += '<a href="'+href+'" class="'+cls+'">';
+                      html += '<div class="eco-noti-title">'+n.title+'</div>';
+                      html += '<div class="eco-noti-body">'+n.message+'</div>';
+                      html += '<div class="eco-noti-time">'+timeAgo(n.time)+'</div>';
+                      html += '</a>';
+                  });
+                  list.innerHTML = html;
+              } else {
+                  list.innerHTML = '<div style="padding: 16px; text-align:center; color:#999">Chưa có thông báo nào.</div>';
+              }
+          }
+
+          document.getElementById('eco-noti-mark-read').addEventListener('click', function() {
+              fetch(ajaxUrl + '?action=aitrongcay_mark_notifications_read')
+                  .then(r => r.json())
+                  .then(res => {
+                      fetchNotifications();
+                  });
+          });
+
+          fetchNotifications();
+          setInterval(fetchNotifications, 5000);
+      }
     })();
   </script>
   <div class="eco-layout">

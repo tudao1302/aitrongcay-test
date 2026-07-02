@@ -324,10 +324,11 @@ add_action('wp_ajax_aitrongcay_timelapse_capture_now', 'aitrongcay_ajax_timelaps
 
 function aitrongcay_ajax_timelapse_capture_now(): void {
     check_ajax_referer('aitrongcay_portal_actions', 'nonce');
-    // if (! current_user_can('manage_options')) {
-    //     wp_send_json_error(['message' => 'Chỉ admin mới được dùng.']);
-    //     return;
-    // }
+    $garden_key  = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? ''));
+    if (! current_user_can('manage_options') && (! is_user_logged_in() || ! aitrongcay_user_can_control_garden($garden_key, get_current_user_id()))) {
+        wp_send_json_error(['message' => 'Chỉ chủ vườn mới được phép chụp ảnh.']);
+        return;
+    }
 
     $garden_key  = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? ''));
     $stream_slug = sanitize_key((string) wp_unslash($_POST['stream'] ?? ''));
@@ -336,13 +337,23 @@ function aitrongcay_ajax_timelapse_capture_now(): void {
         return;
     }
 
-    // Load config for this specific garden, or fallback to global
-    $configs = get_option('aitrongcay_rack_cfg_' . $garden_key, []);
+    // ── Step 1: DB-backed config (reflects current rack assignment) ──────────
+    // Use aitrongcay_get_rack_monitor_configs() which reads from aitr_garden_racks +
+    // aitr_rack_slots tables. This always reflects the CURRENT owner after rack reassignment,
+    // unlike WP options which are per-garden-key and may be empty for new owners.
+    $configs = function_exists('aitrongcay_get_rack_monitor_configs')
+        ? aitrongcay_get_rack_monitor_configs($garden_key)
+        : [];
+
+    // ── Step 2: Fallback to WP option if DB returned nothing ─────────────────
     if (empty($configs)) {
-        $configs = get_option('aitrongcay_rack_monitor_configs', []);
-        $garden_key = 'global';
+        $configs = get_option('aitrongcay_rack_cfg_' . $garden_key, []);
     }
-    
+    if (empty($configs)) {
+        // Last resort: global/legacy option (admin-owned streams)
+        $configs = get_option('aitrongcay_rack_monitor_configs', []);
+    }
+
     if (! is_array($configs) || empty($configs)) {
         wp_send_json_error(['message' => 'Không tìm thấy config của vườn này (và cấu hình chung cũng trống).']);
         return;
@@ -372,6 +383,7 @@ function aitrongcay_ajax_timelapse_capture_now(): void {
         }
     }
 
+    // ── Step 3: Direct DB query fallback (query by garden_key then all) ──────
     if ($frame_url === '') {
         global $wpdb;
         $racks_table = $wpdb->prefix . 'aitr_garden_racks';
@@ -380,16 +392,18 @@ function aitrongcay_ajax_timelapse_capture_now(): void {
             && $wpdb->get_var("SHOW TABLES LIKE '{$slots_table}'") === $slots_table;
 
         if ($tables_exist) {
+            // First: query only slots belonging to this garden's racks (most specific)
             $db_slots = $wpdb->get_results(
                 $wpdb->prepare(
                     "SELECT r.garden_key, s.camera_stream_url, s.slot_name
                        FROM {$racks_table} r
                        JOIN {$slots_table} s ON s.rack_id = r.id
                       WHERE r.garden_key = %s AND s.camera_stream_url != ''",
-                    $_POST['garden_key'] ?? ''
+                    $garden_key
                 ),
                 ARRAY_A
             );
+            // Second: widen to all slots if nothing found yet
             if (empty($db_slots)) {
                 $db_slots = $wpdb->get_results(
                     "SELECT r.garden_key, s.camera_stream_url, s.slot_name
@@ -411,6 +425,7 @@ function aitrongcay_ajax_timelapse_capture_now(): void {
                     $matched_tray  = function_exists('aitrongcay_tray_defaults')
                         ? array_merge(aitrongcay_tray_defaults(), ['webcam_url' => $webcam_url, 'name' => $db_slot['slot_name']])
                         : ['webcam_url' => $webcam_url, 'name' => $db_slot['slot_name']];
+                    // Use the actual rack's garden_key to save the timelapse under correct folder
                     $garden_key    = $db_slot['garden_key'];
                     break;
                 }

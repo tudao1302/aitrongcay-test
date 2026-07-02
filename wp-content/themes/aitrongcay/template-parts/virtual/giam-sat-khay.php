@@ -16,7 +16,7 @@ $garden_key   = function_exists('aitrongcay_resolve_active_garden_key') ? aitron
 $trays        = function_exists('aitrongcay_get_tray_configs') ? aitrongcay_get_tray_configs($garden_key) : [];
 $nonce        = wp_create_nonce('aitrongcay_portal_actions');
 $ajax_url     = admin_url('admin-ajax.php');
-$admin_url    = admin_url('admin.php?page=aitrongcay-tray-config');
+$admin_url    = admin_url('admin.php?page=aitrongcay-unified-admin-beta');
 ?>
 <style>
 /* ── Rack Monitor layout ─────────────────────────────── */

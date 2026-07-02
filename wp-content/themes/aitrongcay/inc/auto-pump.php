@@ -450,8 +450,8 @@ add_action('wp_ajax_aitrongcay_pump_manual', static function (): void {
         wp_send_json_error(['message' => 'Tham số không hợp lệ.'], 400);
     }
     if (
-        ! function_exists('aitrongcay_user_can_view_garden')
-        || ! aitrongcay_user_can_view_garden($gk, get_current_user_id())
+        ! function_exists('aitrongcay_user_can_control_garden')
+        || ! aitrongcay_user_can_control_garden($gk, get_current_user_id())
     ) {
         wp_send_json_error(['message' => 'Không có quyền.'], 403);
     }

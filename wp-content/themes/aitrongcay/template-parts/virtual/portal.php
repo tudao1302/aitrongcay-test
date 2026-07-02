@@ -309,7 +309,75 @@ if ($needs_photo_library) {
     <?php if ($friend_owner_search !== '') : ?><section class="eco-friends-panel" style="margin-top:0 0 24px"><h4>Kết quả tìm kiếm</h4><?php if ($active_garden_owners) : ?><div class="eco-friends-stack"><?php foreach ($active_garden_owners as $owner_card) : $owner_id = (int) ($owner_card['user_id'] ?? 0); $owner_name = (string) ($owner_card['display_name'] ?? $owner_card['user_login'] ?? 'Chủ vườn'); $owner_target = (string) ($owner_card['user_login'] ?? ''); $friendship_status = (string) ($owner_card['friendship_status'] ?? 'none'); $friendship_direction = (string) ($owner_card['friendship_direction'] ?? 'none'); $cta_label = 'Kết nối'; $cta_disabled = false; $cta_url = $owner_target !== '' ? aitrongcay_send_friend_request_url($owner_target, $friends_search_redirect_url, $friend_owner_search) : ''; if ($friendship_status === 'accepted') { $cta_label = 'Đã là hàng xóm'; $cta_disabled = true; } elseif ($friendship_status === 'pending' && $friendship_direction === 'outgoing') { $cta_label = 'Hủy lời mời kết nối'; $cta_url = $owner_id > 0 ? aitrongcay_cancel_friend_request_url($owner_id, $friends_search_redirect_url, $friend_owner_search) : ''; } elseif ($friendship_status === 'pending' && $friendship_direction === 'incoming') { $cta_label = 'Đang chờ phản hồi'; $cta_disabled = true; } ?><article class="eco-friend-card"><div class="eco-friend-avatar">🌱</div><div><div class="eco-friend-name"><?php echo esc_html($owner_name); ?></div><div class="eco-friend-sub">Chủ vườn đang hoạt động</div></div><div class="eco-friend-request-actions"><?php if ($cta_disabled) : ?><button class="btn btn-secondary" type="button" disabled aria-disabled="true"><?php echo esc_html($cta_label); ?></button><?php else : ?><a class="btn btn-primary" href="<?php echo esc_url($cta_url); ?>"><?php echo esc_html($cta_label); ?></a><?php endif; ?></div></article><?php endforeach; ?></div><?php else : ?><div class="notice">Không tìm thấy người phù hợp với tên anh vừa nhập.</div><?php endif; ?></section><?php endif; ?>
     <?php if ($pending_friend_count > 0) : ?><section class="eco-friends-panel" style="margin-top:24px"><h4>Lời mời đang chờ</h4><div class="eco-friend-sub" style="margin:-4px 0 18px"><?php echo esc_html('Có ' . $pending_friend_count . ' lời mời kết nối đang chờ'); ?></div><div class="eco-friends-stack"><?php foreach ($friend_invites as $invite) : $sender = get_user_by('id', (int) $invite['requester_user_id']); $invite_id = (int) ($invite['id'] ?? 0); $current_url = home_url((string) ($_SERVER['REQUEST_URI'] ?? '/portal/hang-xom/')); ?><article class="eco-friend-card"><div class="eco-friend-avatar">🫶</div><div><div class="eco-friend-name"><?php echo esc_html($sender instanceof WP_User ? ($sender->display_name ?: $sender->user_login) : 'Người dùng'); ?></div><div class="eco-friend-sub">Đang chờ anh phản hồi</div></div><div class="eco-friend-request-actions"><a class="btn btn-primary" href="<?php echo esc_url(aitrongcay_accept_friend_request_url($invite_id, $current_url)); ?>">Chấp nhận</a><a class="btn btn-secondary" href="<?php echo esc_url(aitrongcay_reject_friend_request_url($invite_id, $current_url)); ?>">Từ chối</a></div></article><?php endforeach; ?></div></section><?php endif; ?>
     <div class="eco-friends-grid" style="margin-top:24px">
-      <section class="eco-friends-panel"><h4>Hàng xóm hiện tại</h4><div class="eco-friend-sub" style="margin:-4px 0 18px"><?php echo esc_html($friend_count > 0 ? 'Hiện tại có ' . $friend_count . ' hàng xóm' : 'Hiện tại chưa có hàng xóm nào'); ?></div><?php if ($friends) : ?><div class="eco-friends-stack"><?php $friend_membership_map = []; foreach ($garden_members as $member) { $member_user_id = (int) ($member['user_id'] ?? 0); if ($member_user_id > 0) { $friend_membership_map[$member_user_id] = $member; } } foreach ($friends as $friendship) : $friend_id = (int) (($friendship['requester_user_id'] == $current_user->ID) ? $friendship['addressee_user_id'] : $friendship['requester_user_id']); $friend = get_user_by('id', $friend_id); $friend_garden_key = $friend instanceof WP_User ? aitrongcay_preferred_garden_key_for_user($friend) : ''; $friend_garden_url = $friend_garden_key !== '' ? add_query_arg('garden', rawurlencode($friend_garden_key), home_url('/portal/dashboard-2/')) : home_url('/portal/dashboard-2/'); $friend_phone = $friend instanceof WP_User ? aitrongcay_user_zalo_phone((int) $friend->ID) : ''; $friend_zalo_url = $friend_phone !== '' ? 'https://zalo.me/' . rawurlencode($friend_phone) : ''; $membership = $friend_membership_map[$friend_id] ?? null; $friend_role = (string) ($membership['role'] ?? 'viewer'); $membership_id = (int) ($membership['id'] ?? 0); $share_label = $friend_role === 'co_owner' ? 'Đã share vườn' : 'Share vườn'; $share_url = aitrongcay_friend_toggle_share_url($friend_id, $membership_id, $friend_role); $remove_url = aitrongcay_remove_friend_url($friend_id); ?><article class="eco-friend-card"><div class="eco-friend-avatar">🌿</div><div><div class="eco-friend-name"><?php echo esc_html($friend instanceof WP_User ? ($friend->display_name ?: $friend->user_login) : 'Người dùng'); ?></div><div class="eco-friend-sub">Hàng xóm trong hệ sinh thái vườn số</div></div><div class="eco-friend-actions"><a class="eco-friend-action" href="<?php echo esc_url($friend_garden_url); ?>">Xem vườn</a><?php if ($friend_zalo_url !== '') : ?><a class="eco-friend-zalo" href="<?php echo esc_url($friend_zalo_url); ?>" target="_blank" rel="noopener" aria-label="Nhắn Zalo"><span aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><rect x="3" y="3" width="18" height="18" rx="6" fill="#fff"></rect><path d="M7.5 8.2h9l-6.05 7.6h5.95l-9 0 6.05-7.6H7.5Z" fill="#0068FF"></path></svg></span><span>Zalo</span></a><?php else : ?><button class="eco-friend-action" type="button" disabled>Chưa có Zalo</button><?php endif; ?><a class="eco-friend-primary<?php echo $friend_role === 'co_owner' ? ' is-co-owner' : ''; ?>" href="<?php echo esc_url($share_url); ?>"><?php echo esc_html($share_label); ?></a><a class="eco-friend-danger" href="<?php echo esc_url($remove_url); ?>" aria-label="Hủy kết nối hàng xóm"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></a></div></article><?php endforeach; ?></div><?php else : ?><div class="notice">Anh chưa có hàng xóm nào. Anh có thể tìm và kết nối bằng ô tìm kiếm phía trên.</div><?php endif; ?></section>
+      <section class="eco-friends-panel"><h4>Hàng xóm hiện tại</h4><div class="eco-friend-sub" style="margin:-4px 0 18px"><?php echo esc_html($friend_count > 0 ? 'Hiện tại có ' . $friend_count . ' hàng xóm' : 'Hiện tại chưa có hàng xóm nào'); ?></div><?php if ($friends) : ?><div class="eco-friends-stack"><?php $friend_membership_map = []; foreach ($garden_members as $member) { $member_user_id = (int) ($member['user_id'] ?? 0); if ($member_user_id > 0) { $friend_membership_map[$member_user_id] = $member; } } foreach ($friends as $friendship) : $friend_id = (int) (($friendship['requester_user_id'] == $current_user->ID) ? $friendship['addressee_user_id'] : $friendship['requester_user_id']); $friend = get_user_by('id', $friend_id); $friend_garden_key = $friend instanceof WP_User ? aitrongcay_preferred_garden_key_for_user($friend) : ''; $friend_garden_url = $friend_garden_key !== '' ? add_query_arg('garden', rawurlencode($friend_garden_key), home_url('/portal/dashboard-2/')) : home_url('/portal/dashboard-2/'); $friend_phone = $friend instanceof WP_User ? aitrongcay_user_zalo_phone((int) $friend->ID) : ''; $friend_zalo_url = $friend_phone !== '' ? 'https://zalo.me/' . rawurlencode($friend_phone) : ''; $membership = $friend_membership_map[$friend_id] ?? null; $friend_role = (string) ($membership['role'] ?? 'viewer'); $membership_id = (int) ($membership['id'] ?? 0); $share_label = $friend_role === 'co_owner' ? 'Đã share vườn' : 'Share vườn'; $share_url = aitrongcay_friend_toggle_share_url($friend_id, $membership_id, $friend_role); $remove_url = aitrongcay_remove_friend_url($friend_id); ?><article class="eco-friend-card"><div class="eco-friend-avatar">🌿</div><div><div class="eco-friend-name"><?php echo esc_html($friend instanceof WP_User ? ($friend->display_name ?: $friend->user_login) : 'Người dùng'); ?></div><div class="eco-friend-sub">Hàng xóm trong hệ sinh thái vườn số</div></div><div class="eco-friend-actions"><a class="eco-friend-action" href="<?php echo esc_url($friend_garden_url); ?>">Xem vườn</a><button type="button" class="eco-friend-primary aitr-water-friend" data-friend-id="<?php echo esc_attr((string)$friend_id); ?>" style="background:linear-gradient(135deg, #3b82f6, #60a5fa);color:#fff">💦 Tưới nước hộ</button><?php if ($friend_zalo_url !== '') : ?><a class="eco-friend-zalo" href="<?php echo esc_url($friend_zalo_url); ?>" target="_blank" rel="noopener" aria-label="Nhắn Zalo"><span aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><rect x="3" y="3" width="18" height="18" rx="6" fill="#fff"></rect><path d="M7.5 8.2h9l-6.05 7.6h5.95l-9 0 6.05-7.6H7.5Z" fill="#0068FF"></path></svg></span><span>Zalo</span></a><?php else : ?><button class="eco-friend-action" type="button" disabled>Chưa có Zalo</button><?php endif; ?><a class="eco-friend-primary<?php echo $friend_role === 'co_owner' ? ' is-co-owner' : ''; ?>" href="<?php echo esc_url($share_url); ?>"><?php echo esc_html($share_label); ?></a><a class="eco-friend-danger" href="<?php echo esc_url($remove_url); ?>" aria-label="Hủy kết nối hàng xóm"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></a></div></article><?php endforeach; ?></div><?php else : ?><div class="notice">Anh chưa có hàng xóm nào. Anh có thể tìm và kết nối bằng ô tìm kiếm phía trên.</div><?php endif; ?></section>
+      
+      <script>
+      function aitrongcay_show_toast(msg, isError) {
+          var toast = document.createElement('div');
+          toast.style.cssText = 'position:fixed;bottom:30px;right:30px;padding:16px 24px;border-radius:20px;background:' + (isError ? 'rgba(239,68,68,0.95)' : 'rgba(16,185,129,0.95)') + ';color:#fff;font-family:"Inter",sans-serif;font-weight:600;font-size:15px;box-shadow:0 20px 40px rgba(0,0,0,0.3);z-index:99999;transform:translateY(100px);opacity:0;transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:12px;';
+          toast.innerHTML = (isError ? '<span>⚠️</span>' : '<span>✅</span>') + '<span>' + msg + '</span>';
+          document.body.appendChild(toast);
+          
+          // Animate in
+          requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                  toast.style.transform = 'translateY(0)';
+                  toast.style.opacity = '1';
+              });
+          });
+          
+          // Remove after 3.5 seconds
+          setTimeout(function() {
+              toast.style.transform = 'translateY(100px)';
+              toast.style.opacity = '0';
+              setTimeout(function() { toast.remove(); }, 400);
+          }, 3500);
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+          var waterBtns = document.querySelectorAll('.aitr-water-friend');
+          waterBtns.forEach(function(btn) {
+              btn.addEventListener('click', function() {
+                  var fId = this.getAttribute('data-friend-id');
+                  var self = this;
+                  self.disabled = true;
+                  self.style.opacity = '0.7';
+                  self.textContent = 'Đang tưới...';
+                  
+                  // AJAX Call
+                  var formData = new FormData();
+                  formData.append('action', 'aitrongcay_water_friend_garden');
+                  formData.append('friend_id', fId);
+                  
+                  fetch('<?php echo esc_js(admin_url('admin-ajax.php')); ?>', {
+                      method: 'POST',
+                      body: formData
+                  })
+                  .then(r => r.json())
+                  .then(data => {
+                      if(data.success) {
+                          self.style.background = '#10b981';
+                          self.textContent = '✅ Đã tưới xong';
+                          var msg = "Bạn vừa tưới nước hộ thành công!";
+                          if (data.data.points) msg += " Nhận được " + data.data.points + " Eco Points.";
+                          aitrongcay_show_toast(msg, false);
+                      } else {
+                          self.disabled = false;
+                          self.style.opacity = '1';
+                          self.textContent = '💦 Tưới nước hộ';
+                          aitrongcay_show_toast(data.data.message || 'Có lỗi xảy ra.', true);
+                      }
+                  })
+                  .catch(err => {
+                      self.disabled = false;
+                      self.style.opacity = '1';
+                      self.textContent = '💦 Tưới nước hộ';
+                      aitrongcay_show_toast('Lỗi mạng. Vui lòng thử lại.', true);
+                  });
+              });
+          });
+      });
+      </script>
     </div>
     <?php get_template_part('template-parts/site/eco-shell-end'); return; ?>
 <?php endif; ?>
