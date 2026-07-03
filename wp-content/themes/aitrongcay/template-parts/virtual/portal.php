@@ -8,7 +8,9 @@ if (! defined('ABSPATH')) {
 
 $page = aitrongcay_current_virtual_page();
 $slug = $page['slug'] ?? 'portal';
-$portal_nav = aitrongcay_portal_nav_items();
+$portal_nav = array_map(static function (array $item) {
+    return ['key' => (string) ($item['key'] ?? ''), 'label' => (string) ($item['label'] ?? ''), 'url' => (string) ($item['url'] ?? '#')];
+}, aitrongcay_portal_nav_items());
 $current_user = wp_get_current_user();
 $is_logged_in = is_user_logged_in();
 $share_token = isset($_GET['share_token']) ? sanitize_text_field((string) wp_unslash($_GET['share_token'])) : '';
@@ -24,6 +26,13 @@ $needs_photo_library = in_array($slug, ['portal/dashboard', 'portal/dashboard-2'
 $allow_guest_ai_portal = $slug === 'portal/tro-ly-ai';
 $is_guest_ai_portal = $allow_guest_ai_portal && ! $is_logged_in;
 $garden_key = $is_logged_in ? aitrongcay_resolve_active_garden_key($current_user instanceof WP_User ? $current_user : null) : '';
+$portal_nav = array_map(static function (array $item) use ($garden_key) {
+    $url = (string) ($item['url'] ?? '#');
+    if ($garden_key !== '') {
+        $url = add_query_arg('garden', $garden_key, $url);
+    }
+    return ['key' => (string) ($item['key'] ?? ''), 'label' => (string) ($item['label'] ?? ''), 'url' => $url];
+}, $portal_nav);
 $active_profile = $is_logged_in ? aitrongcay_portal_profile_for_garden_context($garden_key, $current_user instanceof WP_User ? $current_user : null) : null;
 $garden_ai = ($needs_garden_ai && ! $is_guest_ai_portal) ? aitrongcay_portal_garden_ai($garden_key, $current_user instanceof WP_User ? $current_user : null) : [];
 $pots = ($needs_pots && ! $is_guest_ai_portal) ? aitrongcay_portal_pots($garden_key, $current_user instanceof WP_User ? $current_user : null) : [];
@@ -255,13 +264,17 @@ if ($needs_photo_library) {
     $share_garden_url = $garden_key !== '' ? add_query_arg('garden', rawurlencode($garden_key), home_url('/portal/chia-se-khu-vuon/')) : home_url('/portal/chia-se-khu-vuon/');
     $friends_page_url = $garden_key !== '' ? add_query_arg('garden', rawurlencode($garden_key), home_url('/portal/hang-xom/')) : home_url('/portal/hang-xom/');
     $friends_search_redirect_url = $friends_page_url;
+    
+
+    
     $friends_nav = array_map(static function (array $item) use ($garden_key) {
         $url = (string) ($item['url'] ?? '#');
-        if (in_array((string) ($item['key'] ?? ''), ['dashboard', 'kho-nong-cu', 'hang-xom'], true) && $garden_key !== '') {
+        if ($garden_key !== '') {
             $url = add_query_arg('garden', $garden_key, $url);
         }
         return ['key' => (string) ($item['key'] ?? ''), 'label' => (string) ($item['label'] ?? ''), 'url' => $url];
     }, aitrongcay_eco_nav_items());
+
     set_query_var('aitr_eco_shell', [
         'title' => 'Hàng xóm',
         'active' => 'hang-xom',

@@ -32,7 +32,7 @@ $shared_top_links = [
   ['key' => 'dashboard-2', 'label' => 'Vào khu vườn của tôi', 'url' => home_url('/portal/dashboard-2/')],
 ];
 foreach ($shared_top_links as &$shared_top_link) {
-  if ($garden_key !== '' && in_array($shared_top_link['key'], ['kho-nong-cu', 'hang-xom', 'dashboard-2'], true)) {
+  if ($garden_key !== '') {
     $shared_top_link['url'] = add_query_arg('garden', $garden_key, $shared_top_link['url']);
   }
 }

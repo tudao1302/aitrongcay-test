@@ -24,6 +24,12 @@ $shared_top_links = [
     ['key' => 'hang-xom', 'label' => 'Hàng xóm', 'url' => home_url('/portal/hang-xom/')],
     ['key' => 'dashboard-2', 'label' => 'Vào khu vườn của tôi', 'url' => home_url('/portal/dashboard-2/')],
 ];
+foreach ($shared_top_links as &$shared_top_link) {
+    if ($garden_key !== '') {
+        $shared_top_link['url'] = add_query_arg('garden', $garden_key, $shared_top_link['url']);
+    }
+}
+unset($shared_top_link);
 $can_manage_catalog = function_exists('aitrongcay_can_manage_onboarding_catalog') ? aitrongcay_can_manage_onboarding_catalog(wp_get_current_user()) : current_user_can('manage_options');
 $catalog_access_state = isset($_GET['catalog_access']) ? sanitize_key((string) ($_GET['catalog_access'] ?? '')) : '';
 $new_plant_url = home_url('/portal/onboarding-cay-moi/');

@@ -8,6 +8,7 @@ if (! is_user_logged_in()) {
 }
 
 $current_user = wp_get_current_user();
+$garden_key = function_exists('aitrongcay_resolve_active_garden_key') ? aitrongcay_resolve_active_garden_key($current_user instanceof WP_User ? $current_user : null) : '';
 $phone = (string) get_user_meta($current_user->ID, 'aitrongcay_phone', true);
 $city = (string) get_user_meta($current_user->ID, 'aitrongcay_city', true);
 $household = (string) get_user_meta($current_user->ID, 'aitrongcay_household', true);
@@ -46,8 +47,12 @@ if ($plan_id === 'basic') {
     $plan_badge = 'Chuyên nghiệp';
 }
 
-$account_nav_items = array_map(static function (array $item) {
-    return ['key' => (string) ($item['key'] ?? ''), 'label' => (string) ($item['label'] ?? ''), 'url' => (string) ($item['url'] ?? '#')];
+$account_nav_items = array_map(static function (array $item) use ($garden_key) {
+    $url = (string) ($item['url'] ?? '#');
+    if ($garden_key !== '') {
+        $url = add_query_arg('garden', $garden_key, $url);
+    }
+    return ['key' => (string) ($item['key'] ?? ''), 'label' => (string) ($item['label'] ?? ''), 'url' => $url];
 }, aitrongcay_eco_nav_items());
 set_query_var('aitr_eco_shell', [
     'title' => 'Tài khoản',
@@ -148,7 +153,7 @@ echo sprintf('%02d', $active_notifs);
                     <label style="display:flex;align-items:center;gap:10px;color:#bdcac0;font-size:14px;cursor:pointer;"><input type="checkbox" name="notify_zalo" value="1" <?php checked($notify_zalo); ?> style="width:18px;height:18px;margin:0;"> Nhận thông báo qua Zalo</label>
                     <label style="display:flex;align-items:center;gap:10px;color:#bdcac0;font-size:14px;cursor:pointer;"><input type="checkbox" name="notify_harvest" value="1" <?php checked($notify_harvest); ?> style="width:18px;height:18px;margin:0;"> Nhắc thu hoạch</label>
                   </div>
-                  <div class="eco-account-actions"><button class="eco-account-btn primary" type="submit">Lưu thông tin</button><a class="eco-account-btn secondary" href="<?php echo esc_url(home_url('/portal/dashboard-2/')); ?>">Khu vườn của tôi</a></div>
+                  <div class="eco-account-actions"><button class="eco-account-btn primary" type="submit">Lưu thông tin</button><a class="eco-account-btn secondary" href="<?php echo esc_url($garden_key !== '' ? add_query_arg('garden', $garden_key, home_url('/portal/dashboard-2/')) : home_url('/portal/dashboard-2/')); ?>">Khu vườn của tôi</a></div>
                 </form>
               </div>
               <div class="eco-account-card eco-account-tier"><div class="eco-account-tier-badge"><?php echo esc_html($plan_badge); ?></div><h2 style="margin:14px 0 2px;font-family:'Noto Serif',serif;font-size:34px;color:#fff"><?php echo esc_html($plan_name); ?></h2><?php if($expiry_text): ?><div style="font-size:13px;color:#6fdba8;font-weight:600;margin-bottom:12px;letter-spacing:0.02em;"><?php echo esc_html($expiry_text); ?></div><?php else: ?><div style="height:12px"></div><?php endif; ?><p style="color:#bdcac0;line-height:1.8;margin-top:0"><?php echo esc_html($plan_desc); ?></p><div class="eco-account-actions"><a class="eco-account-btn primary" href="<?php echo esc_url(home_url('/nang-cap-goi/')); ?>" style="text-decoration:none">Nâng cấp gói</a><a class="eco-account-btn secondary" href="<?php echo esc_url(aitrongcay_logout_url()); ?>">Đăng xuất</a></div></div>

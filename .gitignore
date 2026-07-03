@@ -10,6 +10,9 @@ robot-listener/node_modules/
 wp-content/debug.log
 wp-content/aitr_crash.log
 *.log
+test-*.txt
+test_*.txt
+*_output.txt
 
 # Ignore server config
 .htaccess
@@ -19,3 +22,40 @@ wp-content/aitr_crash.log
 *.tar.gz
 *.rar
 wp-content/uploads.zip
+
+# ============================================
+# KHÔNG BAO GIỜ COMMIT FILE RÁC DEV LÊN GIT
+# ============================================
+
+# File test/debug/fix tạm thời
+test-*.php
+test-*.html
+test_*.php
+test.php
+debug-*.php
+debug_*.php
+check-*.php
+fix-*.php
+fix_*.php
+aitr_*.php
+
+# File tool chẩn đoán/dọn dẹp tạm thời
+debug_hosting.php
+clean_malware.php
+get_log.php
+_cleanup_local.php
+clear_cache.php
+cf_test.php
+dump-*.php
+delete-temp.php
+find_funcs.php
+print-rack-status.php
+replace-khoang.php
+schema-sync.php
+trigger-cron.php
+
+# File WordPress không cần thiết trên production
+readme.html
+license.txt
+wp-config-sample.php
+CLAUDE.md

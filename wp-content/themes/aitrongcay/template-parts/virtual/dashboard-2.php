@@ -24,6 +24,9 @@ $rack_init_status = isset($_GET['rack_init']) ? sanitize_key((string) wp_unslash
 $garden_display_name = $is_logged_in && function_exists('aitrongcay_get_garden_display_name')
   ? trim((string) aitrongcay_get_garden_display_name($garden_key, $current_user instanceof WP_User ? $current_user : null))
   : trim((string) ($active_profile['garden_name'] ?? ''));
+$viewable_gardens = $is_logged_in && function_exists('aitrongcay_get_viewable_gardens_for_user') 
+  ? aitrongcay_get_viewable_gardens_for_user($current_user instanceof WP_User ? $current_user : null) 
+  : [];
 
 if ($slug !== 'portal' && !$is_logged_in) {
   wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
@@ -189,6 +192,12 @@ $shared_top_links = [
   ['key' => 'hang-xom', 'label' => 'Hàng xóm', 'url' => home_url('/portal/hang-xom/')],
   ['key' => 'dashboard-2', 'label' => 'Vào khu vườn của tôi', 'url' => home_url('/portal/dashboard-2/')],
 ];
+foreach ($shared_top_links as &$shared_top_link) {
+  if ($garden_key !== '') {
+    $shared_top_link['url'] = add_query_arg('garden', $garden_key, $shared_top_link['url']);
+  }
+}
+unset($shared_top_link);
 $active_pot_code = isset($_GET['pot']) ? sanitize_text_field((string) wp_unslash($_GET['pot'])) : '';
 if ($active_pot_code !== '') {
   foreach ($pots as $candidate_pot) {
@@ -4204,10 +4213,62 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           <input type="text" class="d2-garden-input"
             value="<?php echo esc_attr($garden_title !== '' ? $garden_title : 'Khu vườn của bạn'); ?>"
             data-garden-inline-input hidden>
-          <?php if ($can_control_garden): ?>
-          <button class="d2-garden-edit" type="button" data-garden-inline-edit aria-label="Đổi tên khu vườn">✏️</button>
+          <?php if (is_array($viewable_gardens) && count($viewable_gardens) > 1) : ?>
+            <div class="eco-garden-switcher" style="position:relative; display:inline-block; margin-left:2px;">
+                <button class="d2-garden-edit eco-garden-btn" type="button" onclick="var p = this.nextElementSibling; p.hidden = !p.hidden; event.stopPropagation();" aria-label="Chuyển đổi khu vườn" style="background:rgba(111,219,168,.12); color:var(--primary); display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:999px; width:36px; height:36px; cursor:pointer;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.8;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="eco-garden-popup" hidden style="position:absolute; top:calc(100% + 8px); left:0; min-width:260px; background:rgba(26,28,25,.98); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:8px; box-shadow:0 24px 48px rgba(0,0,0,.4); z-index:100; font-family:var(--ui-font,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif); font-style:normal; letter-spacing:normal; font-size:14px; line-height:1.4; text-align:left;" onclick="event.stopPropagation();">
+                    <?php 
+                    try {
+                        $has_own_garden = false;
+                        foreach ($viewable_gardens as $g_key => $g_data) {
+                            if (($g_data['role'] ?? '') === 'owner') {
+                                $has_own_garden = true;
+                                $is_active = $g_key === $garden_key;
+                                echo '<a href="'.esc_url(home_url('/portal/dashboard-2/?garden='.urlencode((string)$g_key))).'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-radius:12px; color:'.($is_active?'#6fdba8':'#e3e3de').'; text-decoration:none; background:'.($is_active?'rgba(111,219,168,.1)':'transparent').'; margin-bottom:4px; font-weight:700; transition:0.2s;">';
+                                echo '<span>Vườn của tôi</span>';
+                                if ($is_active) echo '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                                echo '</a>';
+                                break;
+                            }
+                        }
+                        $has_shared = false;
+                        foreach ($viewable_gardens as $g_key => $g_data) {
+                            if (($g_data['role'] ?? '') !== 'owner') {
+                                if (!$has_shared) {
+                                    if ($has_own_garden) {
+                                        echo '<div style="height:1px; background:rgba(255,255,255,.06); margin:6px 0;"></div>';
+                                    }
+                                    $has_shared = true;
+                                }
+                                $g_prof = $g_data['profile'] ?? [];
+                                $owner = $g_data['owner'] ?? null;
+                                if ($owner instanceof \WP_User) {
+                                    $g_name = $owner->display_name ?: $owner->first_name ?: $owner->user_login;
+                                } else {
+                                    $g_name = is_array($g_prof) ? ($g_prof['name'] ?? 'Hàng xóm') : 'Hàng xóm';
+                                }
+                                $is_active = $g_key === $garden_key;
+                                echo '<a href="'.esc_url(home_url('/portal/dashboard-2/?garden='.urlencode((string)$g_key))).'" style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-radius:12px; color:'.($is_active?'#6fdba8':'#a9b5ab').'; text-decoration:none; background:'.($is_active?'rgba(111,219,168,.1)':'transparent').'; margin-bottom:2px; font-weight:600; transition:0.2s;">';
+                                echo '<span style="display:flex; align-items:center; gap:8px;">Vườn của '.esc_html((string)$g_name).' <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(111,219,168,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></span>';
+                                if ($is_active) echo '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                                echo '</a>';
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        echo '<div style="color:red; padding:10px;">Lỗi: ' . esc_html($e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine()) . '</div>';
+                    }
+                    ?>
+                </div>
+            </div>
+            <script>
+            document.addEventListener('click', function(e) {
+                var popups = document.querySelectorAll('.eco-garden-popup');
+                popups.forEach(function(p) { p.hidden = true; });
+            });
+            </script>
           <?php endif; ?>
-          <span class="d2-garden-status" data-garden-inline-status hidden>Nhấn Enter hoặc click ra ngoài để lưu</span>
         </div>
         <div class="d2-top-links">
           <?php foreach ($shared_top_links as $top_link): ?>

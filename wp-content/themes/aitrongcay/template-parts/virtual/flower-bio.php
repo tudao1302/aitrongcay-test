@@ -439,7 +439,7 @@ $shared_top_links = [
     ['key' => 'hang-xom', 'label' => 'Hàng xóm', 'url' => home_url('/portal/hang-xom/')],
 ];
 foreach ($shared_top_links as &$shared_top_link) {
-    if ($garden_key !== '' && in_array($shared_top_link['key'], ['kho-nong-cu', 'hang-xom'], true)) {
+    if ($garden_key !== '') {
         $shared_top_link['url'] = add_query_arg('garden', $garden_key, $shared_top_link['url']);
     }
 }

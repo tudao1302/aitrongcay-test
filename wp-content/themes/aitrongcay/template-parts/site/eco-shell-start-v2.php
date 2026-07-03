@@ -9,6 +9,7 @@ $sideSubtitle = (string) ($eco['side_subtitle'] ?? '');
 $sideBadge = (string) ($eco['side_badge'] ?? '🍃');
 $search = is_array($eco['search'] ?? null) ? $eco['search'] : [];
 $garden_query_value = isset($_GET['garden']) ? sanitize_text_field((string) wp_unslash($_GET['garden'])) : '';
+$active_garden_key = $garden_query_value !== '' ? $garden_query_value : (function_exists('aitrongcay_resolve_active_garden_key') ? aitrongcay_resolve_active_garden_key() : '');
 $use_brand_title = in_array($active, ['cho-que', 'kho-nong-cu', 'hang-xom'], true);
 $shared_top_links = [
     ['key' => 'cho-que', 'label' => 'Chợ quê', 'url' => home_url('/cho-que/')],
@@ -16,12 +17,12 @@ $shared_top_links = [
     ['key' => 'hang-xom', 'label' => 'Hàng xóm', 'url' => home_url('/portal/hang-xom/')],
 ];
 foreach ($shared_top_links as &$shared_top_link) {
-    if ($garden_query_value !== '' && in_array($shared_top_link['key'], ['kho-nong-cu', 'hang-xom', 'dashboard-2'], true)) {
-        $shared_top_link['url'] = add_query_arg('garden', $garden_query_value, $shared_top_link['url']);
+    if ($active_garden_key !== '') {
+        $shared_top_link['url'] = add_query_arg('garden', $active_garden_key, $shared_top_link['url']);
     }
 }
 unset($shared_top_link);
-$brand_home_url = $garden_query_value !== '' ? add_query_arg('garden', $garden_query_value, home_url('/portal/dashboard-2/')) : home_url('/portal/dashboard-2/');
+$brand_home_url = $active_garden_key !== '' ? add_query_arg('garden', $active_garden_key, home_url('/portal/dashboard-2/')) : home_url('/portal/dashboard-2/');
 $profile_links = is_user_logged_in()
     ? [
         ['label' => 'Quản lý tài khoản', 'url' => home_url('/tai-khoan/')],
@@ -86,7 +87,59 @@ if (is_user_logged_in()) {
 <div class="eco-shell">
   <header class="eco-top">
     <div class="eco-top-left">
-      <div class="eco-top-title"><?php if ($use_brand_title) : ?><a href="<?php echo esc_url($brand_home_url); ?>"><span class="eco-top-title-brand"><span class="brand-ai">AI</span><span class="brand-rest">trồng cây</span></span></a><?php else : ?><?php echo esc_html($title); ?><?php endif; ?></div>
+      <div class="eco-top-title">
+        <?php if ($use_brand_title) : ?>
+          <a href="<?php echo esc_url($brand_home_url); ?>"><span class="eco-top-title-brand"><span class="brand-ai">AI</span><span class="brand-rest">trồng cây</span></span></a>
+        <?php else : ?>
+          <?php 
+          $viewable_gardens = is_user_logged_in() && function_exists('aitrongcay_get_viewable_gardens_for_user') ? aitrongcay_get_viewable_gardens_for_user(wp_get_current_user()) : [];
+          if (count($viewable_gardens) > 1) : 
+          ?>
+            <div class="eco-garden-switcher" style="position:relative; display:inline-block;">
+                <button class="eco-garden-btn" data-eco-garden-trigger style="background:transparent; border:none; color:inherit; padding:0; cursor:pointer; font-family:inherit; font-size:inherit; font-weight:inherit; font-style:inherit; letter-spacing:inherit; display:inline-flex; align-items:center; gap:8px;">
+                    <?php echo esc_html($title); ?> 
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary, #6fdba8)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.8"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="eco-garden-popup" data-eco-garden-popup hidden style="position:absolute; top:calc(100% + 4px); left:0; min-width:240px; background:rgba(26,28,25,.98); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:6px; box-shadow:0 24px 48px rgba(0,0,0,.4); z-index:80; font-family:var(--ui-font,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif); font-style:normal; letter-spacing:normal; font-size:14px; line-height:1.4;">
+                    <?php 
+                    $has_own_garden = false;
+                    foreach ($viewable_gardens as $g_key => $g_data) {
+                        if (($g_data['role'] ?? '') === 'owner') {
+                            $has_own_garden = true;
+                            $is_active = $g_key === $active_garden_key;
+                            echo '<a href="'.esc_url(home_url('/portal/dashboard-2/?garden='.urlencode($g_key))).'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-radius:12px; color:'.($is_active?'#6fdba8':'#e3e3de').'; text-decoration:none; background:'.($is_active?'rgba(111,219,168,.1)':'transparent').'; margin-bottom:4px; font-weight:700; transition:0.2s;">';
+                            echo '<span>Vườn của tôi</span>';
+                            if ($is_active) echo '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                            echo '</a>';
+                            break;
+                        }
+                    }
+                    $has_shared = false;
+                    foreach ($viewable_gardens as $g_key => $g_data) {
+                        if (($g_data['role'] ?? '') !== 'owner') {
+                            if (!$has_shared) {
+                                if ($has_own_garden) {
+                                    echo '<div style="height:1px; background:rgba(255,255,255,.06); margin:6px 0;"></div>';
+                                }
+                                $has_shared = true;
+                            }
+                            $g_prof = $g_data['profile'] ?? [];
+                            $g_name = $g_prof['display_name'] ?? 'Hàng xóm';
+                            $is_active = $g_key === $active_garden_key;
+                            echo '<a href="'.esc_url(home_url('/portal/dashboard-2/?garden='.urlencode($g_key))).'" style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-radius:12px; color:'.($is_active?'#6fdba8':'#a9b5ab').'; text-decoration:none; background:'.($is_active?'rgba(111,219,168,.1)':'transparent').'; margin-bottom:2px; font-weight:600; transition:0.2s;">';
+                            echo '<span style="display:flex; align-items:center; gap:8px;">Vườn của '.esc_html($g_name).' <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(111,219,168,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></span>';
+                            if ($is_active) echo '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                            echo '</a>';
+                        }
+                    }
+                    ?>
+                </div>
+            </div>
+          <?php else : ?>
+            <?php echo esc_html($title); ?>
+          <?php endif; ?>
+        <?php endif; ?>
+      </div>
       <nav class="eco-top-links" aria-label="Điều hướng nhanh">
         <?php foreach ($shared_top_links as $top_link) : ?>
           <?php if ($active === $top_link['key']) { continue; } ?>
@@ -137,23 +190,31 @@ if (is_user_logged_in()) {
       var popup=document.querySelector('[data-eco-profile-popup]');
       var notiTrigger = document.getElementById('eco-notification-bell');
       var notiPopup = document.getElementById('eco-noti-popup');
+      var gardenTrigger=document.querySelector('[data-eco-garden-trigger]');
+      var gardenPopup=document.querySelector('[data-eco-garden-popup]');
 
       function closeProfile(){ if(popup) { popup.hidden=true; trigger.setAttribute('aria-expanded','false'); } }
       function closeNoti(){ if(notiPopup) { notiPopup.hidden=true; } }
+      function closeGarden(){ if(gardenPopup) { gardenPopup.hidden=true; } }
 
       if(trigger && popup) {
-          trigger.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var open=popup.hidden===false; closeNoti(); popup.hidden=open; trigger.setAttribute('aria-expanded', open ? 'false':'true'); });
+          trigger.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var open=popup.hidden===false; closeNoti(); closeGarden(); popup.hidden=open; trigger.setAttribute('aria-expanded', open ? 'false':'true'); });
       }
 
       if (notiTrigger && notiPopup) {
-          notiTrigger.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var open=notiPopup.hidden===false; closeProfile(); notiPopup.hidden=open; });
+          notiTrigger.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var open=notiPopup.hidden===false; closeProfile(); closeGarden(); notiPopup.hidden=open; });
+      }
+
+      if (gardenTrigger && gardenPopup) {
+          gardenTrigger.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var open=gardenPopup.hidden===false; closeProfile(); closeNoti(); gardenPopup.hidden=open; });
       }
 
       document.addEventListener('click', function(e){ 
           if(popup && !popup.hidden && !popup.contains(e.target) && e.target!==trigger){ closeProfile(); } 
           if(notiPopup && !notiPopup.hidden && !notiPopup.contains(e.target) && e.target!==notiTrigger && !notiTrigger.contains(e.target)){ closeNoti(); } 
+          if(gardenPopup && !gardenPopup.hidden && !gardenPopup.contains(e.target) && e.target!==gardenTrigger && !gardenTrigger.contains(e.target)){ closeGarden(); } 
       });
-      document.addEventListener('keydown', function(e){ if(e.key==='Escape') { closeProfile(); closeNoti(); } });
+      document.addEventListener('keydown', function(e){ if(e.key==='Escape') { closeProfile(); closeNoti(); closeGarden(); } });
 
       if (notiTrigger && typeof aitrongcayTheme !== 'undefined') {
           var ajaxUrl = aitrongcayTheme.ajaxUrl;

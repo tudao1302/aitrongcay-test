@@ -1824,7 +1824,7 @@ function aitrongcay_build_default_garden_name(string $garden_key, ?WP_User $view
     foreach ($members as $member) {
         $role = (string) ($member['role'] ?? 'viewer');
         $status = (string) ($member['status'] ?? '');
-        if ($status !== 'active' || ! in_array($role, ['owner', 'co_owner'], true)) {
+        if ($status !== 'active' || $role !== 'owner') {
             continue;
         }
 
@@ -1843,8 +1843,9 @@ function aitrongcay_build_default_garden_name(string $garden_key, ?WP_User $view
         return 'Vườn của ' . aitrongcay_format_person_name_list($owner_names);
     }
 
-    $profile = aitrongcay_portal_profile_for_user($viewer instanceof WP_User ? $viewer : wp_get_current_user());
-    return trim((string) ($profile['garden_name'] ?? 'Khu vườn của bạn'));
+    $viewer_user = $viewer instanceof WP_User ? $viewer : wp_get_current_user();
+    $fallback_name = trim((string) ($viewer_user->display_name ?: $viewer_user->first_name ?: $viewer_user->user_login));
+    return 'Vườn của ' . ($fallback_name !== '' ? $fallback_name : 'bạn');
 }
 
 function aitrongcay_get_garden_display_name(string $garden_key, ?WP_User $viewer = null): string
@@ -2309,7 +2310,7 @@ function aitrongcay_get_viewable_gardens_for_user(?WP_User $user = null): array
         $append_garden($friend_garden_key, 'viewer');
     }
 
-    return array_values($gardens);
+    return $gardens;
 }
 
 function aitrongcay_portal_profile_for_garden_context(string $garden_key, ?WP_User $viewer = null): ?array
@@ -2406,6 +2407,19 @@ function aitrongcay_user_garden_role(string $garden_key, int $user_id): ?string
             ));
             if ($has_order) {
                 return 'owner';
+            }
+        }
+    }
+
+    // Fallback: if the garden is a friend's preferred garden, grant viewer role
+    if ($user_id > 0 && $garden_key !== '' && function_exists('aitrongcay_get_friend_ids')) {
+        $friend_ids = aitrongcay_get_friend_ids($user_id);
+        if (is_array($friend_ids)) {
+            foreach ($friend_ids as $fid) {
+                $f_user = get_user_by('id', $fid);
+                if ($f_user instanceof WP_User && aitrongcay_preferred_garden_key_for_user($f_user) === $garden_key) {
+                    return 'viewer';
+                }
             }
         }
     }
@@ -8531,6 +8545,26 @@ function aitrongcay_friend_toggle_share_submit(): void
             'created_at' => current_time('mysql'),
             'updated_at' => current_time('mysql'),
         ], ['%s', '%d', '%s', '%s', '%d', '%s', '%s']);
+    }
+
+    if (function_exists('aitrongcay_add_notification')) {
+        $current_user = wp_get_current_user();
+        $sender_name = $current_user->display_name ?: $current_user->user_login;
+        if ($role === 'co_owner') {
+            aitrongcay_add_notification(
+                $friend_user_id,
+                '🪴 Bạn được mời xem vườn',
+                sprintf('Hàng xóm %s vừa chia sẻ khu vườn của họ cho bạn.', esc_html($sender_name)),
+                home_url('/portal/dashboard-2/?garden=' . rawurlencode($garden_key))
+            );
+        } else {
+            aitrongcay_add_notification(
+                $friend_user_id,
+                '🚫 Hủy chia sẻ vườn',
+                sprintf('Hàng xóm %s đã ngừng chia sẻ khu vườn với bạn.', esc_html($sender_name)),
+                '#'
+            );
+        }
     }
 
     aitrongcay_remember_selected_garden_key($friend_user_id, $garden_key);

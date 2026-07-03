@@ -7,6 +7,7 @@ if (! is_user_logged_in()) {
 }
 
 $current_user   = wp_get_current_user();
+$garden_key     = function_exists('aitrongcay_resolve_active_garden_key') ? aitrongcay_resolve_active_garden_key($current_user instanceof WP_User ? $current_user : null) : '';
 $current_points = (int) get_user_meta($current_user->ID, '_aitrongcay_eco_points', true);
 $current_level  = function_exists('aitrongcay_calculate_level') ? aitrongcay_calculate_level($current_points) : 1;
 $history        = array_filter((array) get_user_meta($current_user->ID, '_aitrongcay_redeem_history', true), function($h) {
@@ -77,6 +78,20 @@ $rewards = [
     ],
 ];
 
+$nav_items = [
+    ['key' => 'doi-diem',        'label' => 'Cửa hàng đổi điểm', 'icon' => '🏪', 'url' => home_url('/portal/doi-diem/')],
+    ['key' => 'lich-su-doi',     'label' => 'Lịch sử đổi thưởng', 'icon' => '📜', 'url' => home_url('/portal/doi-diem/#lich-su')],
+    ['key' => 'tai-khoan',       'label' => 'Tài khoản',          'icon' => '👤', 'url' => home_url('/tai-khoan/')],
+    ['key' => 'dashboard-2',     'label' => 'Khu vườn',           'icon' => '🌱', 'url' => home_url('/portal/dashboard-2/')],
+];
+
+foreach ($nav_items as &$item) {
+    if ($garden_key !== '') {
+        $item['url'] = add_query_arg('garden', $garden_key, $item['url']);
+    }
+}
+unset($item);
+
 set_query_var('aitr_eco_shell', [
     'title'       => 'Đổi điểm',
     'active'      => 'doi-diem',
@@ -85,12 +100,7 @@ set_query_var('aitr_eco_shell', [
     'side_badge'  => '🌿',
     'top_icons'   => ['🔔', '⚙️'],
     'search'      => null,
-    'nav'         => [
-        ['key' => 'doi-diem',        'label' => 'Cửa hàng đổi điểm', 'icon' => '🏪', 'url' => home_url('/portal/doi-diem/')],
-        ['key' => 'lich-su-doi',     'label' => 'Lịch sử đổi thưởng', 'icon' => '📜', 'url' => home_url('/portal/doi-diem/#lich-su')],
-        ['key' => 'tai-khoan',       'label' => 'Tài khoản',          'icon' => '👤', 'url' => home_url('/tai-khoan/')],
-        ['key' => 'dashboard-2',     'label' => 'Khu vườn',           'icon' => '🌱', 'url' => home_url('/portal/dashboard-2/')],
-    ],
+    'nav'         => $nav_items,
 ]);
 get_template_part('template-parts/site/eco-shell-start');
 ?>
