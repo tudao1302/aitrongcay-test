@@ -30,6 +30,7 @@ wp-content/uploads.zip
 # File test/debug/fix tạm thời
 test-*.php
 test-*.html
+!test-3d.html
 test_*.php
 test.php
 debug-*.php
@@ -53,6 +54,7 @@ print-rack-status.php
 replace-khoang.php
 schema-sync.php
 trigger-cron.php
+git-deploy.php
 
 # File WordPress không cần thiết trên production
 readme.html
