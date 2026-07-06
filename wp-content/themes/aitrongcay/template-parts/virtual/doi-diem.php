@@ -14,69 +14,39 @@ $history        = array_filter((array) get_user_meta($current_user->ID, '_aitron
     return !empty($h['reward_id']) && !empty($h['points']);
 });
 
-// Reward catalogue
-$rewards = [
-    [
-        'id'          => 'rau_baby_mix',
-        'name'        => 'Rau Baby Mix 200g',
-        'desc'        => 'Hộp rau mầm hỗn hợp tươi ngon, thu hoạch trong ngày từ vườn thủy canh.',
-        'points'      => 150,
-        'icon'        => '🥗',
-        'color'       => '#31a375',
-        'badge'       => 'Phổ biến',
-        'stock'       => 20,
-    ],
-    [
-        'id'          => 'rau_cai_xanh',
-        'name'        => 'Cải xanh 500g',
-        'desc'        => 'Cải xanh trồng thủy canh không thuốc trừ sâu, đảm bảo an toàn cho cả nhà.',
-        'points'      => 200,
-        'icon'        => '🥬',
-        'color'       => '#4caf50',
-        'badge'       => '',
-        'stock'       => 15,
-    ],
-    [
-        'id'          => 'rau_xalach',
-        'name'        => 'Xà lách Romaine 300g',
-        'desc'        => 'Xà lách giòn, ngọt, phù hợp cho salad, cuốn hay ăn sống đều tuyệt.',
-        'points'      => 180,
-        'icon'        => '🫛',
-        'color'       => '#8bc34a',
-        'badge'       => '',
-        'stock'       => 10,
-    ],
-    [
-        'id'          => 'goi_combo_vuon',
-        'name'        => 'Combo Vườn Xanh',
-        'desc'        => 'Bộ rau tổng hợp 1kg gồm cải, xà lách, rau thơm — đủ dùng cho cả tuần.',
-        'points'      => 400,
-        'icon'        => '🧺',
-        'color'       => '#ff9800',
-        'badge'       => 'Giá trị',
-        'stock'       => 5,
-    ],
-    [
-        'id'          => 'voucher_10k',
-        'name'        => 'Voucher Giảm 10.000đ',
-        'desc'        => 'Mã giảm giá áp dụng cho đơn hàng tiếp theo tại Chợ quê Ai trồng cây.',
-        'points'      => 100,
-        'icon'        => '🎟️',
-        'color'       => '#9c27b0',
-        'badge'       => 'Nhanh nhất',
-        'stock'       => 99,
-    ],
-    [
-        'id'          => 'voucher_50k',
-        'name'        => 'Voucher Giảm 50.000đ',
-        'desc'        => 'Mã giảm giá lớn cho đơn hàng từ 150.000đ trở lên tại Chợ quê.',
-        'points'      => 450,
-        'icon'        => '🎫',
-        'color'       => '#e91e63',
-        'badge'       => '',
-        'stock'       => 30,
-    ],
+// Dynamic Reward catalogue from admin panel
+$catalogue = function_exists('aitrongcay_eco_reward_catalogue') ? aitrongcay_eco_reward_catalogue() : [];
+
+$rewards = [];
+$default_extras = [
+    'rau_baby_mix'   => ['desc' => 'Hộp rau mầm hỗn hợp tươi ngon, thu hoạch trong ngày từ vườn thủy canh.', 'color' => '#31a375', 'badge' => 'Phổ biến'],
+    'rau_cai_xanh'   => ['desc' => 'Cải xanh trồng thủy canh không thuốc trừ sâu, đảm bảo an toàn cho cả nhà.', 'color' => '#4caf50', 'badge' => ''],
+    'rau_xalach'     => ['desc' => 'Xà lách giòn, ngọt, phù hợp cho salad, cuốn hay ăn sống đều tuyệt.', 'color' => '#8bc34a', 'badge' => ''],
+    'goi_combo_vuon' => ['desc' => 'Bộ rau tổng hợp 1kg gồm cải, xà lách, rau thơm — đủ dùng cho cả tuần.', 'color' => '#ff9800', 'badge' => 'Giá trị'],
+    'voucher_10k'    => ['desc' => 'Mã giảm giá áp dụng cho đơn hàng tiếp theo tại Chợ quê Ai trồng cây.', 'color' => '#9c27b0', 'badge' => 'Nhanh nhất'],
+    'voucher_50k'    => ['desc' => 'Mã giảm giá lớn cho đơn hàng từ 150.000đ trở lên tại Chợ quê.', 'color' => '#e91e63', 'badge' => ''],
 ];
+$fallback_colors = ['#31a375', '#4caf50', '#8bc34a', '#ff9800', '#9c27b0', '#e91e63', '#2196f3', '#00bcd4'];
+$color_idx = 0;
+
+foreach ($catalogue as $id => $item) {
+    $extras = $default_extras[$id] ?? [
+        'desc'  => 'Phần thưởng hấp dẫn từ hệ sinh thái Ai Trồng Cây.',
+        'color' => $fallback_colors[$color_idx % count($fallback_colors)],
+        'badge' => ''
+    ];
+    $rewards[] = [
+        'id'     => $id,
+        'name'   => $item['name'] ?? '',
+        'desc'   => $extras['desc'],
+        'points' => (int)($item['points'] ?? 0),
+        'icon'   => $item['icon'] ?? '🎁',
+        'color'  => $extras['color'],
+        'badge'  => $extras['badge'],
+        'stock'  => (int)($item['stock'] ?? 0),
+    ];
+    $color_idx++;
+}
 
 $nav_items = [
     ['key' => 'doi-diem',        'label' => 'Cửa hàng đổi điểm', 'icon' => '🏪', 'url' => home_url('/portal/doi-diem/')],

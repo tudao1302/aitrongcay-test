@@ -8465,16 +8465,20 @@ function aitrongcay_remove_friend_ajax(): void
 }
 add_action('wp_ajax_aitrongcay_remove_friend', 'aitrongcay_remove_friend_ajax');
 
-function aitrongcay_friend_toggle_share_url(int $friend_user_id, int $membership_id, string $role): string
+function aitrongcay_friend_toggle_share_url(int $friend_user_id, int $membership_id, string $role, string $garden_key = ''): string
 {
     $role = $role === 'co_owner' ? 'viewer' : 'co_owner';
-    $url = add_query_arg([
+    $args = [
         'action' => 'aitrongcay_friend_toggle_share',
         'friend_user_id' => $friend_user_id,
         'membership_id' => $membership_id,
         'role' => $role,
         'redirect_to' => home_url('/portal/hang-xom/'),
-    ], admin_url('admin-post.php'));
+    ];
+    if ($garden_key !== '') {
+        $args['garden_key'] = $garden_key;
+    }
+    $url = add_query_arg($args, admin_url('admin-post.php'));
     return wp_nonce_url($url, 'aitrongcay_friend_toggle_share_' . $friend_user_id . '_' . $membership_id . '_' . $role);
 }
 
@@ -8550,7 +8554,13 @@ function aitrongcay_friend_toggle_share_submit(): void
     }
 
     global $wpdb;
-    $garden_key = aitrongcay_resolve_active_garden_key(wp_get_current_user());
+    
+    // Explicitly check for the garden_key we want to share, otherwise fallback to primary owned
+    $garden_key = isset($_GET['garden_key']) ? sanitize_text_field((string) wp_unslash($_GET['garden_key'])) : '';
+    if ($garden_key === '') {
+        $garden_key = function_exists('aitrongcay_primary_garden_key_for_user') ? aitrongcay_primary_garden_key_for_user(wp_get_current_user()) : aitrongcay_resolve_active_garden_key(wp_get_current_user());
+    }
+
     if (aitrongcay_user_garden_role($garden_key, get_current_user_id()) !== 'owner') {
         wp_safe_redirect(add_query_arg('friend_action', 'forbidden', $redirect_to));
         exit;
@@ -8559,10 +8569,13 @@ function aitrongcay_friend_toggle_share_submit(): void
     $table = aitrongcay_garden_members_table();
     if ($membership_id > 0) {
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d LIMIT 1", $membership_id), ARRAY_A);
-        if (! is_array($row)) {
-            wp_safe_redirect(add_query_arg('friend_action', 'notfound', $redirect_to));
-            exit;
+        if (! is_array($row) || $row['garden_key'] !== $garden_key) {
+            // If membership_id belongs to a different garden or not found, treat as new insert
+            $membership_id = 0;
         }
+    }
+
+    if ($membership_id > 0) {
         $wpdb->update($table, [
             'role' => $role,
             'updated_at' => current_time('mysql'),
@@ -9256,7 +9269,7 @@ function aitrongcay_points_for_level(int $level): int {
 // ─── Eco Points: Reward Catalogue ────────────────────────────────────────────
 function aitrongcay_eco_reward_catalogue(): array {
     $saved = get_option('aitrongcay_eco_rewards');
-    if (is_array($saved) && !empty($saved)) {
+    if (is_array($saved)) {
         return $saved;
     }
     return [
