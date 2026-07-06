@@ -7473,32 +7473,73 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
 
         // Web Share API (mobile) với fallback tải video + mở trang
         function tlShareTo(platform, btn) {
-          var originalText = btn ? btn.textContent : '';
-          if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang tạo video...'; }
+          if (btn.dataset.ready) {
+            // Step 2: Synchronous share
+            doShare(platform, btn._blob, btn._fileName);
+            return;
+          }
+
+          // Step 1: Generate video
+          var originalText = btn.textContent;
+          var originalBg = btn.style.background;
+          btn.disabled = true;
+          btn.textContent = '⏳ Đang xử lý...';
           
           tlGenerateVideoBlob(function (blob, fileName) {
-            if (btn) { btn.disabled = false; btn.textContent = originalText; }
-            if (!blob) return;
+            btn.disabled = false;
+            if (!blob) {
+                btn.textContent = originalText;
+                return;
+            }
+            btn._blob = blob;
+            btn._fileName = fileName;
+            btn.dataset.ready = "true";
+            
+            // Đổi text để người dùng bấm lại lần 2 (đồng bộ với sự kiện click)
+            btn.textContent = '✅ Bấm để share';
+            btn.style.background = '#22c55e'; // Green to indicate ready
+            
+            // Tự động reset sau 15 giây nếu không bấm
+            setTimeout(function() {
+                if (btn.dataset.ready) {
+                    delete btn.dataset.ready;
+                    delete btn._blob;
+                    btn.textContent = originalText;
+                    btn.style.background = originalBg;
+                }
+            }, 15000);
+            
+          }, function (current, total) {
+            btn.textContent = '⏳ ' + Math.round((current/total)*100) + '%';
+          });
+        }
 
+        function doShare(platform, blob, fileName) {
             var f = tlFrames[tlIndex] || {};
             var shareText = '🌿 Vườn rau thủy canh của tôi — Ai trồng cây (' + (f.date || '') + ')';
             var file = new File([blob], fileName, { type: 'video/webm' });
             
+            // Reset state
+            var btn = event.currentTarget;
+            var originalText = btn.getAttribute('data-orig-text') || (platform==='fb'?'Facebook':(platform==='zalo'?'Zalo':'Chia sẻ'));
+            btn.textContent = originalText;
+            btn.style.background = '';
+            delete btn.dataset.ready;
+            delete btn._blob;
+
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-              navigator.share({ files: [file], title: 'Vườn rau của tôi', text: shareText })
-                .catch(function () {});
+              navigator.share({ files: [file], title: 'Vườn của tôi', text: shareText })
+                .catch(function (e) { console.log('Share canceled or failed', e); });
               return;
             }
             
             // Fallback desktop: tải video rồi mở nền tảng để user đăng thủ công
+            alert('Video đã được tải về máy.\nTrình duyệt sẽ mở ' + (platform==='fb'?'Facebook':'Zalo') + ' để bạn có thể tự đăng video này nhé!');
             tlDownloadBlob(blob, fileName);
             var urls = { fb: 'https://www.facebook.com/', zalo: 'https://chat.zalo.me/' };
             if (urls[platform]) {
-              setTimeout(function () { window.open(urls[platform], '_blank'); }, 700);
+              window.open(urls[platform], '_blank');
             }
-          }, function (current, total) {
-            if (btn) btn.textContent = '⏳ ' + Math.round((current/total)*100) + '%';
-          });
         }
 
         if (tlSaveFrameBtn) {
@@ -7507,13 +7548,16 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           });
         }
         if (tlShareFbBtn) {
-          tlShareFbBtn.addEventListener('click', function () { tlShareTo('fb', this); });
+          tlShareFbBtn.setAttribute('data-orig-text', tlShareFbBtn.textContent);
+          tlShareFbBtn.addEventListener('click', function (e) { tlShareTo('fb', this); });
         }
         if (tlShareZaloBtn) {
-          tlShareZaloBtn.addEventListener('click', function () { tlShareTo('zalo', this); });
+          tlShareZaloBtn.setAttribute('data-orig-text', tlShareZaloBtn.textContent);
+          tlShareZaloBtn.addEventListener('click', function (e) { tlShareTo('zalo', this); });
         }
         if (tlShareNativeBtn) {
-          tlShareNativeBtn.addEventListener('click', function () { tlShareTo('', this); });
+          tlShareNativeBtn.setAttribute('data-orig-text', tlShareNativeBtn.textContent);
+          tlShareNativeBtn.addEventListener('click', function (e) { tlShareTo('', this); });
         }
 
         // Admin: chụp ảnh ngay
