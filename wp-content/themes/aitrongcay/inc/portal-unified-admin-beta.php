@@ -160,6 +160,51 @@ function aitrongcay_handle_unified_admin_beta_actions(): void {
         }
     }
 
+    // Action 1.5: Update Eco Points
+    if ($action === 'update_eco_points') {
+        $garden_key = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? ''));
+        $target_user_id = absint($_POST['target_user_id'] ?? 0);
+        $new_eco_points = absint($_POST['new_eco_points'] ?? 0);
+
+        if ($target_user_id > 0) {
+            update_user_meta($target_user_id, '_aitrongcay_eco_points', $new_eco_points);
+            wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'gardens', 'selected_garden' => $garden_key], $redirect));
+            exit;
+        }
+    }
+
+
+
+    // Action 1.6: Save Rewards
+    if ($action === 'save_rewards') {
+        $rewards = $_POST['rewards'] ?? [];
+        $catalogue = [];
+        if (is_array($rewards)) {
+            foreach ($rewards as $r_id => $data) {
+                if (strpos((string)$r_id, 'new_') === 0) {
+                    if (empty($data['name']) || empty($data['id_override'])) continue;
+                    $r_id = $data['id_override'];
+                }
+
+                $name = sanitize_text_field($data['name'] ?? '');
+                if ($name === '') continue;
+
+                $safe_id = sanitize_key($r_id);
+                if ($safe_id === '') continue;
+
+                $catalogue[$safe_id] = [
+                    'name' => $name,
+                    'icon' => sanitize_text_field($data['icon'] ?? ''),
+                    'points' => absint($data['points'] ?? 0),
+                    'stock' => absint($data['stock'] ?? 0),
+                ];
+            }
+        }
+        update_option('aitrongcay_eco_rewards', $catalogue);
+        wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'rewards'], $redirect));
+        exit;
+    }
+
     // Action 2: Release Rack
     if ($action === 'release_rack') {
         $rack_id = absint($_POST['rack_id'] ?? 0);
@@ -200,6 +245,17 @@ function aitrongcay_handle_unified_admin_beta_actions(): void {
                 'time' => current_time('mysql')
             ];
             update_option('aitr_garden_notices_' . $garden_key, $notices);
+            
+            $owner = function_exists('aitrongcay_get_garden_owner_user') ? aitrongcay_get_garden_owner_user($garden_key) : null;
+            $owner_user_id = $owner instanceof WP_User ? (int) $owner->ID : 0;
+            if (function_exists('aitrongcay_add_notification') && $owner_user_id > 0) {
+                aitrongcay_add_notification(
+                    $owner_user_id, 
+                    'Thu hồi Rack', 
+                    'Rack ' . esc_html($rack_name) . ' đã được thu hồi khỏi vườn của bạn.',
+                    home_url('/portal/dashboard-2/?garden=' . rawurlencode($garden_key))
+                );
+            }
 
             wp_safe_redirect(add_query_arg(['beta_success' => '1', 'tab' => 'gardens', 'selected_garden' => $garden_key], $redirect));
             exit;
@@ -1204,6 +1260,7 @@ function aitrongcay_render_unified_admin_beta_page(): void {
             <a href="?page=aitrongcay-unified-admin-beta&tab=rewards" class="aitr-beta-tab-btn <?php echo $active_tab === 'rewards' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-gift"></i> Quản lý Đổi thưởng
             </a>
+
             <a href="?page=aitrongcay-unified-admin-beta&tab=settings" class="aitr-beta-tab-btn <?php echo $active_tab === 'settings' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-sliders"></i> Cấu hình Hệ thống
             </a>
@@ -1508,6 +1565,73 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                                     </div>
                                 <?php endif; ?>
 
+                                <!-- Box 4: Eco Points Management -->
+                                <?php if ($owner_user instanceof WP_User): 
+                                    $owner_id = $owner_user->ID;
+                                    $current_eco_points = (int) get_user_meta($owner_id, '_aitrongcay_eco_points', true);
+                                    $redeem_history = (array) get_user_meta($owner_id, '_aitrongcay_redeem_history', true);
+                                ?>
+                                    <div class="aitr-garden-meta-box">
+                                        <h3 class="aitr-garden-meta-title"><i class="fa-solid fa-coins"></i> Quản lý Eco Points & Đổi thưởng</h3>
+                                        <div class="aitr-meta-rows" style="margin-bottom:15px">
+                                            <div class="aitr-meta-row-single">
+                                                <span class="lbl">Điểm Eco hiện tại</span>
+                                                <span class="val" style="color:#fbbf24;font-size:20px;font-weight:700"><?php echo number_format($current_eco_points); ?> <i class="fa-solid fa-leaf"></i></span>
+                                            </div>
+                                            <div class="aitr-meta-row-single">
+                                                <span class="lbl">Số lần đã đổi thưởng</span>
+                                                <span class="val"><?php echo count($redeem_history); ?> lần</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Form to edit points -->
+                                        <form method="post" style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:12px;margin-bottom:15px;display:flex;align-items:flex-end;gap:15px">
+                                            <?php wp_nonce_field('aitrongcay_beta_action_nonce'); ?>
+                                            <input type="hidden" name="beta_action" value="update_eco_points">
+                                            <input type="hidden" name="garden_key" value="<?php echo esc_attr($selected_garden_key); ?>">
+                                            <input type="hidden" name="target_user_id" value="<?php echo esc_attr($owner_id); ?>">
+                                            
+                                            <div style="flex:1">
+                                                <label style="display:block;margin-bottom:6px;font-size:12px;font-weight:600;color:#94a3b8">Điều chỉnh điểm (Ghi đè số điểm mới):</label>
+                                                <input type="number" name="new_eco_points" class="aitr-form-control" style="background:#0f172a;height:40px" value="<?php echo esc_attr((string)$current_eco_points); ?>" required min="0">
+                                            </div>
+                                            <button type="submit" class="aitr-btn" style="height:40px"><i class="fa-solid fa-save"></i> Cập nhật điểm</button>
+                                        </form>
+
+                                        <!-- Redeem History Table -->
+                                        <?php if (!empty($redeem_history)): ?>
+                                            <h4 style="margin:10px 0 5px;font-size:13px;color:#94a3b8">Lịch sử đổi thưởng gần đây</h4>
+                                            <div style="max-height:200px;overflow-y:auto;background:#0f172a;border:1px solid #334155;border-radius:8px">
+                                                <table class="aitr-table" style="margin-top:0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Thời gian</th>
+                                                            <th>Vật phẩm</th>
+                                                            <th>Điểm trừ</th>
+                                                            <th>Trạng thái</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach (array_reverse($redeem_history) as $rh): ?>
+                                                            <tr>
+                                                                <td><?php echo date_i18n('d/m/Y H:i', (int)$rh['time']); ?></td>
+                                                                <td><?php echo esc_html($rh['icon'] . ' ' . $rh['name']); ?></td>
+                                                                <td style="color:#ef4444">-<?php echo esc_html((string)$rh['points']); ?></td>
+                                                                <td>
+                                                                    <?php if ($rh['status'] === 'pending'): ?>
+                                                                        <span class="aitr-badge aitr-badge-warn">Đang chờ</span>
+                                                                    <?php else: ?>
+                                                                        <span class="aitr-badge aitr-badge-online">Hoàn thành</span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
 
                             </div>
                         <?php endif; ?>
@@ -1636,6 +1760,76 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                         ?>
                     </tbody>
                 </table>
+            </div>
+
+        <!-- Tab 3.5: Rewards Management Panel -->
+        <?php elseif ($active_tab === 'rewards'): ?>
+            <div class="aitr-panel">
+                <div class="aitr-panel-title">
+                    <span><i class="fa-solid fa-gift"></i> Quản lý Phần thưởng Đổi điểm Eco (Reward Catalogue)</span>
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed #10b981; color: #34d399; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px;">
+                    <i class="fa-solid fa-circle-info"></i> Danh sách các phần thưởng hiển thị tại trang "Cửa hàng Đổi Điểm". Để xóa phần thưởng, hãy để trống ô Tên Phần Thưởng và lưu lại.
+                </div>
+                <form method="post">
+                    <?php wp_nonce_field('aitrongcay_beta_action_nonce'); ?>
+                    <input type="hidden" name="beta_action" value="save_rewards">
+                    <table class="aitr-table">
+                        <thead>
+                            <tr>
+                                <th>Mã ID</th>
+                                <th>Icon</th>
+                                <th>Tên Phần Thưởng</th>
+                                <th>Số Điểm Cần</th>
+                                <th>Tồn Kho</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            $catalogue = function_exists('aitrongcay_eco_reward_catalogue') ? aitrongcay_eco_reward_catalogue() : [];
+                            foreach ($catalogue as $id => $reward): 
+                            ?>
+                                <tr>
+                                    <td><code><?php echo esc_html($id); ?></code></td>
+                                    <td style="width: 80px;">
+                                        <input type="text" name="rewards[<?php echo esc_attr($id); ?>][icon]" class="aitr-form-control" value="<?php echo esc_attr($reward['icon'] ?? ''); ?>" style="text-align: center;">
+                                    </td>
+                                    <td>
+                                        <input type="text" name="rewards[<?php echo esc_attr($id); ?>][name]" class="aitr-form-control" value="<?php echo esc_attr($reward['name'] ?? ''); ?>">
+                                    </td>
+                                    <td style="width: 120px;">
+                                        <input type="number" name="rewards[<?php echo esc_attr($id); ?>][points]" class="aitr-form-control" value="<?php echo esc_attr((string) ($reward['points'] ?? 0)); ?>" required min="0">
+                                    </td>
+                                    <td style="width: 120px;">
+                                        <input type="number" name="rewards[<?php echo esc_attr($id); ?>][stock]" class="aitr-form-control" value="<?php echo esc_attr((string) ($reward['stock'] ?? 0)); ?>" required min="0">
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            
+                            <!-- Thêm mới -->
+                            <tr style="background: rgba(59, 130, 246, 0.05);">
+                                <td>
+                                    <input type="text" name="rewards[new_1][id_override]" class="aitr-form-control" placeholder="Mã ID (VD: voucher_new)" style="background: rgba(0,0,0,0.2);">
+                                </td>
+                                <td style="width: 80px;">
+                                    <input type="text" name="rewards[new_1][icon]" class="aitr-form-control" placeholder="🎁" style="text-align: center; background: rgba(0,0,0,0.2);">
+                                </td>
+                                <td>
+                                    <input type="text" name="rewards[new_1][name]" class="aitr-form-control" placeholder="+ Thêm phần thưởng mới..." style="background: rgba(0,0,0,0.2);">
+                                </td>
+                                <td style="width: 120px;">
+                                    <input type="number" name="rewards[new_1][points]" class="aitr-form-control" value="0" min="0" style="background: rgba(0,0,0,0.2);">
+                                </td>
+                                <td style="width: 120px;">
+                                    <input type="number" name="rewards[new_1][stock]" class="aitr-form-control" value="0" min="0" style="background: rgba(0,0,0,0.2);">
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 20px; text-align: right;">
+                        <button type="submit" class="aitr-btn"><i class="fa-solid fa-save"></i> Lưu cấu hình phần thưởng</button>
+                    </div>
+                </form>
             </div>
 
         <!-- Tab 4: System Settings Panel -->

@@ -155,11 +155,11 @@ get_template_part('template-parts/site/eco-shell-start');
 .redeem-msg{padding:14px 18px;border-radius:14px;font-size:14px;font-weight:600;margin-top:14px;display:none}
 .redeem-msg.success{background:rgba(111,219,168,.12);color:#6fdba8;border:1px solid rgba(111,219,168,.2)}
 .redeem-msg.error{background:rgba(255,100,100,.1);color:#ff9999;border:1px solid rgba(255,100,100,.2)}
-@media(max-width:640px){.doi-diem-points-banner{flex-direction:column;text-align:center}.reward-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.doi-diem-container{margin-left:-16px !important}.doi-diem-points-banner{flex-direction:column;text-align:center;padding:20px}.doi-diem-points-num{font-size:48px}.reward-grid{grid-template-columns:repeat(2,1fr);gap:12px}.reward-card{padding:14px;gap:8px}.reward-icon{width:48px;height:48px;font-size:24px;border-radius:14px}.reward-name{font-size:15px}.reward-desc{font-size:11px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.reward-points-num{font-size:20px}.reward-points-label{font-size:10px}.reward-btn{font-size:12px;padding:10px}.reward-card-badge{font-size:9px;padding:3px 6px;top:12px;right:12px}}
 </style>
 
 <section style="padding:0;min-height:100vh">
-  <div style="max-width:1040px;margin:0 auto;padding:28px">
+  <div class="doi-diem-container" style="max-width:1040px;margin:0 auto;padding:28px">
 
     <!-- Points Banner -->
     <div class="doi-diem-points-banner">

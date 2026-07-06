@@ -161,8 +161,11 @@ if (is_user_logged_in()) {
       document.addEventListener('keydown', function(e){ if(e.key==='Escape') { closeProfile(); closeNoti(); } });
 
       // Notification Polling Logic
-      if (notiTrigger && typeof aitrongcayTheme !== 'undefined') {
-          var ajaxUrl = aitrongcayTheme.ajaxUrl;
+      if (notiTrigger) {
+          var ajaxUrl = "<?php echo esc_url(admin_url('admin-ajax.php')); ?>";
+          if (typeof aitrongcayTheme !== 'undefined' && aitrongcayTheme.ajaxUrl) {
+              ajaxUrl = aitrongcayTheme.ajaxUrl;
+          }
           var lastUnreadCount = 0;
           function fetchNotifications() {
               fetch(ajaxUrl + '?action=aitrongcay_get_notifications', {cache: 'no-store'})

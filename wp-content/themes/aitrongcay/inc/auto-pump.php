@@ -333,7 +333,73 @@ add_action('init', static function (): void {
     if (! wp_next_scheduled('aitrongcay_auto_pump_tick')) {
         wp_schedule_event(time(), 'aitr_5min', 'aitrongcay_auto_pump_tick');
     }
+    if (! wp_next_scheduled('aitrongcay_garden_sos_tick')) {
+        wp_schedule_event(time(), 'hourly', 'aitrongcay_garden_sos_tick');
+    }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SOS ALERT INTEGRATION (HÀNG XÓM)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Quét tất cả các vườn đang hoạt động, nếu đất quá khô (dưới 20%) -> SOS tới hàng xóm
+ */
+function aitrongcay_garden_sos_cron_tick(): void
+{
+    global $wpdb;
+    $racks_table = function_exists('aitrongcay_garden_racks_table') ? aitrongcay_garden_racks_table() : $wpdb->prefix . 'aitr_garden_racks';
+    $gardens = $wpdb->get_col("SELECT DISTINCT garden_key FROM {$racks_table} WHERE status = 'assigned' AND garden_key != ''");
+
+    foreach ($gardens as $gk) {
+        $soil = aitrongcay_pump_read_soil($gk);
+        // Nếu độ ẩm dưới 20%, có thể do bơm hỏng hoặc hết nước
+        if ($soil !== null && $soil <= 20.0) {
+            // Check cooldown (12h/lần)
+            $cooldown_key = "aitr_sos_cooldown_" . md5($gk);
+            if (get_transient($cooldown_key)) {
+                continue;
+            }
+
+            // Lấy chủ vườn
+            $members_table = function_exists('aitrongcay_garden_members_table') ? aitrongcay_garden_members_table() : $wpdb->prefix . 'aitr_garden_members';
+            $owners = $wpdb->get_col($wpdb->prepare("SELECT user_id FROM {$members_table} WHERE garden_key = %s AND role = 'owner' AND status = 'active'", $gk));
+            if (empty($owners)) {
+                continue;
+            }
+
+            $owner_id = (int)$owners[0];
+            $owner_user = get_user_by('id', $owner_id);
+            if (!$owner_user) {
+                continue;
+            }
+            $owner_name = $owner_user->display_name ?: $owner_user->user_login;
+
+            // Lấy danh sách hàng xóm
+            $friends = function_exists('aitrongcay_get_user_friends') ? aitrongcay_get_user_friends($owner_id) : [];
+            $notified = false;
+
+            foreach ($friends as $f) {
+                $friend_id = (int) ($f['requester_user_id'] == $owner_id ? $f['addressee_user_id'] : $f['requester_user_id']);
+
+                if (function_exists('aitrongcay_add_notification')) {
+                    aitrongcay_add_notification(
+                        $friend_id,
+                        '🆘 Vườn hàng xóm kêu cứu!',
+                        "Vườn của {$owner_name} đang kêu cứu vì đất quá khô (" . round($soil) . "%)! Hãy ghé qua nhắc anh ấy kiểm tra lại máy bơm và tiện tay tưới hộ một gáo nước nhé!",
+                        home_url('/portal/hang-xom/')
+                    );
+                    $notified = true;
+                }
+            }
+
+            if ($notified) {
+                set_transient($cooldown_key, 1, 12 * HOUR_IN_SECONDS);
+            }
+        }
+    }
+}
+add_action('aitrongcay_garden_sos_tick', 'aitrongcay_garden_sos_cron_tick');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // AJAX: LẤY LỊCH SỬ BƠM

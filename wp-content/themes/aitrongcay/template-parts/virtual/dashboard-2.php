@@ -4205,20 +4205,27 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           endforeach;
       endif;
       ?>
+      <style>
+      @media (max-width: 820px) {
+        .d2-garden-rename-responsive { display: block !important; }
+        .d2-garden-name-responsive { display: inline !important; padding-top: 0 !important; }
+        .eco-garden-switcher-responsive { display: inline-block !important; vertical-align: middle !important; margin-top: -4px !important; margin-left: 6px !important; }
+      }
+      </style>
       <div class="d2-top">
-        <div class="d2-garden-rename" data-garden-inline-name
+        <div class="d2-garden-rename d2-garden-rename-responsive" data-garden-inline-name
           data-garden-name="<?php echo esc_attr($garden_title !== '' ? $garden_title : 'Khu vườn của bạn'); ?>">
-          <div class="d2-garden-name" data-garden-display-name>
+          <div class="d2-garden-name d2-garden-name-responsive" data-garden-display-name>
             <?php echo esc_html($garden_title !== '' ? $garden_title : 'Khu vườn của bạn'); ?></div>
           <input type="text" class="d2-garden-input"
             value="<?php echo esc_attr($garden_title !== '' ? $garden_title : 'Khu vườn của bạn'); ?>"
             data-garden-inline-input hidden>
           <?php if (is_array($viewable_gardens) && count($viewable_gardens) > 1) : ?>
-            <div class="eco-garden-switcher" style="position:relative; display:inline-block; margin-left:2px;">
+            <div class="eco-garden-switcher eco-garden-switcher-responsive" style="position:relative; display:inline-block; margin-left:4px; margin-top:2px;">
                 <button class="d2-garden-edit eco-garden-btn" type="button" onclick="var p = this.nextElementSibling; p.hidden = !p.hidden; event.stopPropagation();" aria-label="Chuyển đổi khu vườn" style="background:rgba(111,219,168,.12); color:var(--primary); display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:999px; width:36px; height:36px; cursor:pointer;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.8;"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
-                <div class="eco-garden-popup" hidden style="position:absolute; top:calc(100% + 8px); left:0; min-width:260px; background:rgba(26,28,25,.98); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:8px; box-shadow:0 24px 48px rgba(0,0,0,.4); z-index:100; font-family:var(--ui-font,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif); font-style:normal; letter-spacing:normal; font-size:14px; line-height:1.4; text-align:left;" onclick="event.stopPropagation();">
+                <div class="eco-garden-popup" hidden style="position:absolute; top:calc(100% + 8px); left:0; min-width:240px; background:rgba(26,28,25,.98); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:8px; box-shadow:0 24px 48px rgba(0,0,0,.4); z-index:100; font-family:var(--ui-font,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif); font-style:normal; letter-spacing:normal; font-size:14px; line-height:1.4; text-align:left; max-width: calc(100vw - 32px);" onclick="event.stopPropagation();">
                     <?php 
                     try {
                         $has_own_garden = false;
@@ -5078,7 +5085,11 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
               .then(res => res.json())
               .then(res => {
                   if (res && res.success) {
-                      msg.innerHTML += `<br><span style="color:#6fdba8;">✅ Đã lưu ảnh tự động vào Kho ảnh của ${data.pot_code}. (<a href="${res.data.url}" target="_blank" style="color:#fff;text-decoration:underline;">Xem ảnh gốc</a>)</span>`;
+                      let pointsText = '';
+                      if (res.data.bonus_points && res.data.bonus_points > 0) {
+                          pointsText = ` Nhận được +${res.data.bonus_points} Eco Points!`;
+                      }
+                      msg.innerHTML += `<br><span style="color:#6fdba8;">✅ Đã lưu ảnh tự động vào Kho ảnh của ${data.pot_code}.${pointsText} (<a href="${res.data.url}" target="_blank" style="color:#fff;text-decoration:underline;">Xem ảnh gốc</a>)</span>`;
                       console.log('✅ THÀNH CÔNG: Ảnh đã được chụp và lưu!', res.data);
                       
                       // Hiển thị Popup ảnh vừa chụp
@@ -6699,17 +6710,26 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         }
       }
       var captureToast = document.querySelector('[data-d2-capture-toast]');
-      var captureToastTimer = null;
       function showCaptureToast(message, type) {
-        if (!captureToast) return;
-        captureToast.textContent = message || '';
-        captureToast.className = 'd2-capture-toast';
-        if (type) captureToast.classList.add(type);
-        captureToast.hidden = !message;
-        if (captureToastTimer) window.clearTimeout(captureToastTimer);
-        if (message) {
-          captureToastTimer = window.setTimeout(function () { captureToast.hidden = true; }, 2800);
-        }
+        if (!message) return;
+        var isError = type === 'is-error';
+        var toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:30px;right:30px;padding:16px 24px;border-radius:20px;background:' + (isError ? 'rgba(239,68,68,0.95)' : 'rgba(16,185,129,0.95)') + ';color:#fff;font-family:"Inter",sans-serif;font-weight:600;font-size:15px;box-shadow:0 20px 40px rgba(0,0,0,0.3);z-index:99999;transform:translateY(100px);opacity:0;transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:12px;';
+        toast.innerHTML = (isError ? '<span>⚠️</span>' : '<span>📸</span>') + '<span>' + message + '</span>';
+        document.body.appendChild(toast);
+        
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                toast.style.transform = 'translateY(0)';
+                toast.style.opacity = '1';
+            });
+        });
+        
+        setTimeout(function() {
+            toast.style.transform = 'translateY(100px)';
+            toast.style.opacity = '0';
+            setTimeout(function() { toast.remove(); }, 400);
+        }, 3500);
       }
       function captureCurrentFrame() {
         var video = document.querySelector('[data-d2-hero-video]');
@@ -6751,7 +6771,11 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           post('aitrongcay_capture_photo_server', { garden_key: AITR_GARDEN_KEY || '', pot_code: potCode })
             .then(function (res) {
               if (!res || !res.success || !res.data) throw new Error((res && res.data && res.data.message) || 'Chưa lưu được ảnh.');
-              showCaptureToast('Đã lưu vào Kho ảnh · ' + potCode + (res.data.source === 'timelapse' ? ' (timelapse)' : ' (live)') + '.', 'is-success');
+              var msg = 'Đã lưu vào Kho ảnh · ' + potCode + (res.data.source === 'timelapse' ? ' (timelapse)' : ' (live)') + '.';
+              if (res.data.bonus_points && res.data.bonus_points > 0) {
+                  msg += ' ✅ +' + res.data.bonus_points + ' Eco Points!';
+              }
+              showCaptureToast(msg, 'is-success');
             })
             .catch(function (err) {
               showCaptureToast((err && err.message) || 'Chưa chụp được ảnh.', 'is-error');

@@ -81,8 +81,10 @@ if (is_user_logged_in()) {
 .eco-noti-title { font-weight: bold; font-size: 14px; margin-bottom: 4px; color: #fff; }
 .eco-noti-body { font-size: 12px; color: #a9b5ab; line-height: 1.4; }
 .eco-noti-time { font-size: 11px; color: #7a827b; margin-top: 6px; }
+.eco-garden-popup { position:absolute; top:calc(100% + 4px); left:0; min-width:240px; background:rgba(26,28,25,.98); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:6px; box-shadow:0 24px 48px rgba(0,0,0,.4); z-index:80; font-family:var(--ui-font,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif); font-style:normal; letter-spacing:normal; font-size:14px; line-height:1.4; }
+.eco-garden-popup[hidden] { display:none; }
 @media (max-width:1100px){.eco-layout{grid-template-columns:1fr;padding:18px}.eco-side{position:static}}
-@media (max-width:820px){.eco-shell{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}.eco-top-left{display:contents}.eco-top{padding:14px 16px;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:flex-start}.eco-top-title{font-size:28px;flex:1 1 0;min-width:0;order:1}.eco-top-right{flex:0 0 auto;padding:6px 8px;border-radius:18px;order:2}.eco-top-links{order:3;flex:0 0 100%;margin-left:0;padding-bottom:4px;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}.eco-top-search{order:4;min-width:0;width:100%;flex:0 0 100%}.eco-layout{padding:18px 14px 14px}.eco-side{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));top:auto;z-index:65;padding:11px 12px calc(11px + env(safe-area-inset-bottom,0px));border-radius:26px;background:rgba(7,33,24,.88);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);box-shadow:0 20px 44px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.06)}.eco-side-head{display:none}.eco-side nav{margin-top:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.eco-side nav a{flex-direction:column;justify-content:center;text-align:center;padding:10px 8px;border-radius:18px;font-size:11px;line-height:1.15;color:rgba(227,227,222,.74);gap:5px;font-weight:700}.eco-side nav a.is-desktop-only,.eco-side-link-label{display:none}.eco-side-link-short{display:block}.eco-side-link-icon{font-size:20px}.eco-side nav a.active{border-radius:18px;background:linear-gradient(180deg,rgba(111,219,168,.24),rgba(49,163,117,.92));color:#f7fff9;font-weight:800;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 22px rgba(49,163,117,.22)}.eco-side nav a:not(.active):hover{transform:none}.eco-main{max-width:none}.eco-hero h1{font-size:40px}}
+@media (max-width:820px){.eco-shell{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}.eco-top-left{display:contents}.eco-top{padding:14px 16px;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:flex-start}.eco-top-title{font-size:28px;flex:1 1 0;min-width:0;order:1}.eco-top-right{flex:0 0 auto;padding:6px 8px;border-radius:18px;order:2}.eco-top-links{order:3;flex:0 0 100%;margin-left:0;padding-bottom:4px;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}.eco-top-search{order:4;min-width:0;width:100%;flex:0 0 100%}.eco-layout{padding:18px 14px 14px}.eco-side{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));top:auto;z-index:65;padding:11px 12px calc(11px + env(safe-area-inset-bottom,0px));border-radius:26px;background:rgba(7,33,24,.88);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);box-shadow:0 20px 44px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.06)}.eco-side-head{display:none}.eco-side nav{margin-top:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.eco-side nav a{flex-direction:column;justify-content:center;text-align:center;padding:10px 8px;border-radius:18px;font-size:11px;line-height:1.15;color:rgba(227,227,222,.74);gap:5px;font-weight:700}.eco-side nav a.is-desktop-only,.eco-side-link-label{display:none}.eco-side-link-short{display:block}.eco-side-link-icon{font-size:20px}.eco-side nav a.active{border-radius:18px;background:linear-gradient(180deg,rgba(111,219,168,.24),rgba(49,163,117,.92));color:#f7fff9;font-weight:800;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 22px rgba(49,163,117,.22)}.eco-side nav a:not(.active):hover{transform:none}.eco-main{max-width:none}.eco-hero h1{font-size:40px}.eco-garden-popup{left:-16px;max-width:calc(100vw - 32px);width:max-content;}}
 </style>
 <div class="eco-shell">
   <header class="eco-top">
@@ -100,7 +102,7 @@ if (is_user_logged_in()) {
                     <?php echo esc_html($title); ?> 
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary, #6fdba8)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.8"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
-                <div class="eco-garden-popup" data-eco-garden-popup hidden style="position:absolute; top:calc(100% + 4px); left:0; min-width:240px; background:rgba(26,28,25,.98); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:6px; box-shadow:0 24px 48px rgba(0,0,0,.4); z-index:80; font-family:var(--ui-font,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif); font-style:normal; letter-spacing:normal; font-size:14px; line-height:1.4;">
+                <div class="eco-garden-popup" data-eco-garden-popup hidden>
                     <?php 
                     $has_own_garden = false;
                     foreach ($viewable_gardens as $g_key => $g_data) {
@@ -216,8 +218,11 @@ if (is_user_logged_in()) {
       });
       document.addEventListener('keydown', function(e){ if(e.key==='Escape') { closeProfile(); closeNoti(); closeGarden(); } });
 
-      if (notiTrigger && typeof aitrongcayTheme !== 'undefined') {
-          var ajaxUrl = aitrongcayTheme.ajaxUrl;
+      if (notiTrigger) {
+          var ajaxUrl = "<?php echo esc_url(admin_url('admin-ajax.php')); ?>";
+          if (typeof aitrongcayTheme !== 'undefined' && aitrongcayTheme.ajaxUrl) {
+              ajaxUrl = aitrongcayTheme.ajaxUrl;
+          }
           function fetchNotifications() {
               fetch(ajaxUrl + '?action=aitrongcay_get_notifications', {cache: 'no-store'})
                   .then(r => r.json())

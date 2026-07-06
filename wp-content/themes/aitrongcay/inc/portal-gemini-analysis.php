@@ -513,9 +513,9 @@ function aitrongcay_analyze_timelapse_gemini_ajax(): void
 
     // Get pot record for context and latest image
     $pot_record = ['name' => $pot_code, 'code' => $pot_code];
-    if (function_exists('aitrongcay_get_db_pots')) {
-        foreach (aitrongcay_get_db_pots($garden_key) as $pot) {
-            if (strtoupper(trim((string) ($pot['pot_code'] ?? ''))) === $pot_code) {
+    if (function_exists('aitrongcay_portal_pots')) {
+        foreach (aitrongcay_portal_pots($garden_key, $user) as $pot) {
+            if (strtoupper(trim((string) ($pot['code'] ?? ''))) === $pot_code || strtoupper(trim((string) ($pot['pot_code'] ?? ''))) === $pot_code) {
                 $pot_record = $pot;
                 break;
             }
@@ -524,12 +524,43 @@ function aitrongcay_analyze_timelapse_gemini_ajax(): void
 
     $image_url = trim((string) ($pot_record['image_url'] ?? ''));
     if ($image_url === '' || $image_url === '0') {
-        // Fallback to latest timelapse if available
-        $stream_slug = trim((string) ($pot_record['video_url'] ?? $pot_record['video'] ?? ''));
+        // Fallback 1: Resolve actual slug from camera config
+        $cam_info = function_exists('aitrongcay_resolve_pot_webcam_info') ? aitrongcay_resolve_pot_webcam_info($garden_key, $pot_code) : [];
+        $stream_slug = $cam_info['slug'] ?? trim((string) ($pot_record['video_url'] ?? $pot_record['video'] ?? ''));
+        
         if ($stream_slug !== '') {
             $latest = aitrongcay_get_latest_timelapse_for_pot($garden_key, $stream_slug);
             if ($latest) {
                 $image_url = $latest['url'];
+            }
+        }
+
+        // Fallback 2: Check Media Library (Robot captures) if timelapse directory didn't have it
+        if ($image_url === '' || $image_url === '0') {
+            $photo_query = new WP_Query([
+                'post_type'      => 'attachment',
+                'post_status'    => 'inherit',
+                'posts_per_page' => 20,
+                'meta_query'     => [
+                    [
+                        'key'   => '_aitrongcay_photo_garden_key',
+                        'value' => $garden_key,
+                    ],
+                ],
+                'orderby'        => 'date',
+                'order'          => 'DESC',
+            ]);
+            if ($photo_query->have_posts()) {
+                foreach ($photo_query->posts as $p) {
+                    $p_code = strtoupper(trim((string) get_post_meta($p->ID, '_aitrongcay_pot_code', true)));
+                    if ($p_code === $pot_code) {
+                        $img_url = wp_get_attachment_image_url($p->ID, 'large') ?: wp_get_attachment_url($p->ID);
+                        if ($img_url) {
+                            $image_url = $img_url;
+                            break;
+                        }
+                    }
+                }
             }
         }
 
@@ -575,7 +606,17 @@ function aitrongcay_analyze_timelapse_gemini_ajax(): void
         wp_send_json_error(['message' => 'Không thể đọc được file ảnh của khoang (' . esc_html($image_url) . '). Vui lòng thử upload lại.'], 500);
     }
 
-    $photo_meta = ['source' => 'gallery', 'date' => wp_date('Y-m-d'), 'time' => wp_date('H-i'), 'sensors' => []];
+    $raw_sensors = [
+        'temp' => trim((string) ($pot_record['temperature'] ?? '')),
+        'hum'  => trim((string) ($pot_record['humidity'] ?? '')),
+        'soil' => trim((string) ($pot_record['soil_moisture'] ?? '')),
+        'ph'   => trim((string) ($pot_record['ph'] ?? '')),
+        'ec'   => trim((string) ($pot_record['soil_ec'] ?? ''))
+    ];
+    // Filter out empty sensors
+    $active_sensors = array_filter($raw_sensors, fn($val) => $val !== '');
+    
+    $photo_meta = ['source' => 'gallery', 'date' => wp_date('Y-m-d'), 'time' => wp_date('H-i'), 'sensors' => $active_sensors];
 
     $prompt = aitrongcay_build_gemini_analysis_prompt($pot_record, $photo_meta);
     $result = aitrongcay_call_gemini_vision_raw((string) $image_data, $prompt, $api_key);
@@ -703,6 +744,36 @@ function aitrongcay_reset_pot_crop_ajax(): void
                 $garden_key,
                 $pot_code
             ]);
+        }
+    }
+
+    // Gamification: Reward points if the pot was in a harvestable stage
+    $pot_record = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE garden_key = %s AND pot_code = %s LIMIT 1", $garden_key, $pot_code), ARRAY_A);
+    if (is_array($pot_record)) {
+        $stage = strtolower(trim((string) ($pot_record['latest_analysis_current_stage'] ?? '')));
+        $harvest_keywords = ['chin', 'thu hoach', 'sap thu', 'harvest', 'chín', 'thu hoạch', 'đậu quả'];
+        $is_harvest = false;
+        foreach ($harvest_keywords as $kw) {
+            if (str_contains($stage, ltrim(rtrim($kw)))) {
+                $is_harvest = true;
+                break;
+            }
+        }
+        
+        if ($is_harvest) {
+            $user_id = $current_user->ID;
+            $current_points = (int) get_user_meta($user_id, '_aitrongcay_eco_points', true);
+            update_user_meta($user_id, '_aitrongcay_eco_points', $current_points + 50);
+            
+            if (function_exists('aitrongcay_add_notification')) {
+                $pot_name = trim((string) ($pot_record['name'] ?? $pot_code));
+                aitrongcay_add_notification(
+                    $user_id,
+                    '🌾 Thu hoạch thành công',
+                    sprintf('Tuyệt vời! Bạn vừa thu hoạch thành công khoang %s và nhận được +50 Điểm Eco.', esc_html($pot_name)),
+                    home_url('/portal/doi-diem/')
+                );
+            }
         }
     }
 

@@ -160,11 +160,13 @@ get_template_part('template-parts/site/eco-hero');
   $chip_is_newest    = ($current_sort === '' || $current_sort === 'newest') && $current_offer === '';
   $chip_is_popular   = $current_sort === 'popular' && $current_offer === '';
   $chip_is_sale_only = $current_offer === 'Bán';
+  $chip_is_gift      = $current_offer === 'Tặng hàng xóm';
   ?>
   <div class="eco-market-chips">
     <a href="<?php echo esc_url(add_query_arg('market_sort', 'newest', $chip_base_url)); ?>" class="eco-market-chip<?php echo $chip_is_newest ? ' active' : ''; ?>">Mới nhất</a>
     <a href="<?php echo esc_url(add_query_arg('market_sort', 'popular', $chip_base_url)); ?>" class="eco-market-chip<?php echo $chip_is_popular ? ' active' : ''; ?>">Nổi bật</a>
     <a href="<?php echo esc_url(add_query_arg(['market_offer_type' => 'Bán'], $chip_base_url)); ?>" class="eco-market-chip<?php echo $chip_is_sale_only ? ' active' : ''; ?>">Chỉ mua bán</a>
+    <a href="<?php echo esc_url(add_query_arg(['market_offer_type' => 'Tặng hàng xóm'], $chip_base_url)); ?>" class="eco-market-chip<?php echo $chip_is_gift ? ' active' : ''; ?>">🎁 Quà tặng hàng xóm</a>
   </div>
 </div>
 <div class="market-compose-modal" data-market-edit-modal hidden>
@@ -176,7 +178,7 @@ get_template_part('template-parts/site/eco-hero');
       <input type="hidden" data-market-edit-post-id>
       <div class="market-compose-surface">
         <div class="market-compose-title-wrap"><input id="market-edit-title-input" type="text" maxlength="140" placeholder="Tiêu đề" aria-label="Tiêu đề" data-market-edit-title><div class="small subtle" data-market-title-hint></div></div>
-        <div class="market-structured-grid"><div><select id="market-edit-category" aria-label="Danh mục" data-market-edit-category><option value="">Danh mục</option><option>Hạt giống</option><option>Cây giống</option><option>Dinh dưỡng cho cây</option><option>Các loại rau</option><option>Hoa</option></select></div><div><select id="market-edit-offer-type" aria-label="Hình thức" data-market-edit-offer-type><option value="">Hình thức</option><option>Bán</option><option>Trao đổi</option><option>Chia sẻ</option><option>Nhận đặt trước</option></select></div><div><input id="market-edit-quantity" type="text" placeholder="Số lượng" aria-label="Số lượng" data-market-edit-quantity></div><div><input id="market-edit-area" type="text" placeholder="Khu vực" aria-label="Khu vực" data-market-edit-area></div><div><input id="market-edit-availability" type="text" placeholder="Thời gian nhận/giao" aria-label="Thời gian nhận hoặc giao" data-market-edit-availability></div><div><input id="market-edit-contact" type="text" placeholder="Liên hệ" aria-label="Liên hệ" data-market-edit-contact></div></div>
+        <div class="market-structured-grid"><div><select id="market-edit-category" aria-label="Danh mục" data-market-edit-category><option value="">Danh mục</option><option>Hạt giống</option><option>Cây giống</option><option>Dinh dưỡng cho cây</option><option>Các loại rau</option><option>Hoa</option></select></div><div><select id="market-edit-offer-type" aria-label="Hình thức" data-market-edit-offer-type><option value="">Hình thức</option><option>Bán</option><option>Trao đổi</option><option>Tặng hàng xóm</option><option>Nhận đặt trước</option></select></div><div><input id="market-edit-quantity" type="text" placeholder="Số lượng" aria-label="Số lượng" data-market-edit-quantity></div><div><input id="market-edit-area" type="text" placeholder="Khu vực" aria-label="Khu vực" data-market-edit-area></div><div><input id="market-edit-availability" type="text" placeholder="Thời gian nhận/giao" aria-label="Thời gian nhận hoặc giao" data-market-edit-availability></div><div><input id="market-edit-contact" type="text" placeholder="Liên hệ" aria-label="Liên hệ" data-market-edit-contact></div></div>
         <div class="market-compose-body-wrap"><textarea id="market-edit-content-input" placeholder="Nội dung" aria-label="Nội dung" data-market-edit-content></textarea><div class="small subtle" data-market-content-hint></div></div>
         <div class="market-compose-toolbar"><label class="market-compose-upload" for="market-edit-photo-input"><span>＋</span><strong>Thay ảnh</strong></label><input id="market-edit-photo-input" type="file" accept="image/*" multiple data-market-edit-files></div>
       </div>
@@ -458,7 +460,7 @@ endwhile; wp_reset_postdata(); else : ?>
           <div>
             <select aria-label="Offer type" data-market-compose-offer-type>
               <option value="">Hình thức</option>
-              <option>Bán</option><option>Trao đổi</option><option>Chia sẻ</option><option>Nhận đặt trước</option>
+              <option>Bán</option><option>Trao đổi</option><option>Tặng hàng xóm</option><option>Nhận đặt trước</option>
             </select>
           </div>
           <div><input type="text" placeholder="Số lượng" aria-label="Quantity" data-market-compose-quantity></div>

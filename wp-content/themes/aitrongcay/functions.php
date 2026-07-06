@@ -26,6 +26,8 @@ require_once get_template_directory() . '/inc/blynk-webhook.php';
 require_once get_template_directory() . '/inc/portal-robot-api.php';
 require_once get_template_directory() . '/inc/notifications.php';
 require_once get_template_directory() . '/inc/rack-handoff.php';
+require_once get_template_directory() . '/inc/rewards-admin.php';
+
 function aitrongcay_theme_setup(): void
 {
     add_theme_support('title-tag');
@@ -6211,6 +6213,30 @@ function aitrongcay_blynk_control_direct_submit(): void
 }
 add_action('admin_post_aitrongcay_blynk_control_direct', 'aitrongcay_blynk_control_direct_submit');
 
+/**
+ * Grant +5 Eco Points for the first photo of the day.
+ */
+function aitrongcay_grant_daily_photo_points(int $user_id): int {
+    $today = current_time('Ymd');
+    $last_date = get_user_meta($user_id, '_aitrongcay_last_photo_bonus_date', true);
+    if ($last_date !== $today) {
+        update_user_meta($user_id, '_aitrongcay_last_photo_bonus_date', $today);
+        $points = (int) get_user_meta($user_id, '_aitrongcay_eco_points', true);
+        update_user_meta($user_id, '_aitrongcay_eco_points', $points + 5);
+        
+        if (function_exists('aitrongcay_add_notification')) {
+            aitrongcay_add_notification(
+                $user_id,
+                '📸 Thưởng nhiếp ảnh gia',
+                'Bạn vừa nhận được +5 Điểm Eco cho bức ảnh đầu tiên trong ngày.',
+                home_url('/portal/doi-diem/')
+            );
+        }
+        return 5;
+    }
+    return 0;
+}
+
 function aitrongcay_capture_photo_ajax(): void
 {
     aitrongcay_require_portal_nonce();
@@ -6267,6 +6293,8 @@ function aitrongcay_capture_photo_ajax(): void
         $preview_url = wp_make_link_relative((string) (wp_get_attachment_image_url($attachment_id, 'medium_large') ?: wp_get_attachment_url($attachment_id)));
     }
 
+    $bonus_points = aitrongcay_grant_daily_photo_points(get_current_user_id());
+
     wp_send_json_success([
         'id' => $attachment_id,
         'url' => $preview_url,
@@ -6274,6 +6302,7 @@ function aitrongcay_capture_photo_ajax(): void
         'label' => get_the_title($attachment_id),
         'pot_code' => $pot_code,
         'updated_latest' => (bool) $updated_latest,
+        'bonus_points' => $bonus_points,
     ]);
 }
 add_action('wp_ajax_aitrongcay_capture_photo', 'aitrongcay_capture_photo_ajax');
@@ -6378,12 +6407,15 @@ function aitrongcay_capture_photo_server_ajax(): void
         (string) (wp_get_attachment_image_url($attachment_id, 'medium_large') ?: wp_get_attachment_url($attachment_id))
     );
 
+    $bonus_points = aitrongcay_grant_daily_photo_points(get_current_user_id());
+
     wp_send_json_success([
         'id'      => $attachment_id,
         'url'     => $url,
         'label'   => get_the_title($attachment_id),
         'pot_code' => $pot_code,
         'source'  => $source,
+        'bonus_points' => $bonus_points,
     ]);
 }
 add_action('wp_ajax_aitrongcay_capture_photo_server', 'aitrongcay_capture_photo_server_ajax');
@@ -9121,14 +9153,23 @@ add_action('wp_ajax_aitrongcay_water_friend_garden', function() {
         wp_send_json_error(['message' => 'Chỉ có thể tưới nước cho hàng xóm đã kết nối.']);
     }
     
-    // Rate limit: 1 time per day per friend
-    $last_water_key = "_aitrongcay_watered_{$friend_id}_" . gmdate('Ymd');
-    $has_watered = get_user_meta($current_user_id, $last_water_key, true);
-    if ($has_watered) {
-        wp_send_json_error(['message' => 'Bạn đã tưới nước cho vườn này hôm nay rồi!']);
+    // Rate limit: 3 times per day TOTAL, and max 1 time per friend per day
+    $today = current_time('Ymd');
+    $daily_waters_key = "_aitrongcay_daily_waters_count_{$today}";
+    $daily_waters_count = (int) get_user_meta($current_user_id, $daily_waters_key, true);
+    
+    if ($daily_waters_count >= 3) {
+        wp_send_json_error(['message' => 'Hôm nay bạn đã hết 3 lượt tưới nước hộ hàng xóm rồi. Hãy quay lại vào ngày mai nhé!']);
     }
     
-    update_user_meta($current_user_id, $last_water_key, 1);
+    $last_water_friend_key = "_aitrongcay_watered_{$friend_id}_{$today}";
+    $has_watered_friend = get_user_meta($current_user_id, $last_water_friend_key, true);
+    if ($has_watered_friend) {
+        wp_send_json_error(['message' => 'Hôm nay bạn đã tưới nước cho vườn này rồi!']);
+    }
+    
+    update_user_meta($current_user_id, $last_water_friend_key, 1);
+    update_user_meta($current_user_id, $daily_waters_key, $daily_waters_count + 1);
 
     // Create a notification for the neighbor
     if (function_exists('aitrongcay_add_notification')) {
@@ -9163,6 +9204,10 @@ add_action('wp_ajax_aitrongcay_water_friend_garden', function() {
     $watered_count = (int) get_user_meta($friend_id, '_aitrongcay_garden_watered_count', true);
     update_user_meta($friend_id, '_aitrongcay_garden_watered_count', $watered_count + 1);
     
+    // Track helpful count for the sender
+    $helpful_count = (int) get_user_meta($current_user_id, '_aitrongcay_helpful_water_count', true);
+    update_user_meta($current_user_id, '_aitrongcay_helpful_water_count', $helpful_count + 1);
+    
     // Add 10 Eco Points
     $points = 10;
     $current_points = (int) get_user_meta($current_user_id, '_aitrongcay_eco_points', true);
@@ -9174,6 +9219,28 @@ add_action('wp_ajax_aitrongcay_water_friend_garden', function() {
 /**
  * Gamification functions for Eco Points
  */
+function aitrongcay_daily_login_bonus(): void {
+    if (!is_user_logged_in() || is_admin() || wp_doing_ajax()) return;
+    $user_id = get_current_user_id();
+    $today = current_time('Ymd');
+    $last_login = get_user_meta($user_id, '_aitrongcay_last_login_date', true);
+    if ($last_login !== $today) {
+        update_user_meta($user_id, '_aitrongcay_last_login_date', $today);
+        $points = (int) get_user_meta($user_id, '_aitrongcay_eco_points', true);
+        update_user_meta($user_id, '_aitrongcay_eco_points', $points + 5);
+        
+        if (function_exists('aitrongcay_add_notification')) {
+            aitrongcay_add_notification(
+                $user_id,
+                '🎁 Thưởng chăm chỉ',
+                'Điểm danh thành công! Bạn vừa nhận được +5 Điểm Eco cho lần ghé thăm vườn hôm nay.',
+                home_url('/portal/doi-diem/')
+            );
+        }
+    }
+}
+add_action('wp', 'aitrongcay_daily_login_bonus');
+
 function aitrongcay_calculate_level(int $points): int {
     // RPG curve: Points = 50 * L * (L-1)
     // L=1(0pts), L=2(100pts), L=3(300pts), L=4(600pts), L=5(1000pts)...
@@ -9188,6 +9255,10 @@ function aitrongcay_points_for_level(int $level): int {
 
 // ─── Eco Points: Reward Catalogue ────────────────────────────────────────────
 function aitrongcay_eco_reward_catalogue(): array {
+    $saved = get_option('aitrongcay_eco_rewards');
+    if (is_array($saved) && !empty($saved)) {
+        return $saved;
+    }
     return [
         'rau_baby_mix'  => ['name' => 'Rau Baby Mix 200g',      'icon' => '🥗', 'points' => 150, 'stock' => 20],
         'rau_cai_xanh'  => ['name' => 'Cải xanh 500g',          'icon' => '🥬', 'points' => 200, 'stock' => 15],
