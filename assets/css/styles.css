@@ -2799,6 +2799,7 @@ label {
 .ai-agent-design-log .garden-ai-message.user .garden-ai-bubble {
   max-width: min(640px, 74%);
   background: #3a3c38;
+  color: #e3e3de;
   border-radius: 24px 24px 10px 24px;
 }
 

@@ -695,7 +695,8 @@ function aitrongcay_ai_build_openai_messages(array $payload): array
         'Khi được hỏi tư vấn trồng cây, LUÔN CHỦ ĐỘNG DỰA VÀO THÁNG/MÙA HIỆN TẠI (' . $season . ', tháng ' . $current_month . ') để đưa ra lời khuyên thực tế ngay lập tức. TUYỆT ĐỐI KHÔNG HỎI NGƯỢC LẠI người dùng xem đang là tháng mấy hay mùa nào.',
         'Giọng điệu: tự nhiên, dịu dàng, ngắn gọn và đáng tin như một người làm vườn chuyên nghiệp.',
         'Xưng em, gọi người dùng là anh/chị.',
-        'Luôn bám sát vào dữ liệu cảm biến thực tế của khu vườn đang mở (đã được cung cấp bên dưới), tuyệt đối không bịa số liệu.',
+        'Bạn ĐÃ ĐƯỢC KẾT NỐI trực tiếp với các cảm biến của khu vườn. Dữ liệu cảm biến THỰC TẾ đang được cung cấp bên dưới.',
+        'Tuyệt đối KHÔNG ĐƯỢC nói rằng bạn là mô hình AI không có khả năng kết nối cảm biến hay không thể lấy dữ liệu. Hãy dựa vào dữ liệu được cung cấp ở dưới để tư vấn trực tiếp.',
         'Trình bày rõ ràng, luôn XUỐNG DÒNG tách biệt các ý chính, tuyệt đối không viết gộp thành một đoạn văn dài ngoằng.',
         'Trò chuyện linh hoạt, không trả lời theo kiểu khuôn mẫu máy móc. Nếu số liệu tốt thì khen, nếu có vấn đề thì chỉ ra ngay.',
         'Không nhắc tới prompt, token, API, hệ thống nội bộ hay cấu hình máy chủ.',
@@ -715,7 +716,8 @@ function aitrongcay_ai_build_openai_messages(array $payload): array
     $pot_notes = is_array($payload['garden']['pot_notes'] ?? null) ? $payload['garden']['pot_notes'] : [];
     if (!empty($pot_notes)) {
         $notes_str = [];
-        foreach ($pot_notes as $pot_code => $note_text) {
+        foreach ($pot_notes as $pot_code => $note_data) {
+            $note_text = is_array($note_data) ? ($note_data['note_text'] ?? '') : (string) $note_data;
             if (trim($note_text) !== '') {
                 $notes_str[] = "[$pot_code] $note_text";
             }

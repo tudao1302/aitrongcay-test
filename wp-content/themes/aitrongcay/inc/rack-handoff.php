@@ -68,6 +68,24 @@ function aitrongcay_handoff_archive_old_customer(int $rack_id, string $from_gard
     // 3. Xoá transient cache sensor của rack này cho KH cũ
     aitrongcay_handoff_flush_sensor_cache($from_garden_key, $rack_id);
 
+    // 3.5 Xoá dữ liệu các khoang (pots) thuộc rack này khỏi garden của KH cũ
+    global $wpdb;
+    $slots_table = $wpdb->prefix . 'aitr_rack_slots';
+    $pots_table  = function_exists('aitrongcay_garden_pots_table') ? aitrongcay_garden_pots_table() : ($wpdb->prefix . 'aitr_garden_pots');
+    
+    $pot_codes = $wpdb->get_col($wpdb->prepare(
+        "SELECT pot_code FROM {$slots_table} WHERE rack_id = %d AND pot_code != ''",
+        $rack_id
+    ));
+    
+    if (!empty($pot_codes)) {
+        $placeholders = implode(',', array_fill(0, count($pot_codes), '%s'));
+        $delete_sql = "DELETE FROM {$pots_table} WHERE garden_key = %s AND pot_code IN ($placeholders)";
+        $delete_args = array_merge([$from_garden_key], $pot_codes);
+        $wpdb->query($wpdb->prepare($delete_sql, ...$delete_args));
+        error_log("[RACK HANDOFF] 🗑️ Đã xoá " . count($pot_codes) . " dữ liệu khoang trồng (pots) khỏi database của KH cũ.");
+    }
+
     // 4. Log sự kiện
     error_log("[RACK HANDOFF] ✅ Đã đóng gói dữ liệu KH cũ: garden={$from_garden_key}, rack_id={$rack_id} ({$rack_code}) lúc {$archived_at}.");
 }

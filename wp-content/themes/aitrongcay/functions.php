@@ -3662,7 +3662,7 @@ function aitrongcay_generate_cindy_onboarding_analysis(array $pot, array $photo_
         $summary = (string) ($fallback_analysis['summary'] ?? '');
     }
     if ($summary !== '' && $captured_at !== '' && ! preg_match('/ảnh|bộ ảnh/u', $summary)) {
-        $summary .= ' Kết luận này dựa trên ' . ($photo_count > 1 ? ('bộ ' . $photo_count . ' ảnh cùng ngày') : 'ảnh mới nhất của khoang') . ', cập nhật lúc ' . mysql2date('H:i d/m/Y', $captured_at) . '.';
+        $summary .= ' Kết luận này dựa trên ' . ($photo_count > 1 ? ('bộ ' . $photo_count . ' ảnh cùng ngày') : 'ảnh mới nhất của khoang') . ', cập nhật lúc ' . wp_date('H:i d/m/Y', strtotime((string) $captured_at . ' UTC'), new DateTimeZone('Asia/Ho_Chi_Minh')) . '.';
     }
 
     $analysis = [
@@ -3786,7 +3786,7 @@ function aitrongcay_generate_pot_analysis(array $pot, array $photo_context = [])
             $label = 'Ổn nhưng cần theo dõi';
             $short = 'Cà chua đang ở giai đoạn nuôi quả. Hiện có dấu hiệu lá già tầng dưới xuống màu, nhưng nếu phần ngọn vẫn ổn thì trước mắt nên theo dõi sát thay vì nâng cảnh báo quá cao.';
             if (! empty($photo_context['captured_at'])) {
-                $short .= ' Kết luận này dựa trên ' . ($photo_count > 1 ? ('bộ ' . $photo_count . ' ảnh cùng ngày') : 'ảnh mới nhất') . ', cập nhật gần nhất lúc ' . mysql2date('H:i d/m/Y', (string) $photo_context['captured_at']) . '.';
+                $short .= ' Kết luận này dựa trên ' . ($photo_count > 1 ? ('bộ ' . $photo_count . ' ảnh cùng ngày') : 'ảnh mới nhất') . ', cập nhật gần nhất lúc ' . wp_date('H:i d/m/Y', strtotime((string) $photo_context['captured_at'] . ' UTC'), new DateTimeZone('Asia/Ho_Chi_Minh')) . '.';
             }
             $actions = [
                 'Theo dõi xem vàng lá có lan từ gốc lên tầng giữa hay không.',
@@ -3981,7 +3981,7 @@ function aitrongcay_generate_pot_analysis(array $pot, array $photo_context = [])
 
     if (! empty($photo_context['captured_at'])) {
         if (! str_contains($short, 'Ảnh') && ! str_contains($short, 'ảnh') && ! str_contains($short, 'bộ')) {
-            $short .= ' Kết luận này dựa trên ' . ($photo_count > 1 ? ('bộ ' . $photo_count . ' ảnh của chậu trong ngày') : 'ảnh mới nhất của chậu') . ', cập nhật lúc ' . mysql2date('H:i d/m/Y', (string) $photo_context['captured_at']) . '.';
+            $short .= ' Kết luận này dựa trên ' . ($photo_count > 1 ? ('bộ ' . $photo_count . ' ảnh của chậu trong ngày') : 'ảnh mới nhất của chậu') . ', cập nhật lúc ' . wp_date('H:i d/m/Y', strtotime((string) $photo_context['captured_at'] . ' UTC'), new DateTimeZone('Asia/Ho_Chi_Minh')) . '.';
         }
     }
 
@@ -7376,7 +7376,7 @@ function aitrongcay_garden_assistant_build_reply(string $message, WP_User $user,
         $pot_label = (string) ($photo_context['pot_name'] ?: ($photo_context['pot_code'] ?? $sample_pot));
         $photo_hint = ' Em sẽ ưu tiên bám ảnh mới nhất của ' . $pot_label;
         if (! empty($photo_context['captured_at'])) {
-            $photo_hint .= ' (cập nhật gần nhất: ' . mysql2date('H:i d/m/Y', (string) $photo_context['captured_at']) . ')';
+            $photo_hint .= ' (cập nhật gần nhất: ' . wp_date('H:i d/m/Y', strtotime((string) $photo_context['captured_at'] . ' UTC'), new DateTimeZone('Asia/Ho_Chi_Minh')) . ')';
         }
         $photo_hint .= ' khi phân tích và đưa cảnh báo.';
         $reply .= $photo_hint;

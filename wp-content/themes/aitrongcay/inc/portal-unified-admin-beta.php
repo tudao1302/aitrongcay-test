@@ -1612,7 +1612,9 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <?php foreach (array_reverse($redeem_history) as $rh): ?>
+                                                        <?php foreach (array_reverse($redeem_history) as $rh): 
+                                                                if (!is_array($rh)) continue;
+                                                        ?>
                                                             <tr>
                                                                 <td><?php echo date_i18n('d/m/Y H:i', (int)$rh['time']); ?></td>
                                                                 <td><?php echo esc_html($rh['icon'] . ' ' . $rh['name']); ?></td>
