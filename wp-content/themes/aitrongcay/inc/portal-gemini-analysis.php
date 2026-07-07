@@ -765,6 +765,14 @@ function aitrongcay_reset_pot_crop_ajax(): void
             $current_points = (int) get_user_meta($user_id, '_aitrongcay_eco_points', true);
             update_user_meta($user_id, '_aitrongcay_eco_points', $current_points + 50);
             
+            // Track Daily Mission: Thu hoạch rau đúng kỳ
+            $today = current_time('Ymd');
+            $daily_harvest_key = "_aitrongcay_daily_thu_hoach_{$today}";
+            $daily_harvest = (int) get_user_meta($user_id, $daily_harvest_key, true);
+            if ($daily_harvest < 1) {
+                update_user_meta($user_id, $daily_harvest_key, $daily_harvest + 1);
+            }
+
             if (function_exists('aitrongcay_add_notification')) {
                 $pot_name = trim((string) ($pot_record['name'] ?? $pot_code));
                 aitrongcay_add_notification(

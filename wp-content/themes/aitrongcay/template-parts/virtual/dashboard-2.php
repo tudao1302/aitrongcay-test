@@ -7462,6 +7462,52 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           if (img.complete && img.naturalWidth) { draw(); } else { img.onload = draw; }
         }
 
+        // Helper for gamification
+        window.aitrongcay_trigger_daily_mission = function(missionId) {
+          var fd = new FormData();
+          fd.append('action', 'aitrongcay_complete_daily_mission');
+          fd.append('mission_id', missionId);
+          fetch(AITR_AJAX_URL, { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+              if (res.success && res.data && res.data.message) {
+                var toast = document.createElement('div');
+                toast.style.position = 'fixed';
+                toast.style.bottom = '24px';
+                toast.style.right = '24px';
+                toast.style.background = 'rgba(26,28,25,0.95)';
+                toast.style.border = '1px solid rgba(111,219,168,0.3)';
+                toast.style.color = '#fff';
+                toast.style.padding = '16px 24px';
+                toast.style.borderRadius = '16px';
+                toast.style.boxShadow = '0 12px 40px rgba(0,0,0,0.3)';
+                toast.style.zIndex = '99999';
+                toast.style.fontFamily = '"Noto Serif", serif';
+                toast.style.fontSize = '15px';
+                toast.style.transition = 'opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                toast.style.transform = 'translateY(20px)';
+                toast.style.opacity = '0';
+                
+                toast.innerHTML = '<strong style="color:#6fdba8">🎉 Điểm danh!</strong><br>' + res.data.message;
+                
+                document.body.appendChild(toast);
+                
+                // Animate in
+                setTimeout(function() {
+                  toast.style.transform = 'translateY(0)';
+                  toast.style.opacity = '1';
+                }, 10);
+                
+                // Animate out
+                setTimeout(function() {
+                  toast.style.opacity = '0';
+                  toast.style.transform = 'translateY(10px)';
+                  setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
+                }, 4000);
+              }
+            }).catch(function(e) { console.error('Lỗi nhiệm vụ', e); });
+        };
+
         // Tải ảnh về máy
         function tlDownloadBlob(blob, fileName) {
           var a = document.createElement('a');
@@ -7469,6 +7515,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           a.download = fileName;
           document.body.appendChild(a); a.click(); document.body.removeChild(a);
           setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+          
+          window.aitrongcay_trigger_daily_mission('chup_anh');
         }
 
         // Web Share API (mobile) với fallback tải video + mở trang
@@ -7529,6 +7577,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
 
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
               navigator.share({ files: [file], title: 'Vườn của tôi', text: shareText })
+                .then(function() { window.aitrongcay_trigger_daily_mission('chup_anh'); })
                 .catch(function (e) { console.log('Share canceled or failed', e); });
               return;
             }
@@ -7536,6 +7585,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             // Fallback desktop: tải video rồi mở nền tảng để user đăng thủ công
             alert('Video đã được tải về máy.\nTrình duyệt sẽ mở ' + (platform==='fb'?'Facebook':'Zalo') + ' để bạn có thể tự đăng video này nhé!');
             tlDownloadBlob(blob, fileName);
+            window.aitrongcay_trigger_daily_mission('chup_anh');
             var urls = { fb: 'https://www.facebook.com/', zalo: 'https://chat.zalo.me/' };
             if (urls[platform]) {
               window.open(urls[platform], '_blank');
@@ -7585,6 +7635,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
                 if (tlCaptureStatus) tlCaptureStatus.textContent = '✓ ' + d.message + ' (' + d.date + ' ' + d.time + ')';
                 // Hiển thị ảnh vừa chụp luôn trong player
                 if (tlImg) { tlImg.src = d.url; tlImg.style.display = 'block'; }
+                
+                window.aitrongcay_trigger_daily_mission('chup_anh');
                 if (tlEmpty) tlEmpty.style.display = 'none';
                 if (tlInfo) tlInfo.textContent = d.date + ' ' + d.time + ' (vừa chụp)';
               })
@@ -7862,6 +7914,124 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           resetBtn.disabled = false;
         });
       });
+    })();
+
+    // ── TASK: Share Referral Modal ─────────────────────────
+    (function() {
+      var url = new URL(window.location);
+      if (url.searchParams.get('share') === '1') {
+        var overlay = document.createElement('div');
+        overlay.id = 'd2-referral-overlay';
+        
+        var style = document.createElement('style');
+        style.textContent = `
+          #d2-referral-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 12, 10, 0.85);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            z-index: 999999;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease;
+            padding: 24px;
+          }
+          .d2-ref-modal {
+            background: #1e201d;
+            border: 1px solid rgba(111, 219, 168, 0.2);
+            border-radius: 24px;
+            width: 100%; max-width: 420px;
+            padding: 32px;
+            text-align: center;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+            transform: translateY(20px); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: #e3e3de;
+            font-family: 'Manrope', sans-serif;
+          }
+          .d2-ref-icon {
+            font-size: 48px; line-height: 1; margin-bottom: 16px;
+            filter: drop-shadow(0 4px 12px rgba(111,219,168,0.2));
+          }
+          .d2-ref-title {
+            font-family: 'Noto Serif', serif;
+            font-size: 24px; font-weight: 700; color: #6FDBA8;
+            margin: 0 0 12px 0;
+          }
+          .d2-ref-text {
+            font-size: 14px; line-height: 1.6; color: #bdcac0; margin: 0 0 24px 0;
+          }
+          .d2-ref-text strong { color: #ffe16d; font-weight: 700; }
+          .d2-ref-input-group {
+            display: flex; gap: 8px; margin-bottom: 24px;
+          }
+          .d2-ref-input-group input {
+            flex: 1; background: #121411; border: 1px solid rgba(111,219,168,0.3);
+            border-radius: 12px; padding: 12px 16px; color: #fff;
+            font-size: 13px; outline: none; transition: border-color 0.2s;
+          }
+          .d2-ref-input-group input:focus { border-color: #6FDBA8; }
+          .d2-ref-copy {
+            background: linear-gradient(135deg, #31A375 0%, #6FDBA8 100%);
+            color: #003824; font-weight: 700; border: none; border-radius: 12px;
+            padding: 0 20px; cursor: pointer; transition: all 0.2s;
+            font-size: 14px;
+          }
+          .d2-ref-copy:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(111,219,168,0.4); }
+          .d2-ref-close {
+            background: transparent; border: 1px solid rgba(189,202,192,0.2);
+            color: #bdcac0; font-weight: 600; border-radius: 12px;
+            padding: 12px; width: 100%; cursor: pointer; transition: all 0.2s;
+            font-size: 14px;
+          }
+          .d2-ref-close:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        `;
+        document.head.appendChild(style);
+        
+        var refUrl = '<?php echo esc_url(home_url('/onboarding/')); ?>?ref=<?php echo get_current_user_id(); ?>';
+        
+        overlay.innerHTML = `
+          <div class="d2-ref-modal" id="d2-ref-modal">
+            <div class="d2-ref-icon">🤝</div>
+            <h3 class="d2-ref-title">Mời bạn bè cùng trồng cây</h3>
+            <p class="d2-ref-text">Gửi liên kết dưới đây cho bạn bè. Khi họ đăng ký tài khoản, bạn sẽ nhận được <strong>+100 Điểm Eco</strong> và cả hai sẽ tự động trở thành hàng xóm của nhau!</p>
+            <div class="d2-ref-input-group">
+              <input type="text" id="d2-ref-input" value="${refUrl}" readonly>
+              <button type="button" class="d2-ref-copy" id="d2-ref-copy">Copy</button>
+            </div>
+            <button type="button" class="d2-ref-close" id="d2-ref-close">Đóng</button>
+          </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        
+        requestAnimationFrame(function() {
+          overlay.style.opacity = '1';
+          document.getElementById('d2-ref-modal').style.transform = 'translateY(0)';
+        });
+        
+        var copyBtn = document.getElementById('d2-ref-copy');
+        var closeBtn = document.getElementById('d2-ref-close');
+        var inputEl = document.getElementById('d2-ref-input');
+        
+        closeBtn.addEventListener('click', function() {
+          overlay.style.opacity = '0';
+          document.getElementById('d2-ref-modal').style.transform = 'translateY(20px)';
+          setTimeout(function() {
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            url.searchParams.delete('share');
+            window.history.replaceState({}, '', url);
+          }, 300);
+        });
+        
+        copyBtn.addEventListener('click', function() {
+          inputEl.select();
+          document.execCommand('copy');
+          copyBtn.textContent = 'Đã Copy!';
+          copyBtn.style.background = '#6FDBA8';
+          setTimeout(function() {
+            copyBtn.textContent = 'Copy';
+            copyBtn.style.background = '';
+          }, 2000);
+        });
+      }
     })();
   </script>
 </section>

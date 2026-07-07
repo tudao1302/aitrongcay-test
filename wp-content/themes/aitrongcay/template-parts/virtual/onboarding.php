@@ -61,6 +61,9 @@
             <input type="hidden" name="action" value="aitrongcay_register_submit">
             <?php wp_nonce_field('aitrongcay_register_submit', 'aitrongcay_register_nonce'); ?>
             <input type="hidden" name="redirect_to" value="<?php echo esc_url(home_url('/onboarding/')); ?>">
+            <?php if (isset($_GET['ref'])) : ?>
+              <input type="hidden" name="ref" value="<?php echo esc_attr(sanitize_text_field(wp_unslash($_GET['ref']))); ?>">
+            <?php endif; ?>
             <div class="eco-register-grid">
               <div><label class="eco-register-label" for="register-salutation">Danh xưng</label><select id="register-salutation" name="salutation" required><option value="anh">Anh</option><option value="chị" selected>Chị</option></select></div>
               <div><label class="eco-register-label" for="register-phone">Số điện thoại</label><input id="register-phone" name="phone" type="tel" placeholder="09xx xxx xxx" autocomplete="tel" required></div>
