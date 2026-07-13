@@ -5966,7 +5966,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       control(document.querySelector('[data-d2-light-toggle]'), 'data-d2-light-toggle', '[data-d2-light-label]', 'Tắt đèn', 'Bật đèn');
       control(document.querySelector('[data-d2-pump-toggle]'), 'data-d2-pump-toggle', '[data-d2-pump-label]', 'Tắt bơm', 'Bật bơm');
 
-      // ── Tray thumbnail: auto-refresh từ go2rtc snapshot mỗi 10s ──
+      // ── Tray thumbnail: auto-refresh từ go2rtc snapshot mỗi 60s ──
       function refreshTraySnaps() {
         document.querySelectorAll('[data-d2-rack-trays] img[data-snap]').forEach(function (img) {
           var snap = img.getAttribute('data-snap');
@@ -5976,7 +5976,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           tmp.src = snap + (snap.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now();
         });
       }
-      setInterval(refreshTraySnaps, 10000);
+      setInterval(refreshTraySnaps, 60000);
 
       var rackMap = Array.isArray(AITR_RACKS) ? AITR_RACKS.reduce(function (map, item) {
         if (item && item.key) map[item.key] = item;

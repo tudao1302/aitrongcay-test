@@ -121,7 +121,7 @@ if (! defined('ABSPATH')) { exit; }
       }
 
       fetchNotifications();
-      setInterval(fetchNotifications, 5000);
+      setInterval(fetchNotifications, 60000);
   }
 })();
 </script>

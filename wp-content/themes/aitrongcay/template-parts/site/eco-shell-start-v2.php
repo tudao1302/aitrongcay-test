@@ -276,7 +276,7 @@ if (is_user_logged_in()) {
           });
 
           fetchNotifications();
-          setInterval(fetchNotifications, 5000);
+          setInterval(fetchNotifications, 60000); // Tăng từ 5s lên 60s để tránh làm chết máy chủ
       }
     })();
   </script>

@@ -221,7 +221,7 @@ if (is_user_logged_in()) {
 
           // Poll every 5 seconds for Real-time feel
           fetchNotifications();
-          setInterval(fetchNotifications, 5000);
+          setInterval(fetchNotifications, 60000);
       }
     })();
   </script>
