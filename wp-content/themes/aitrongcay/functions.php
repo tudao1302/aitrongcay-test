@@ -2589,11 +2589,11 @@ function aitrongcay_get_db_pots(string $garden_key): array
             
             $plant_name_to_id_map = [];
             if (!empty($plant_names_to_query)) {
-                $plant_names_to_query = array_unique($plant_names_to_query);
+                $plant_names_to_query = array_values(array_unique($plant_names_to_query));
                 $onboarding_table = $wpdb->prefix . 'aitr_onboarding_plants';
                 
                 $placeholders = implode(', ', array_fill(0, count($plant_names_to_query), '%s'));
-                $query = $wpdb->prepare("SELECT id, public_name FROM {$onboarding_table} WHERE public_name IN ($placeholders)", ...$plant_names_to_query);
+                $query = $wpdb->prepare("SELECT id, public_name FROM {$onboarding_table} WHERE public_name IN ($placeholders)", $plant_names_to_query);
                 $results = $wpdb->get_results($query);
                 
                 if ($results) {
