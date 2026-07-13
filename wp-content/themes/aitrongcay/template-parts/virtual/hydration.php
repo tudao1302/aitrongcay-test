@@ -44,61 +44,19 @@ if (empty($blynk_token)) {
 // ---------------------------------------------
 // TASK 3.2: KIỂM TRA PHẦN CỨNG ONLINE/OFFLINE
 // ---------------------------------------------
-$is_hardware_online = true; // Mặc định là online nếu không check được
-if ($blynk_token !== '') {
-    $online_api_url = "https://blynk.cloud/external/api/isHardwareConnected?token={$blynk_token}";
-    $resp_online = wp_remote_get($online_api_url, ['timeout' => 3]);
-    if (!is_wp_error($resp_online) && wp_remote_retrieve_response_code($resp_online) === 200) {
-        $body = trim(wp_remote_retrieve_body($resp_online));
-        if (strtolower($body) === 'false') {
-            $is_hardware_online = false;
-        }
-    }
-}
+$is_hardware_online = true; // Mặc định hiển thị giao diện bình thường để JS xử lý
 
 // ---------------------------------------------
 // TASK 3.1: ĐỒNG BỘ TRẠNG THÁI BƠM HIỆN TẠI
 // ---------------------------------------------
 $is_pump_running = false;
-if ($blynk_token !== '' && $is_hardware_online) {
-    $pump_api_url = "https://blynk.cloud/external/api/get?token={$blynk_token}&v1";
-    $resp_pump = wp_remote_get($pump_api_url, ['timeout' => 3]);
-    if (!is_wp_error($resp_pump) && wp_remote_retrieve_response_code($resp_pump) === 200) {
-        $body = trim(wp_remote_retrieve_body($resp_pump));
-        if ($body === '1' || strtolower($body) === 'on') {
-            $is_pump_running = true;
-        }
-    }
-}
 
 // ---------------------------------------------
 // TASK 2.2: ĐỒNG BỘ MỰC NƯỚC (Từ Blynk API)
 // ---------------------------------------------
 $water_level = 0; 
-if ($blynk_token !== '' && $is_hardware_online) { // Chỉ lấy số khi online
-    // V12 là chân Water Level mặc định theo cấu hình.
-    // Dùng wp_remote_get để lấy số liệu thực từ Blynk
-    $blynk_api_url = "https://blynk.cloud/external/api/get?token={$blynk_token}&v12";
-    $response = wp_remote_get($blynk_api_url, ['timeout' => 3]);
-    if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
-        $body = trim(wp_remote_retrieve_body($response));
-        if (is_numeric($body)) {
-            $water_level = (int) $body;
-        }
-    }
-}
-
-// Tự động phân tích cảnh báo
-if ($water_level >= 80) {
-    $water_status_text = 'Mực nước đầy';
-    $water_status_color = '#3b82f6'; // Xanh dương
-} elseif ($water_level >= 25) {
-    $water_status_text = 'Mực nước ổn định';
-    $water_status_color = '#31a375'; // Xanh lá
-} else {
-    $water_status_text = 'Cảnh báo cạn nước!';
-    $water_status_color = '#ef4444'; // Đỏ cảnh báo
-}
+$water_status_text = 'Đang đồng bộ dữ liệu...';
+$water_status_color = '#31a375';
 
 // ---------------------------------------------
 // TASK 2.1: BÁO CÁO TIÊU HAO THỰC TẾ (Từ Database)
@@ -692,35 +650,28 @@ unset($shared_top_link);
         <!-- Cột trái: Mực nước & Thống kê -->
         <div style="display: flex; flex-direction: column; gap: 24px; position: relative;">
 
-          <?php if (!$is_hardware_online): ?>
-            <!-- Lớp phủ xám khi mất mạng -->
-            <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: grayscale(80%) blur(2px); z-index: 10; border-radius: 24px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-               <div style="background: rgba(239, 68, 68, 0.9); padding: 12px 24px; border-radius: 12px; color: white; font-weight: bold; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
-                 ⚠️ CẢNH BÁO: Mất kết nối WiFi <br>
-                 <span style="font-size: 13px; font-weight: normal;">Thiết bị phần cứng tại vườn đang Offline. Không thể điều khiển lúc này!</span>
-               </div>
-            </div>
-          <?php endif; ?>
+          <!-- Lớp phủ xám khi mất mạng -->
+          <div id="hy-offline-warning" style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: grayscale(80%) blur(2px); z-index: 10; align-items: center; justify-content: center; flex-direction: column; border-radius: 24px;">
+             <div style="background: rgba(239, 68, 68, 0.9); padding: 12px 24px; border-radius: 12px; color: white; font-weight: bold; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+               ⚠️ CẢNH BÁO: Mất kết nối WiFi <br>
+               <span style="font-size: 13px; font-weight: normal;">Thiết bị phần cứng tại vườn đang Offline. Không thể điều khiển lúc này!</span>
+             </div>
+          </div>
           
           <div class="hy-card">
             <h3 class="hy-card-title">💧 Trạng thái Bồn chứa</h3>
             <div class="hy-tank-wrap">
               <div class="hy-tank">
-                <div class="hy-tank-fill" style="height: <?php echo $water_level; ?>%;"></div>
-                <div class="hy-tank-percent"><?php echo $water_level; ?>%</div>
+                <div id="hy-tank-fill" class="hy-tank-fill" style="height: <?php echo $water_level; ?>%;"></div>
+                <div id="hy-tank-percent" class="hy-tank-percent"><?php echo $water_level; ?>%</div>
               </div>
               <div class="hy-tank-info">
-                <?php if (!$is_hardware_online): ?>
-                  <div class="hy-status-badge" style="background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid #ef4444;">🔴 Thiết bị đang Offline</div>
-                <?php else: ?>
-                  <div class="hy-status-badge">🟢 <?php echo $water_status_text; ?></div>
-                <?php endif; ?>
+                <div id="hy-status-badge" class="hy-status-badge">🔄 <?php echo $water_status_text; ?></div>
                 <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px; line-height: 1.6;">
                   Mực nước đang ở mức an toàn. Hệ thống tự động tưới vẫn hoạt động bình thường. Dự kiến còn <strong>7 ngày</strong> nữa mới cần châm thêm nước.
                 </p>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                   <button id="hy-btn-pump-main" class="hy-btn" 
-                          <?php if (!$is_hardware_online) echo 'disabled style="opacity: 0.5; cursor: not-allowed;"'; ?> 
                           style="<?php echo $is_pump_running ? 'background: #ef4444; color: #fff; border-color: #ef4444; box-shadow: 0 0 15px rgba(239,68,68,0.4);' : ''; ?>">
                     <?php echo $is_pump_running ? '🛑 ĐANG BƠM (Bấm để Tắt)' : 'Bơm ngay 5 phút'; ?>
                   </button>
@@ -895,6 +846,7 @@ if (function_exists('aitrongcay_blynk_get_pump_history') && $blynk_token !== '')
 
 </section>
 <script>
+  const blynkToken = '<?php echo esc_js($blynk_token); ?>';
   // Script xử lý Toggle (UI only)
   document.querySelectorAll('.hy-toggle').forEach(function(toggle) {
     toggle.addEventListener('click', function() {
@@ -969,32 +921,86 @@ if (function_exists('aitrongcay_blynk_get_pump_history') && $blynk_token !== '')
     }
   }
 
-  // TASK 3.1: Đồng bộ trạng thái nút Bơm (2 chiều) Real-time
+  // TASK 3.1: Đồng bộ trạng thái thiết bị và dữ liệu (2 chiều) Real-time qua AJAX thay vì PHP block
   const btnPump = document.getElementById('hy-btn-pump-main');
-  const isHardwareOnline = <?php echo $is_hardware_online ? 'true' : 'false'; ?>;
+  const offlineWarning = document.getElementById('hy-offline-warning');
+  const tankFill = document.getElementById('hy-tank-fill');
+  const tankPercent = document.getElementById('hy-tank-percent');
+  const statusBadge = document.getElementById('hy-status-badge');
+  let isHardwareOnline = true;
   
-  if (isHardwareOnline && blynkToken) {
-    setInterval(() => {
-      fetch(`https://blynk.cloud/external/api/get?token=${blynkToken}&v1`)
-        .then(res => res.text())
-        .then(val => {
-           // Cập nhật UI nút bấm dựa trên giá trị thực tế từ mạch IoT
-           if (val.trim() === '1') {
+  async function syncHydrationData() {
+    if (!blynkToken) return;
+    try {
+        // 1. Kiểm tra Online
+        const onlineRes = await fetch(`https://blynk.cloud/external/api/isHardwareConnected?token=${blynkToken}`);
+        const isOnline = (await onlineRes.text()).trim() === 'true';
+        isHardwareOnline = isOnline;
+        
+        if (!isOnline) {
+            offlineWarning.style.display = 'flex';
+            statusBadge.innerHTML = '🔴 Thiết bị đang Offline';
+            statusBadge.style.background = 'rgba(239,68,68,0.2)';
+            statusBadge.style.color = '#ef4444';
+            statusBadge.style.borderColor = '#ef4444';
+            btnPump.disabled = true;
+            btnPump.style.opacity = '0.5';
+            btnPump.style.cursor = 'not-allowed';
+            return;
+        } else {
+            offlineWarning.style.display = 'none';
+            btnPump.disabled = false;
+            btnPump.style.opacity = '1';
+            btnPump.style.cursor = 'pointer';
+        }
+        
+        // 2. Lấy mức nước
+        const levelRes = await fetch(`https://blynk.cloud/external/api/get?token=${blynkToken}&v12`);
+        const waterLevel = parseInt(await levelRes.text()) || 0;
+        tankFill.style.height = `${waterLevel}%`;
+        tankPercent.innerHTML = `${waterLevel}%`;
+        
+        if (waterLevel >= 80) {
+            statusBadge.innerHTML = '🟢 Mực nước đầy';
+            statusBadge.style.background = 'rgba(49, 163, 117, 0.15)';
+            statusBadge.style.color = '#3b82f6';
+            statusBadge.style.borderColor = 'rgba(49, 163, 117, 0.3)';
+        } else if (waterLevel >= 25) {
+            statusBadge.innerHTML = '🟢 Mực nước ổn định';
+            statusBadge.style.background = 'rgba(49, 163, 117, 0.15)';
+            statusBadge.style.color = '#6fdba8';
+            statusBadge.style.borderColor = 'rgba(49, 163, 117, 0.3)';
+        } else {
+            statusBadge.innerHTML = '🔴 Cảnh báo cạn nước!';
+            statusBadge.style.background = 'rgba(239,68,68,0.2)';
+            statusBadge.style.color = '#ef4444';
+            statusBadge.style.borderColor = '#ef4444';
+        }
+        
+        // 3. Lấy trạng thái bơm
+        const pumpRes = await fetch(`https://blynk.cloud/external/api/get?token=${blynkToken}&v1`);
+        const isPumpOn = (await pumpRes.text()).trim() === '1';
+        if (isPumpOn) {
              btnPump.style.background = '#ef4444';
              btnPump.style.color = '#fff';
              btnPump.style.borderColor = '#ef4444';
              btnPump.style.boxShadow = '0 0 15px rgba(239,68,68,0.4)';
              btnPump.innerHTML = '🛑 ĐANG BƠM (Bấm để Tắt)';
-           } else {
+        } else {
              btnPump.style.background = '';
              btnPump.style.color = '';
              btnPump.style.borderColor = '';
              btnPump.style.boxShadow = '';
              btnPump.innerHTML = 'Bơm ngay 5 phút';
-           }
-        })
-        .catch(err => console.error(err));
-    }, 2000); // Quét 2 giây/lần cho cảm giác mượt mà
+        }
+    } catch (e) {
+        console.error('Error syncing hydration data:', e);
+    }
+  }
+
+  if (blynkToken) {
+    syncHydrationData();
+    setInterval(syncHydrationData, 3000); // Cập nhật mỗi 3 giây
   }
 
   // Gắn sự kiện click cho nút mở modal (Thay vì onClick hardcode)

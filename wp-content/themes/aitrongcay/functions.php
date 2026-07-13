@@ -2593,7 +2593,14 @@ function aitrongcay_get_db_pots(string $garden_key): array
                 $onboarding_table = $wpdb->prefix . 'aitr_onboarding_plants';
                 
                 $placeholders = implode(', ', array_fill(0, count($plant_names_to_query), '%s'));
-                $query = $wpdb->prepare("SELECT id, public_name FROM {$onboarding_table} WHERE public_name IN ($placeholders)", $plant_names_to_query);
+                
+                // Sử dụng call_user_func_array để tương thích 100% với mọi phiên bản WordPress và PHP cũ
+                $prepare_args = array_merge( 
+                    ["SELECT id, public_name FROM {$onboarding_table} WHERE public_name IN ($placeholders)"], 
+                    $plant_names_to_query 
+                );
+                $query = call_user_func_array([$wpdb, 'prepare'], $prepare_args);
+                
                 $results = $wpdb->get_results($query);
                 
                 if ($results) {
@@ -5962,9 +5969,10 @@ function aitrongcay_migrate_legacy_garden_media(int $limit = 80): void
         aitrongcay_migrate_market_post_garden_key((int) $market_post_id);
     }
 }
-add_action('wp', static function (): void {
-    aitrongcay_migrate_legacy_garden_media();
-}, 15);
+// Tắt tạm thời tính năng tự động migrate để tránh treo database (NOT EXISTS meta query)
+// add_action('wp', static function (): void {
+//     aitrongcay_migrate_legacy_garden_media();
+// }, 15);
 
 function aitrongcay_market_posts_query_args(string $garden_key = '', int $posts_per_page = 24): array
 {
