@@ -1,0 +1,394 @@
+SLOTS:
+Array
+(
+)
+
+POTS:
+Array
+(
+    [0] => Array
+        (
+            [id] => 49
+            [garden_key] => garden:09137ead10344fae6b2197e8ee7abdf5
+            [pot_code] => P-001
+        )
+
+    [1] => Array
+        (
+            [id] => 50
+            [garden_key] => garden:09137ead10344fae6b2197e8ee7abdf5
+            [pot_code] => P-002
+        )
+
+    [2] => Array
+        (
+            [id] => 51
+            [garden_key] => garden:09137ead10344fae6b2197e8ee7abdf5
+            [pot_code] => P-003
+        )
+
+    [3] => Array
+        (
+            [id] => 52
+            [garden_key] => garden:09137ead10344fae6b2197e8ee7abdf5
+            [pot_code] => P-004
+        )
+
+    [4] => Array
+        (
+            [id] => 41
+            [garden_key] => garden:85369e50c52b58ca805cc6d00ed68b09
+            [pot_code] => P-001
+        )
+
+    [5] => Array
+        (
+            [id] => 42
+            [garden_key] => garden:85369e50c52b58ca805cc6d00ed68b09
+            [pot_code] => P-002
+        )
+
+    [6] => Array
+        (
+            [id] => 43
+            [garden_key] => garden:85369e50c52b58ca805cc6d00ed68b09
+            [pot_code] => P-003
+        )
+
+    [7] => Array
+        (
+            [id] => 44
+            [garden_key] => garden:85369e50c52b58ca805cc6d00ed68b09
+            [pot_code] => P-004
+        )
+
+    [8] => Array
+        (
+            [id] => 45
+            [garden_key] => garden:89878eb7a9b80d93f5ee88d00a4ee1db
+            [pot_code] => P-001
+        )
+
+    [9] => Array
+        (
+            [id] => 46
+            [garden_key] => garden:89878eb7a9b80d93f5ee88d00a4ee1db
+            [pot_code] => P-002
+        )
+
+    [10] => Array
+        (
+            [id] => 47
+            [garden_key] => garden:89878eb7a9b80d93f5ee88d00a4ee1db
+            [pot_code] => P-003
+        )
+
+    [11] => Array
+        (
+            [id] => 48
+            [garden_key] => garden:89878eb7a9b80d93f5ee88d00a4ee1db
+            [pot_code] => P-004
+        )
+
+    [12] => Array
+        (
+            [id] => 1
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => P-001
+        )
+
+    [13] => Array
+        (
+            [id] => 2
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => P-002
+        )
+
+    [14] => Array
+        (
+            [id] => 3
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => P-003
+        )
+
+    [15] => Array
+        (
+            [id] => 4
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => P-004
+        )
+
+    [16] => Array
+        (
+            [id] => 5
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => P-005
+        )
+
+    [17] => Array
+        (
+            [id] => 6
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => P-006
+        )
+
+    [18] => Array
+        (
+            [id] => 20
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => R2-S01
+        )
+
+    [19] => Array
+        (
+            [id] => 21
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => R2-S02
+        )
+
+    [20] => Array
+        (
+            [id] => 22
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => R2-S03
+        )
+
+    [21] => Array
+        (
+            [id] => 23
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => R2-S04
+        )
+
+    [22] => Array
+        (
+            [id] => 53
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => RACK_3-S01
+        )
+
+    [23] => Array
+        (
+            [id] => 54
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => RACK_3-S02
+        )
+
+    [24] => Array
+        (
+            [id] => 55
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => RACK_3-S03
+        )
+
+    [25] => Array
+        (
+            [id] => 56
+            [garden_key] => garden:a5bb69bedc403485a0f61f7ea22dd505
+            [pot_code] => RACK_3-S04
+        )
+
+    [26] => Array
+        (
+            [id] => 11
+            [garden_key] => garden:bd90a6042921195ca31264989e145a94
+            [pot_code] => P-001
+        )
+
+    [27] => Array
+        (
+            [id] => 12
+            [garden_key] => garden:bd90a6042921195ca31264989e145a94
+            [pot_code] => P-002
+        )
+
+    [28] => Array
+        (
+            [id] => 13
+            [garden_key] => garden:bd90a6042921195ca31264989e145a94
+            [pot_code] => P-003
+        )
+
+    [29] => Array
+        (
+            [id] => 14
+            [garden_key] => garden:bd90a6042921195ca31264989e145a94
+            [pot_code] => P-004
+        )
+
+    [30] => Array
+        (
+            [id] => 35
+            [garden_key] => garden:bd90a6042921195ca31264989e145a94
+            [pot_code] => P-005
+        )
+
+    [31] => Array
+        (
+            [id] => 36
+            [garden_key] => garden:bd90a6042921195ca31264989e145a94
+            [pot_code] => P-006
+        )
+
+    [32] => Array
+        (
+            [id] => 31
+            [garden_key] => garden:bd90a6042921195ca31264989e145a94
+            [pot_code] => R2-S01
+        )
+
+    [33] => Array
+        (
+            [id] => 32
+            [garden_key] => garden:bd90a6042921195ca31264989e145a94
+            [pot_code] => R2-S02
+        )
+
+    [34] => Array
+        (
+            [id] => 33
+            [garden_key] => garden:bd90a6042921195ca31264989e145a94
+            [pot_code] => R2-S03
+        )
+
+    [35] => Array
+        (
+            [id] => 34
+            [garden_key] => garden:bd90a6042921195ca31264989e145a94
+            [pot_code] => R2-S04
+        )
+
+    [36] => Array
+        (
+            [id] => 37
+            [garden_key] => garden:d5dbc998571cc1d0f83a1376b0c55fe6
+            [pot_code] => P-001
+        )
+
+    [37] => Array
+        (
+            [id] => 38
+            [garden_key] => garden:d5dbc998571cc1d0f83a1376b0c55fe6
+            [pot_code] => P-002
+        )
+
+    [38] => Array
+        (
+            [id] => 39
+            [garden_key] => garden:d5dbc998571cc1d0f83a1376b0c55fe6
+            [pot_code] => P-003
+        )
+
+    [39] => Array
+        (
+            [id] => 40
+            [garden_key] => garden:d5dbc998571cc1d0f83a1376b0c55fe6
+            [pot_code] => P-004
+        )
+
+    [40] => Array
+        (
+            [id] => 19
+            [garden_key] => garden:e7ae08ddd1d0e1b4fa18977b08abb22b
+            [pot_code] => P-001
+        )
+
+    [41] => Array
+        (
+            [id] => 15
+            [garden_key] => garden:e7ae08ddd4d0e4b4fa18977b08abb22b
+            [pot_code] => P-001
+        )
+
+    [42] => Array
+        (
+            [id] => 16
+            [garden_key] => garden:e7ae08ddd4d0e4b4fa18977b08abb22b
+            [pot_code] => P-002
+        )
+
+    [43] => Array
+        (
+            [id] => 17
+            [garden_key] => garden:e7ae08ddd4d0e4b4fa18977b08abb22b
+            [pot_code] => P-003
+        )
+
+    [44] => Array
+        (
+            [id] => 18
+            [garden_key] => garden:e7ae08ddd4d0e4b4fa18977b08abb22b
+            [pot_code] => P-004
+        )
+
+    [45] => Array
+        (
+            [id] => 29
+            [garden_key] => garden:e7ae08ddd4d0e4b4fa18977b08abb22b
+            [pot_code] => P-005
+        )
+
+    [46] => Array
+        (
+            [id] => 30
+            [garden_key] => garden:e7ae08ddd4d0e4b4fa18977b08abb22b
+            [pot_code] => P-006
+        )
+
+    [47] => Array
+        (
+            [id] => 25
+            [garden_key] => garden:e7ae08ddd4d0e4b4fa18977b08abb22b
+            [pot_code] => R2-S01
+        )
+
+    [48] => Array
+        (
+            [id] => 26
+            [garden_key] => garden:e7ae08ddd4d0e4b4fa18977b08abb22b
+            [pot_code] => R2-S02
+        )
+
+    [49] => Array
+        (
+            [id] => 27
+            [garden_key] => garden:e7ae08ddd4d0e4b4fa18977b08abb22b
+            [pot_code] => R2-S03
+        )
+
+    [50] => Array
+        (
+            [id] => 28
+            [garden_key] => garden:e7ae08ddd4d0e4b4fa18977b08abb22b
+            [pot_code] => R2-S04
+        )
+
+    [51] => Array
+        (
+            [id] => 7
+            [garden_key] => garden:ea2076a14eedf2f8131809ca59efda44
+            [pot_code] => P-001
+        )
+
+    [52] => Array
+        (
+            [id] => 8
+            [garden_key] => garden:ea2076a14eedf2f8131809ca59efda44
+            [pot_code] => P-002
+        )
+
+    [53] => Array
+        (
+            [id] => 9
+            [garden_key] => garden:ea2076a14eedf2f8131809ca59efda44
+            [pot_code] => P-003
+        )
+
+    [54] => Array
+        (
+            [id] => 10
+            [garden_key] => garden:ea2076a14eedf2f8131809ca59efda44
+            [pot_code] => P-004
+        )
+
+)

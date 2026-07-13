@@ -345,20 +345,33 @@ function aitrongcay_handle_unified_admin_beta_actions(): void {
                     $pot_code = '';
                     
                     if ($slot_id > 0) {
+                        $pot_code = $wpdb->get_var($wpdb->prepare("SELECT pot_code FROM {$slots_table} WHERE id = %d", $slot_id));
+                        
+                        // Auto-repair duplicated pot_codes (e.g. if Rack 3 got P-001 which belongs to Rack 1)
+                        if ($pot_code) {
+                            $conflict = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$slots_table} WHERE pot_code = %s AND rack_id != %d LIMIT 1", $pot_code, $rack_id));
+                            if ($conflict) {
+                                $rack = function_exists('aitrongcay_get_rack_by_id') ? aitrongcay_get_rack_by_id($rack_id) : null;
+                                $rack_code = $rack ? (string) ($rack['rack_code'] ?? 'RACK') : 'RACK';
+                                $slot_index = (int) $wpdb->get_var($wpdb->prepare("SELECT slot_index FROM {$slots_table} WHERE id = %d", $slot_id));
+                                $pot_code = sprintf('%s-S%02d', $rack_code, max(1, $slot_index));
+                                $wpdb->update($slots_table, ['pot_code' => $pot_code], ['id' => $slot_id]);
+                            }
+                        }
+
                         $wpdb->update($slots_table, [
                             'slot_name' => $slot_name,
                             'plant_name' => $plant_name,
                             'camera_stream_url' => $camera_url,
                             'updated_at' => current_time('mysql')
                         ], ['id' => $slot_id]);
-                        $pot_code = $wpdb->get_var($wpdb->prepare("SELECT pot_code FROM {$slots_table} WHERE id = %d", $slot_id));
                     } else if (strpos((string) $slot_key, 'new_') === 0) {
                         // Create missing slot in database
                         $slot_index = (int) str_replace('new_', '', (string) $slot_key);
                         if ($slot_index > 0) {
                             $rack = function_exists('aitrongcay_get_rack_by_id') ? aitrongcay_get_rack_by_id($rack_id) : null;
                             $rack_code = $rack ? (string) ($rack['rack_code'] ?? 'RACK') : 'RACK';
-                            $pot_code = sprintf('P-%03d', $slot_index);
+                            $pot_code = sprintf('%s-S%02d', $rack_code, $slot_index);
                             $wpdb->insert($slots_table, [
                                 'rack_id' => $rack_id,
                                 'slot_index' => $slot_index,
@@ -1657,7 +1670,7 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                         <?php
                             $total_racks = count($racks);
                             $next_rack_index = $total_racks + 1;
-                            $next_rack_code = "RACK_" . $next_rack_index;
+                            $next_rack_code = "R" . $next_rack_index;
                             $next_rack_name = "Rack số " . $next_rack_index;
                         ?>
                         <div class="aitr-form-group" style="margin:0">

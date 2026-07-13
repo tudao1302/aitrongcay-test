@@ -106,13 +106,13 @@ get_template_part('template-parts/site/eco-hero');
       <div class="eco-pricing-badge basic">Khởi đầu</div>
       <?php endif; ?>
       <h3 class="eco-pricing-title">Basic Seed</h3>
-      <p class="eco-pricing-desc">Gói khởi đầu không sử dụng camera, phù hợp cho người mới bắt đầu chăm sóc theo dõi qua dữ liệu cơ bản.</p>
+      <p class="eco-pricing-desc">Gói khởi đầu cơ bản với 1 camera giám sát bao quát toàn bộ 1 rack, phù hợp cho người mới bắt đầu chăm sóc.</p>
       <div class="eco-pricing-price">299.000đ <span>/ tháng</span></div>
       <ul class="eco-pricing-features">
-        <li>Cập nhật ảnh chụp định kỳ hằng ngày</li>
+        <li>1 Camera giám sát trực tiếp 24/7 cho 1 rack</li>
         <li>Báo cáo độ ẩm, nhiệt độ, ánh sáng</li>
         <li>Trợ lý AI tư vấn mức độ cơ bản</li>
-        <li class="unavailable">Camera giám sát trực tiếp 24/7</li>
+        <li class="unavailable">Camera giám sát riêng từng khoang</li>
         <li class="unavailable">Phân tích chuyên sâu về chất lượng đất</li>
       </ul>
       <?php if ($plan_id === 'basic'): ?>
@@ -130,10 +130,10 @@ get_template_part('template-parts/site/eco-hero');
       <div class="eco-pricing-badge prime" style="background:#6fdba8;color:#062013">Phổ biến</div>
       <?php endif; ?>
       <h3 class="eco-pricing-title">Verdant Prime</h3>
-      <p class="eco-pricing-desc">Gói phổ biến nhất phù hợp cho một khu vườn gia đình với camera, dữ liệu cơ bản và AI đồng hành.</p>
+      <p class="eco-pricing-desc">Gói phổ biến nâng cấp toàn diện với hệ thống camera riêng cho từng khoang trên rack cùng AI đồng hành chặt chẽ.</p>
       <div class="eco-pricing-price">699.000đ <span>/ tháng</span></div>
       <ul class="eco-pricing-features">
-        <li>Camera giám sát sinh thái trực tiếp 24/7</li>
+        <li>Camera giám sát 24/7 trên toàn bộ các khoang</li>
         <li>Hệ thống cảnh báo tưới tiêu tự động</li>
         <li>Phân tích chuyên sâu tình trạng đất và nước</li>
         <li>AI đồng hành toàn thời gian & nhắc lịch</li>
@@ -147,7 +147,7 @@ get_template_part('template-parts/site/eco-hero');
     </div>
 
     <!-- Gói 3 -->
-    <div class="eco-pricing-card <?php echo $plan_id === 'enterprise' ? 'is-popular' : ''; ?>">
+    <div class="eco-pricing-card <?php echo $plan_id === 'enterprise' ? 'is-popular' : ''; ?>" style="display:none;">
       <?php if ($plan_id === 'enterprise'): ?>
       <div class="eco-pricing-badge prime">Gói hiện tại</div>
       <?php else: ?>

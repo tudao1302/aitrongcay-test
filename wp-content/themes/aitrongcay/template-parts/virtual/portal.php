@@ -511,6 +511,11 @@ if ($needs_photo_library) {
     $rack_slots_table = aitrongcay_garden_rack_slots_table();
     $pots_table = aitrongcay_garden_pots_table();
     $all_garden_racks = $wpdb->get_col($wpdb->prepare("SELECT id FROM " . aitrongcay_garden_racks_table() . " WHERE garden_key = %s ORDER BY id ASC", $garden_key));
+    $cloned_rack_ids = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
+    $cloned_rack_ids = is_array($cloned_rack_ids) ? array_values($cloned_rack_ids) : (is_string($cloned_rack_ids) && $cloned_rack_ids !== '' ? explode(',', $cloned_rack_ids) : array_values((array) $cloned_rack_ids));
+    if (!empty($cloned_rack_ids)) {
+        $all_garden_racks = array_unique(array_merge($all_garden_racks, array_map('intval', $cloned_rack_ids)));
+    }
     
     $used_pcodes = [];
     $slots_to_sync = [];
@@ -559,8 +564,16 @@ if ($needs_photo_library) {
         $r_id = (int)($slot['rack_id'] ?? 0);
         
         if ($pcode !== '' && $r_id > 0) {
-            $nk_rack_names[$r_id] = trim((string)($slot['rack_name'] ?? '')) ?: 'Rack ' . $r_id;
             $nk_rack_by_pot[$pcode] = $r_id;
+            if (!isset($nk_rack_names[$r_id]) || $nk_rack_names[$r_id] === ('Rack ' . $r_id)) {
+                $extracted_name = 'Rack ' . $r_id;
+                if (preg_match('/^r(\d+)/i', $pcode, $matches)) {
+                    $extracted_name = 'Rack ' . (int)$matches[1];
+                } elseif (preg_match('/^([a-z0-9]+)-/i', $pcode, $matches)) {
+                    $extracted_name = 'Rack ' . strtoupper(trim($matches[1]));
+                }
+                $nk_rack_names[$r_id] = trim((string)($slot['rack_name'] ?? '')) ?: $extracted_name;
+            }
         }
     }
     
@@ -1229,6 +1242,7 @@ if ($needs_photo_library) {
             <?php elseif ($slug === 'portal/nhat-ky-cham-soc') : ?>
                 <?php
                 $nk_rack_slots = function_exists('aitrongcay_get_rack_slots') ? aitrongcay_get_rack_slots($garden_key) : [];
+
                 $nk_rack_by_pot = [];
                 $nk_rack_names = [];
                 foreach ($nk_rack_slots as $slot) {
@@ -1236,7 +1250,17 @@ if ($needs_photo_library) {
                     $r_id = (int)($slot['rack_id'] ?? 0);
                     if ($pcode !== '' && $r_id > 0) {
                         $nk_rack_by_pot[$pcode] = $r_id;
-                        $nk_rack_names[$r_id] = trim((string)($slot['rack_name'] ?? '')) ?: 'Rack ' . $r_id;
+                        
+                        // Extract rack name from pot_code (e.g. 'R4-S01' -> 'Rack 4')
+                        if (!isset($nk_rack_names[$r_id]) || $nk_rack_names[$r_id] === ('Rack ' . $r_id)) {
+                            $extracted_name = 'Rack ' . $r_id;
+                            if (preg_match('/^R(\d+)/i', $pcode, $matches)) {
+                                $extracted_name = 'Rack ' . (int)$matches[1];
+                            } elseif (preg_match('/^([A-Z0-9]+)-/i', $pcode, $matches)) {
+                                $extracted_name = 'Rack ' . strtoupper(trim($matches[1]));
+                            }
+                            $nk_rack_names[$r_id] = $extracted_name;
+                        }
                     }
                 }
                 

@@ -722,12 +722,46 @@ if ($has_active_subscription || !empty($rack_configs)) {
           $_flat_pots[] = $_p;
       }
   }
-  $_pot_offset = 0;
+  $_assigned_pot_codes = [];
+  $_global_pot_offset = 0;
+  
   foreach ($rack_configs as $_ri => $_rcfg) {
     $_tray_count_from_cfg = count($_rcfg['trays'] ?? []);
     $_tray_count = $_ri === 0 && isset($rack_slot_count) && $rack_slot_count > $_tray_count_from_cfg ? $rack_slot_count : $_tray_count_from_cfg;
     $_tray_count = max(1, $_tray_count);
-    $_per_rack_pots = array_values(array_slice($_flat_pots, $_pot_offset, $_tray_count));
+    
+    $_per_rack_pots = [];
+    for ($_ti = 0; $_ti < $_tray_count; $_ti++) {
+        $_cfg_tray = $_rcfg['trays'][$_ti] ?? [];
+        $target_pot_code = trim((string)($_cfg_tray['pot_code'] ?? ''));
+        $found_pot = null;
+        
+        if ($target_pot_code !== '') {
+            foreach ($_flat_pots as $_fp) {
+                if (($_fp['code'] ?? '') === $target_pot_code && !isset($_assigned_pot_codes[$target_pot_code])) {
+                    $found_pot = $_fp;
+                    break;
+                }
+            }
+        }
+        
+        // Fallback to sequential unused pot if not found or no target provided
+        if ($found_pot === null) {
+            foreach ($_flat_pots as $_fp) {
+                $_fp_code = $_fp['code'] ?? '';
+                if ($_fp_code !== '' && !isset($_assigned_pot_codes[$_fp_code])) {
+                    $found_pot = $_fp;
+                    break;
+                }
+            }
+        }
+        
+        if ($found_pot !== null) {
+            $_assigned_pot_codes[$found_pot['code'] ?? ''] = true;
+            $_per_rack_pots[] = $found_pot;
+        }
+    }
+    
     // Override streamUrl theo vị trí hiển thị (0,1,2...) thay vì slot_index vật lý.
     // Đảm bảo "Khoang 1 trên dashboard = Tray 1 trong cài đặt" không phụ thuộc slot_index DB.
     foreach ($_per_rack_pots as $_ti => &$_rp) {
@@ -749,10 +783,11 @@ if ($has_active_subscription || !empty($rack_configs)) {
       }
     }
     unset($_rp);
+    
     // Pad với empty tray nếu DB chưa có đủ slot cho rack này (rack mới tạo trong config)
     for ($_ti = count($_per_rack_pots); $_ti < $_tray_count; $_ti++) {
       $_cfg_tray      = $_rcfg['trays'][$_ti] ?? [];
-      $_global_slot   = $_pot_offset + $_ti + 1;
+      $_global_slot   = $_global_pot_offset + $_ti + 1;
       $_tray_name     = trim((string) ($_cfg_tray['name'] ?? '')) ?: ('Khoang ' . $_global_slot);
       $_cfg_stream  = trim((string) ($_cfg_tray['webcam_url'] ?? ''));
       $_per_rack_pots[] = [
@@ -789,7 +824,7 @@ if ($has_active_subscription || !empty($rack_configs)) {
       'label' => trim((string) ($_rcfg['rack_name'] ?? '')) ?: 'Rack ' . ($_ri + 1),
       'pots'  => $_per_rack_pots,
     ];
-    $_pot_offset += $_tray_count;
+    $_global_pot_offset += $_tray_count;
   }
   if (empty($rack_switcher_payload)) {
     $rack_switcher_payload = [['key' => 'rack-0', 'label' => 'Rack 1', 'pots' => $_flat_pots]];
@@ -4160,7 +4195,16 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       <div class="d2-level">
         <div class="d2-level-badge">🛡</div>
         <div>
-          <div style="font-weight:800;color:var(--primary)">Level 42</div>
+          <?php
+          $_lvl = 1;
+          if (isset($current_user->ID)) {
+              $_pts = (int) get_user_meta($current_user->ID, '_aitrongcay_eco_points', true);
+              if (function_exists('aitrongcay_calculate_level')) {
+                  $_lvl = aitrongcay_calculate_level($_pts);
+              }
+          }
+          ?>
+          <div style="font-weight:800;color:var(--primary)">Level <?php echo esc_html($_lvl); ?></div>
           <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(227,227,222,.46)">
             <?php echo esc_html($owner_name); ?></div>
         </div>
@@ -4507,7 +4551,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
                 <span style="margin-right: 6px">📖</span> Nhật ký sinh trưởng AI
               </div>
               <?php if ($can_control_garden): ?>
-              <button class="d2-pot-journal-edit" type="button" title="Ghi chú thủ công" data-d2-journal-edit>✍️</button>
+              <button class="d2-pot-journal-edit" type="button" title="Ghi chú thủ công" data-d2-journal-edit style="display:none;">✍️</button>
               <?php endif; ?>
             </div>
             
@@ -4544,18 +4588,14 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
               </div>
               <?php endforeach; ?>
               
-              <?php if(trim($hero_journal_text) !== ''): ?>
-              <div class="d2-log-entry user-note" style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.05);">
+              <div class="d2-log-entry user-note" style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.05); cursor: pointer;">
                 <div style="font-size: 11px; color: #ffb68c; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
                   <span>👤 Ghi chú của bạn</span>
                 </div>
-                <div style="font-size: 13.5px; color: rgba(227, 227, 222, 0.85); line-height: 1.6; white-space: pre-line;" data-d2-journal-text>
-                  <?php echo esc_html($hero_journal_text); ?>
+                <div style="font-size: 13.5px; color: rgba(227, 227, 222, 0.85); line-height: 1.6; white-space: pre-line; min-height: 38px; padding: 10px 12px; background: rgba(255,255,255,0.04); border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.2s;" data-d2-journal-text onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+                  <?php echo trim($hero_journal_text) !== '' ? esc_html($hero_journal_text) : '<span style="color:rgba(255,255,255,0.3)">Bấm vào đây để ghi nhật ký canh tác...</span>'; ?>
                 </div>
               </div>
-              <?php else: ?>
-              <p class="d2-pot-journal-text" data-d2-journal-text style="display:none;"></p>
-              <?php endif; ?>
             </div>
 
             <textarea class="d2-pot-journal-input" data-d2-journal-input hidden
@@ -5578,11 +5618,11 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         input.addEventListener('blur', function () { saveName(input.value); });
       });
       document.querySelectorAll('[data-d2-journal-wrap]').forEach(function (wrap) {
-        var editButton = wrap.querySelector('[data-d2-journal-edit]');
+        var editButton = wrap.querySelector('[data-d2-journal-edit]'); // still present but hidden
         var text = wrap.querySelector('[data-d2-journal-text]');
         var input = wrap.querySelector('[data-d2-journal-input]');
         var status = wrap.querySelector('[data-d2-journal-status]');
-        if (!editButton || !text || !input || !status) return;
+        if (!text || !input || !status) return;
         var isEditing = false;
         var isSaving = false;
         var timer = null;
@@ -5595,7 +5635,11 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           status.hidden = !show;
         }
         function renderText(value) {
-          text.textContent = value || 'Chưa có nhật ký canh tác cho khoang này.';
+          if (value && value.trim() !== '') {
+            text.textContent = value;
+          } else {
+            text.innerHTML = '<span style="color:rgba(255,255,255,0.3)">Bấm vào đây để ghi nhật ký canh tác...</span>';
+          }
         }
         function buildTodayDraft(value) {
           var today = new Date();
@@ -5643,7 +5687,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           isEditing = false;
           text.hidden = false;
           input.hidden = true;
-          editButton.hidden = false;
+          if (editButton) editButton.hidden = true; // explicitly keep it hidden
           if (!keepStatus) status.hidden = true;
         }
         function pushSave(value) {
@@ -5690,7 +5734,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           setStatus('Đang lưu nhật ký...', 'is-saving', true);
           timer = window.setTimeout(function () { pushSave(input.value); }, 500);
         }
-        editButton.addEventListener('click', function (event) { event.preventDefault(); event.stopPropagation(); openEditor(); });
+        text.addEventListener('click', function (event) { event.preventDefault(); event.stopPropagation(); openEditor(); });
+        if (editButton) editButton.addEventListener('click', function (event) { event.preventDefault(); event.stopPropagation(); openEditor(); });
         input.addEventListener('input', scheduleSave);
         input.addEventListener('keydown', function (event) {
           if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
@@ -6530,7 +6575,13 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         var isEmptyPot = pot.isEmpty === true;
         if (journalLabel) journalLabel.textContent = (isEmptyPot ? 'Trạng thái khoang · ' : 'Nhật ký canh tác · ') + (pot.code || 'Khoang');
         if (journalWrap) journalWrap.setAttribute('data-pot-code', isEmptyPot ? '' : (pot.code || ''));
-        if (journalText) journalText.textContent = pot.journalText || (isEmptyPot ? 'Khoang này đang trống và sẵn sàng để trồng cây mới.' : 'Chưa có nhật ký canh tác cho khoang này.');
+        if (journalText) {
+          if (pot.journalText && pot.journalText.trim() !== '') {
+            journalText.textContent = pot.journalText;
+          } else {
+            journalText.innerHTML = '<span style="color:rgba(255,255,255,0.3)">Bấm vào đây để ghi nhật ký canh tác...</span>';
+          }
+        }
         if (journalInput) journalInput.value = isEmptyPot ? '' : (pot.journalText || '');
         
         // Cập nhật giao diện Auto-log AI

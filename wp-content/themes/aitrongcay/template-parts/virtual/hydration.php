@@ -633,7 +633,16 @@ unset($shared_top_link);
       <div class="d2-level">
         <div class="d2-level-badge">🛡</div>
         <div>
-          <div style="font-weight:800;color:var(--primary)">Level 42</div>
+          <?php
+          $_lvl = 1;
+          if (isset($current_user->ID)) {
+              $_pts = (int) get_user_meta($current_user->ID, '_aitrongcay_eco_points', true);
+              if (function_exists('aitrongcay_calculate_level')) {
+                  $_lvl = aitrongcay_calculate_level($_pts);
+              }
+          }
+          ?>
+          <div style="font-weight:800;color:var(--primary)">Level <?php echo esc_html($_lvl); ?></div>
           <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(227,227,222,.46)">
             <?php echo esc_html($owner_name); ?></div>
         </div>

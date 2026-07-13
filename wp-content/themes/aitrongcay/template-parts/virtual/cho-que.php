@@ -82,7 +82,7 @@ set_query_var('aitr_eco_shell', [
     'title' => 'Eco-Tech Marketplace',
     'active' => 'cho-que',
     'side_title' => 'Master Gardener',
-    'side_subtitle' => 'Eco-Level 42',
+    'side_subtitle' => 'Eco-Level ' . (function_exists('aitrongcay_calculate_level') ? aitrongcay_calculate_level((int) get_user_meta(get_current_user_id(), '_aitrongcay_eco_points', true)) : 1),
     'side_badge' => '🌿',
     'top_icons' => ['🔔', '🛒'],
     'search' => null,

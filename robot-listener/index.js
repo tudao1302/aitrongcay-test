@@ -1,3 +1,4 @@
+require('dotenv').config();
 const admin = require('firebase-admin');
 const axios = require('axios');
 
@@ -8,7 +9,7 @@ try {
   const serviceAccount = require('./serviceAccountKey.json');
   
   // KHAI BÁO URL DATABSE CỦA BẠN (VD: https://aitrongcay-robot-default-rtdb.asia-southeast1.firebasedatabase.app)
-  const DATABASE_URL = 'https://aitrongcay-robot-default-rtdb.asia-southeast1.firebasedatabase.app'; // <--- ĐỔI LẠI NẾU SAI
+  const DATABASE_URL = process.env.FIREBASE_DB_URL || 'https://aitrongcay-robot-default-rtdb.asia-southeast1.firebasedatabase.app'; // Lấy từ biến môi trường
   
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -25,8 +26,8 @@ const db = admin.database();
 const commandRef = db.ref('robot/camera_command');
 
 // URL API Backend (WordPress)
-// Nếu deploy thật, đổi localhost thành tên miền của bạn
-const WP_API_URL = 'http://localhost/aitrongcay/wp-json/aitrongcay/v1/robot/capture';
+// Ưu tiên lấy từ biến môi trường (.env), nếu không có thì fallback về localhost
+const WP_API_URL = process.env.WP_API_URL || 'http://localhost/aitrongcay/wp-json/aitrongcay/v1/robot/capture';
 
 console.log("🚀 [AiTrongCay Robot Listener] Đã khởi động! Đang lắng nghe Firebase 24/24...");
 
@@ -51,36 +52,53 @@ commandRef.on('value', async (snapshot) => {
       return;
     }
 
-    console.log(`📸 Đang gửi lệnh cắt ảnh cho Khay: ${pot_code} (Vườn: ${garden_key})...`);
-    
-    try {
-      // 3. Gọi WordPress API để cắt ảnh và chạy AI
-      const response = await axios.post(WP_API_URL, {
-        garden_key: garden_key,
-        pot_code: pot_code,
-        command: data.command || ''
-      }, {
-        headers: { 'Content-Type': 'application/json' }
-      });
+    let success = false;
+    let attempts = 0;
+    const maxRetries = 3;
 
-      if (response.data && response.data.status === 'success') {
-        console.log(`✅ [Thành công] WordPress báo đã lưu ảnh! URL: ${response.data.url}`);
-        
-        // 4. Cập nhật lại Firebase thành 'captured' để báo robot đi tiếp
-        console.log(`🤖 Đang báo lại cho Robot: status = 'captured' ...`);
-        await commandRef.update({ status: 'captured' });
-      }
-
-    } catch (error) {
-      console.error(`❌ [Lỗi API] WordPress phản hồi lỗi:`);
-      if (error.response) {
-        console.error(error.response.data);
-      } else {
-        console.error(error.message);
-      }
+    while (attempts < maxRetries && !success) {
+      attempts++;
+      console.log(`📸 [Lần thử ${attempts}/${maxRetries}] Đang gửi lệnh cắt ảnh cho Khay: ${pot_code} (Vườn: ${garden_key})...`);
       
-      // Báo lỗi lên Firebase để robot biết
-      await commandRef.update({ status: 'capture_failed' });
+      try {
+        // 3. Gọi WordPress API để cắt ảnh và chạy AI
+        const response = await axios.post(WP_API_URL, {
+          garden_key: garden_key,
+          pot_code: pot_code,
+          command: data.command || ''
+        }, {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000 // Giới hạn 10s để không bị treo request
+        });
+
+        if (response.data && response.data.status === 'success') {
+          console.log(`✅ [Thành công] WordPress báo đã lưu ảnh! URL: ${response.data.url}`);
+          
+          // 4. Cập nhật lại Firebase thành 'captured' để báo robot đi tiếp
+          console.log(`🤖 Đang báo lại cho Robot: status = 'captured' ...`);
+          await commandRef.update({ status: 'captured' });
+          success = true;
+        } else {
+          throw new Error('API không trả về status success');
+        }
+
+      } catch (error) {
+        console.error(`❌ [Lỗi API] WordPress phản hồi lỗi:`);
+        if (error.response) {
+          console.error(error.response.data);
+        } else {
+          console.error(error.message);
+        }
+        
+        if (attempts < maxRetries) {
+          console.log(`⏳ Đang đợi 2 giây để thử lại...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          console.error(`🚨 Đã thử 3 lần nhưng vẫn thất bại. Cập nhật Firebase thành 'capture_failed'.`);
+          // Báo lỗi lên Firebase để robot biết
+          await commandRef.update({ status: 'capture_failed' });
+        }
+      }
     }
   }
 });

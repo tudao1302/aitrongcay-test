@@ -158,6 +158,7 @@ function aitrongcay_get_rack_monitor_configs(string $garden_key = ''): array
                         'webcam_url'  => trim((string) ($slot['camera_stream_url'] ?? '')),
                         'blynk_token' => $blynk_token,
                         'blynk_base'  => $blynk_base,
+                        'pot_code'    => $pot_code,
                     ]);
 
                     foreach (['name', 'webcam_url', 'vpin_temp', 'vpin_hum', 'vpin_soil', 'vpin_ph', 'vpin_ec', 'vpin_light', 'vpin_pump'] as $vp) {

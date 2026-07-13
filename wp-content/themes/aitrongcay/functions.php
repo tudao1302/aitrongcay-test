@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
-if (! defined('ABSPATH')) {
+if (function_exists('opcache_reset')) {
+    opcache_reset();
+}
+
+if (!defined('ABSPATH')) {
     exit;
 }
 
@@ -23,6 +27,7 @@ require_once get_template_directory() . '/inc/orders.php';
 require_once get_template_directory() . '/inc/supplies-admin.php';
 require_once get_template_directory() . '/inc/portal-unified-admin-beta.php';
 require_once get_template_directory() . '/inc/blynk-webhook.php';
+
 require_once get_template_directory() . '/inc/portal-robot-api.php';
 require_once get_template_directory() . '/inc/notifications.php';
 require_once get_template_directory() . '/inc/rack-handoff.php';
@@ -154,7 +159,7 @@ function aitrongcay_market_status_label(string $status): string
 
 function aitrongcay_render_market_admin_page(): void
 {
-    if (! current_user_can('edit_posts')) {
+    if (!current_user_can('edit_posts')) {
         wp_die(esc_html__('Bạn không có quyền truy cập mục này.', 'aitrongcay'));
     }
 
@@ -286,7 +291,7 @@ add_action('restrict_manage_posts', 'aitrongcay_market_admin_filters');
 
 function aitrongcay_market_admin_query_filter(WP_Query $query): void
 {
-    if (! is_admin() || ! $query->is_main_query()) {
+    if (!is_admin() || !$query->is_main_query()) {
         return;
     }
 
@@ -308,13 +313,13 @@ add_action('pre_get_posts', 'aitrongcay_market_admin_query_filter');
 
 function aitrongcay_market_admin_set_status(): void
 {
-    if (! current_user_can('edit_posts')) {
+    if (!current_user_can('edit_posts')) {
         wp_die(esc_html__('Bạn không có quyền thực hiện thao tác này.', 'aitrongcay'));
     }
 
     $post_id = absint($_GET['post_id'] ?? 0);
     $status = sanitize_key((string) ($_GET['status'] ?? ''));
-    if ($post_id <= 0 || ! in_array($status, ['publish', 'pending', 'draft'], true)) {
+    if ($post_id <= 0 || !in_array($status, ['publish', 'pending', 'draft'], true)) {
         wp_safe_redirect(admin_url('edit.php?post_type=aitr_market_post'));
         exit;
     }
@@ -322,7 +327,7 @@ function aitrongcay_market_admin_set_status(): void
     check_admin_referer('aitr_market_admin_status_' . $post_id);
 
     $post = get_post($post_id);
-    if (! $post || $post->post_type !== 'aitr_market_post') {
+    if (!$post || $post->post_type !== 'aitr_market_post') {
         wp_safe_redirect(admin_url('edit.php?post_type=aitr_market_post'));
         exit;
     }
@@ -344,7 +349,7 @@ add_action('admin_post_aitrongcay_market_admin_set_status', 'aitrongcay_market_a
 function aitrongcay_market_admin_notice(): void
 {
     $screen = function_exists('get_current_screen') ? get_current_screen() : null;
-    if (! $screen || $screen->post_type !== 'aitr_market_post' || ! isset($_GET['market_updated'])) {
+    if (!$screen || $screen->post_type !== 'aitr_market_post' || !isset($_GET['market_updated'])) {
         return;
     }
 
@@ -367,7 +372,7 @@ function aitrongcay_enqueue_assets(): void
 
     $page = function_exists('aitrongcay_current_virtual_page') ? aitrongcay_current_virtual_page() : null;
     $slug = $page['slug'] ?? '';
-    
+
     if ($slug !== '') {
         $is_portal_request = $slug === 'portal'
             || str_starts_with($slug, 'portal/')
@@ -509,7 +514,7 @@ function aitrongcay_consultation_notice(): ?array
 function aitrongcay_render_consultation_notice(): void
 {
     $notice = aitrongcay_consultation_notice();
-    if (! is_array($notice)) {
+    if (!is_array($notice)) {
         return;
     }
 
@@ -530,7 +535,7 @@ function aitrongcay_consultation_notification_email(): string
 function aitrongcay_send_consultation_notification(array $payload, int $post_id = 0): void
 {
     $admin_email = aitrongcay_consultation_notification_email();
-    if (! is_email($admin_email)) {
+    if (!is_email($admin_email)) {
         return;
     }
 
@@ -558,7 +563,7 @@ function aitrongcay_send_consultation_notification(array $payload, int $post_id 
 
 function aitrongcay_handle_consultation_submission(): void
 {
-    if (! isset($_POST['aitrongcay_consultation_nonce']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['aitrongcay_consultation_nonce'])), 'aitrongcay_consultation_submit')) {
+    if (!isset($_POST['aitrongcay_consultation_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['aitrongcay_consultation_nonce'])), 'aitrongcay_consultation_submit')) {
         wp_safe_redirect(add_query_arg('consultation_status', 'invalid', wp_get_referer() ?: home_url('/dang-ky-tu-van/')));
         exit;
     }
@@ -602,7 +607,7 @@ function aitrongcay_handle_consultation_submission(): void
         ])),
     ], true);
 
-    if (! is_wp_error($post_id) && is_int($post_id)) {
+    if (!is_wp_error($post_id) && is_int($post_id)) {
         update_post_meta($post_id, 'full_name', $full_name);
         update_post_meta($post_id, 'phone', $phone);
         update_post_meta($post_id, 'email', $email);
@@ -662,7 +667,7 @@ function aitrongcay_auth_notice(): ?array
 function aitrongcay_render_auth_notice(): void
 {
     $notice = aitrongcay_auth_notice();
-    if (! is_array($notice)) {
+    if (!is_array($notice)) {
         return;
     }
 
@@ -739,7 +744,7 @@ function aitrongcay_account_notice(): ?array
 function aitrongcay_render_account_notice(): void
 {
     $notice = aitrongcay_account_notice();
-    if (! is_array($notice)) {
+    if (!is_array($notice)) {
         return;
     }
 
@@ -753,7 +758,7 @@ function aitrongcay_render_account_notice(): void
 
 function aitrongcay_admin_display_page_title($title, $post_id = 0)
 {
-    if (! is_admin()) {
+    if (!is_admin()) {
         return $title;
     }
 
@@ -814,7 +819,7 @@ function aitrongcay_handle_register_submission(): void
 {
     $redirect_to = esc_url_raw(wp_unslash($_POST['redirect_to'] ?? home_url('/onboarding/')));
 
-    if (! isset($_POST['aitrongcay_register_nonce']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['aitrongcay_register_nonce'])), 'aitrongcay_register_submit')) {
+    if (!isset($_POST['aitrongcay_register_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['aitrongcay_register_nonce'])), 'aitrongcay_register_submit')) {
         wp_safe_redirect(add_query_arg('auth_status', 'register-invalid', $redirect_to));
         exit;
     }
@@ -825,7 +830,7 @@ function aitrongcay_handle_register_submission(): void
     $salutation = sanitize_text_field(wp_unslash($_POST['salutation'] ?? ''));
     $phone = sanitize_text_field(wp_unslash($_POST['phone'] ?? ''));
 
-    if ($full_name === '' || ! is_email($email) || $password === '' || ! in_array($salutation, ['anh', 'chị'], true) || $phone === '') {
+    if ($full_name === '' || !is_email($email) || $password === '' || !in_array($salutation, ['anh', 'chị'], true) || $phone === '') {
         wp_safe_redirect(add_query_arg('auth_status', 'register-invalid', $redirect_to));
         exit;
     }
@@ -859,31 +864,31 @@ function aitrongcay_handle_register_submission(): void
     } elseif (isset($_POST['ref'])) {
         $ref_id = absint($_POST['ref']);
     }
-    
+
     if ($ref_id > 0 && $ref_id !== $user_id) {
         $inviter = get_user_by('id', $ref_id);
         if ($inviter instanceof WP_User) {
             // Save the relationship: current user was referred by the inviter
             update_user_meta($user_id, '_aitrongcay_referred_by', $ref_id);
-            
+
             // Increment inviter's referral count for the mission UI
             $total_referrals = (int) get_user_meta($ref_id, '_aitrongcay_total_referrals', true);
             update_user_meta($ref_id, '_aitrongcay_total_referrals', $total_referrals + 1);
-            
+
             // Add 100 Eco Points to the inviter
             $inviter_points = (int) get_user_meta($ref_id, '_aitrongcay_eco_points', true);
             update_user_meta($ref_id, '_aitrongcay_eco_points', $inviter_points + 100);
-            
+
             // Send a notification to the inviter
             if (function_exists('aitrongcay_add_notification')) {
                 aitrongcay_add_notification(
-                    $ref_id, 
-                    '🎉 Có người đăng ký từ link của bạn!', 
-                    'Bạn vừa nhận được +100 Điểm Eco vì ' . $full_name . ' đã tạo tài khoản và trở thành hàng xóm của bạn.', 
+                    $ref_id,
+                    '🎉 Có người đăng ký từ link của bạn!',
+                    'Bạn vừa nhận được +100 Điểm Eco vì ' . $full_name . ' đã tạo tài khoản và trở thành hàng xóm của bạn.',
                     home_url('/portal/doi-diem/')
                 );
             }
-            
+
             // Clear the cookie since it's fulfilled
             if (isset($_COOKIE['aitrongcay_ref'])) {
                 setcookie('aitrongcay_ref', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
@@ -905,7 +910,7 @@ function aitrongcay_handle_login_submission(): void
 {
     $redirect_to = esc_url_raw(wp_unslash($_POST['redirect_to'] ?? home_url('/portal/dashboard-2/')));
 
-    if (! isset($_POST['aitrongcay_login_nonce']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['aitrongcay_login_nonce'])), 'aitrongcay_login_submit')) {
+    if (!isset($_POST['aitrongcay_login_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['aitrongcay_login_nonce'])), 'aitrongcay_login_submit')) {
         wp_safe_redirect(add_query_arg('auth_status', 'login-error', home_url('/dang-nhap/')));
         exit;
     }
@@ -1015,11 +1020,11 @@ function aitrongcay_creator_user_list(): array
 
 function aitrongcay_is_creator_user($user = null): bool
 {
-    if (! ($user instanceof WP_User)) {
+    if (!($user instanceof WP_User)) {
         $user = wp_get_current_user();
     }
 
-    if (! ($user instanceof WP_User) || (int) $user->ID <= 0) {
+    if (!($user instanceof WP_User) || (int) $user->ID <= 0) {
         return false;
     }
 
@@ -1082,7 +1087,7 @@ add_action('admin_menu', 'aitrongcay_creator_admin_menu', 100);
 
 function aitrongcay_handle_creator_admin_save(): void
 {
-    if (! is_admin() || ! current_user_can('edit_theme_options')) {
+    if (!is_admin() || !current_user_can('edit_theme_options')) {
         return;
     }
 
@@ -1099,7 +1104,7 @@ function aitrongcay_handle_creator_admin_save(): void
     $entries = [];
     foreach ($selected_ids as $user_id) {
         $user = get_user_by('id', $user_id);
-        if (! ($user instanceof WP_User)) {
+        if (!($user instanceof WP_User)) {
             continue;
         }
 
@@ -1121,7 +1126,7 @@ add_action('admin_init', 'aitrongcay_handle_creator_admin_save');
 
 function aitrongcay_render_creator_admin_page(): void
 {
-    if (! current_user_can('edit_theme_options')) {
+    if (!current_user_can('edit_theme_options')) {
         wp_die('Bạn không có quyền truy cập mục này.');
     }
 
@@ -1139,48 +1144,52 @@ function aitrongcay_render_creator_admin_page(): void
     }
     ?>
     <div class="wrap">
-      <h1>Danh sách creator</h1>
-      <p>Chọn những user được phép nhìn thấy và truy cập khu <strong>onboarding cây mới</strong> và <strong>tạo vật phẩm mới</strong>.</p>
-      <?php if (isset($_GET['updated']) && $_GET['updated'] === 'true') : ?>
-        <div class="notice notice-success is-dismissible"><p>Đã cập nhật danh sách creator.</p></div>
-      <?php endif; ?>
-      <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=aitrongcay-creator-list')); ?>">
-        <?php wp_nonce_field('aitrongcay_save_creator_list'); ?>
-        <input type="hidden" name="action" value="aitrongcay_save_creator_list">
-        <table class="widefat striped" style="max-width:980px">
-          <thead>
-            <tr>
-              <th style="width:90px">Chọn</th>
-              <th>Tên hiển thị</th>
-              <th>Login</th>
-              <th>Email</th>
-              <th>Role</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($users as $user) : ?>
-              <?php $user_id = (int) $user->ID; ?>
-              <tr>
-                <td><label><input type="checkbox" name="creator_user_ids[]" value="<?php echo esc_attr((string) $user_id); ?>" <?php checked(isset($selected_lookup[$user_id])); ?>> chọn</label></td>
-                <td><strong><?php echo esc_html((string) $user->display_name); ?></strong></td>
-                <td><?php echo esc_html((string) $user->user_login); ?></td>
-                <td><?php echo esc_html((string) $user->user_email); ?></td>
-                <td><?php echo esc_html(implode(', ', array_map('strval', (array) $user->roles))); ?></td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-        <p style="margin-top:16px">
-          <button type="submit" class="button button-primary">Lưu danh sách creator</button>
-        </p>
-      </form>
+        <h1>Danh sách creator</h1>
+        <p>Chọn những user được phép nhìn thấy và truy cập khu <strong>onboarding cây mới</strong> và <strong>tạo vật phẩm
+                mới</strong>.</p>
+        <?php if (isset($_GET['updated']) && $_GET['updated'] === 'true'): ?>
+            <div class="notice notice-success is-dismissible">
+                <p>Đã cập nhật danh sách creator.</p>
+            </div>
+        <?php endif; ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=aitrongcay-creator-list')); ?>">
+            <?php wp_nonce_field('aitrongcay_save_creator_list'); ?>
+            <input type="hidden" name="action" value="aitrongcay_save_creator_list">
+            <table class="widefat striped" style="max-width:980px">
+                <thead>
+                    <tr>
+                        <th style="width:90px">Chọn</th>
+                        <th>Tên hiển thị</th>
+                        <th>Login</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($users as $user): ?>
+                        <?php $user_id = (int) $user->ID; ?>
+                        <tr>
+                            <td><label><input type="checkbox" name="creator_user_ids[]"
+                                        value="<?php echo esc_attr((string) $user_id); ?>" <?php checked(isset($selected_lookup[$user_id])); ?>> chọn</label></td>
+                            <td><strong><?php echo esc_html((string) $user->display_name); ?></strong></td>
+                            <td><?php echo esc_html((string) $user->user_login); ?></td>
+                            <td><?php echo esc_html((string) $user->user_email); ?></td>
+                            <td><?php echo esc_html(implode(', ', array_map('strval', (array) $user->roles))); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <p style="margin-top:16px">
+                <button type="submit" class="button button-primary">Lưu danh sách creator</button>
+            </p>
+        </form>
     </div>
     <?php
 }
 
 function aitrongcay_login_redirect(string $redirect_to, string $requested_redirect_to, $user): string
 {
-    if (! ($user instanceof WP_User)) {
+    if (!($user instanceof WP_User)) {
         return $redirect_to;
     }
 
@@ -1202,7 +1211,7 @@ add_filter('login_redirect', 'aitrongcay_login_redirect', 10, 3);
 
 function aitrongcay_block_wp_admin_for_frontend_users(): void
 {
-    if (! is_user_logged_in() || aitrongcay_is_backend_admin_user()) {
+    if (!is_user_logged_in() || aitrongcay_is_backend_admin_user()) {
         return;
     }
 
@@ -1234,7 +1243,7 @@ add_filter('show_admin_bar', 'aitrongcay_show_admin_bar_for_backend_users');
 
 function aitrongcay_handle_account_update(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -1256,7 +1265,7 @@ function aitrongcay_handle_account_update(): void
     $notify_zalo = isset($_POST['notify_zalo']) ? '1' : '0';
     $notify_harvest = isset($_POST['notify_harvest']) ? '1' : '0';
 
-    if ($email !== '' && ! is_email($email)) {
+    if ($email !== '' && !is_email($email)) {
         wp_safe_redirect(add_query_arg('account_status', 'invalid-email', home_url('/tai-khoan/')));
         exit;
     }
@@ -1300,7 +1309,7 @@ add_action('admin_post_aitrongcay_account_update', 'aitrongcay_handle_account_up
 
 function aitrongcay_handle_email_confirmation(): void
 {
-    if (! isset($_GET['ait_confirm_email'], $_GET['uid'], $_GET['token'])) {
+    if (!isset($_GET['ait_confirm_email'], $_GET['uid'], $_GET['token'])) {
         return;
     }
     $user_id = absint($_GET['uid']);
@@ -1319,7 +1328,7 @@ add_action('template_redirect', 'aitrongcay_handle_email_confirmation');
 
 function aitrongcay_handle_account_password_update(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -1343,14 +1352,14 @@ add_action('admin_post_aitrongcay_account_password_update', 'aitrongcay_handle_a
 
 function aitrongcay_handle_account_avatar_update(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
 
     check_admin_referer('aitrongcay_account_avatar_submit', 'aitrongcay_account_avatar_nonce');
 
-    if (empty($_FILES['avatar']) || ! is_array($_FILES['avatar']) || (int) ($_FILES['avatar']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+    if (empty($_FILES['avatar']) || !is_array($_FILES['avatar']) || (int) ($_FILES['avatar']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
         wp_safe_redirect(add_query_arg('account_status', 'updated', home_url('/tai-khoan/')));
         exit;
     }
@@ -1360,7 +1369,7 @@ function aitrongcay_handle_account_avatar_update(): void
     require_once ABSPATH . 'wp-admin/includes/image.php';
 
     $attachment_id = media_handle_upload('avatar', 0);
-    if (! is_wp_error($attachment_id) && $attachment_id) {
+    if (!is_wp_error($attachment_id) && $attachment_id) {
         update_user_meta(get_current_user_id(), 'aitrongcay_avatar_id', (int) $attachment_id);
         update_post_meta($attachment_id, '_aitrongcay_avatar_owner', get_current_user_id());
         wp_safe_redirect(add_query_arg('account_status', 'avatar-updated', home_url('/tai-khoan/')));
@@ -1374,7 +1383,7 @@ add_action('admin_post_aitrongcay_account_avatar_update', 'aitrongcay_handle_acc
 
 function aitrongcay_handle_account_avatar_remove(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -1427,7 +1436,7 @@ add_shortcode('aitrongcay_register_form', 'aitrongcay_register_form_shortcode');
 function aitrongcay_require_portal_nonce(): void
 {
     check_ajax_referer('aitrongcay_portal_actions', 'nonce');
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Anh/chị cần đăng nhập trước.'], 401);
     }
 }
@@ -1730,18 +1739,18 @@ function aitrongcay_seed_db_from_legacy_datasets(): void
     if ((string) get_option('aitrongcay_db_seed_version', '') === '1') {
         return;
     }
-    if (! function_exists('aitrongcay_portal_dataset_library')) {
+    if (!function_exists('aitrongcay_portal_dataset_library')) {
         return;
     }
 
     $library = aitrongcay_portal_dataset_library();
     foreach ($library as $dataset) {
         $emails = array_values(array_filter((array) ($dataset['match_emails'] ?? [])));
-        if (! $emails) {
+        if (!$emails) {
             continue;
         }
         $owner = get_user_by('email', (string) $emails[0]);
-        if (! $owner instanceof WP_User) {
+        if (!$owner instanceof WP_User) {
             continue;
         }
         $garden_key = aitrongcay_primary_garden_key_for_user($owner);
@@ -1753,13 +1762,15 @@ function aitrongcay_seed_db_from_legacy_datasets(): void
         ]);
 
         foreach ((array) ($dataset['pots'] ?? []) as $index => $pot) {
-            if (! is_array($pot)) continue;
+            if (!is_array($pot))
+                continue;
             $pot['sort_order'] = $index + 1;
             aitrongcay_upsert_db_pot($garden_key, $pot);
         }
 
         foreach ((array) ($dataset['tool_shelf'] ?? []) as $index => $tool) {
-            if (! is_array($tool)) continue;
+            if (!is_array($tool))
+                continue;
             global $wpdb;
             $table = aitrongcay_garden_tools_table();
             $tool_key = sanitize_key((string) ($tool['name'] ?? ('tool_' . ($index + 1))));
@@ -1776,9 +1787,9 @@ function aitrongcay_seed_db_from_legacy_datasets(): void
                 'updated_at' => $now,
             ];
             if ($existing_id > 0) {
-                $wpdb->update($table, $payload, ['id' => $existing_id], ['%s','%s','%s','%d','%d','%s','%d','%s'], ['%d']);
+                $wpdb->update($table, $payload, ['id' => $existing_id], ['%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s'], ['%d']);
             } else {
-                $wpdb->insert($table, array_merge(['garden_key' => $garden_key, 'tool_key' => $tool_key], $payload, ['created_at' => $now]), ['%s','%s','%s','%s','%s','%d','%d','%s','%d','%s','%s']);
+                $wpdb->insert($table, array_merge(['garden_key' => $garden_key, 'tool_key' => $tool_key], $payload, ['created_at' => $now]), ['%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%s']);
             }
         }
     }
@@ -1821,7 +1832,7 @@ function aitrongcay_get_garden_name_override(string $garden_key, int $user_id): 
     }
 
     $bucket = get_user_meta($user_id, aitrongcay_garden_name_overrides_meta_key(), true);
-    if (! is_array($bucket)) {
+    if (!is_array($bucket)) {
         return '';
     }
 
@@ -1835,7 +1846,7 @@ function aitrongcay_store_garden_name_override(string $garden_key, int $user_id,
     }
 
     $bucket = get_user_meta($user_id, aitrongcay_garden_name_overrides_meta_key(), true);
-    if (! is_array($bucket)) {
+    if (!is_array($bucket)) {
         $bucket = [];
     }
 
@@ -1884,12 +1895,12 @@ function aitrongcay_build_default_garden_name(string $garden_key, ?WP_User $view
         }
 
         $member_user = get_user_by('id', (int) ($member['user_id'] ?? 0));
-        if (! $member_user instanceof WP_User) {
+        if (!$member_user instanceof WP_User) {
             continue;
         }
 
         $display_name = trim((string) ($member_user->display_name ?: $member_user->first_name ?: $member_user->user_login));
-        if ($display_name !== '' && ! in_array($display_name, $owner_names, true)) {
+        if ($display_name !== '' && !in_array($display_name, $owner_names, true)) {
             $owner_names[] = $display_name;
         }
     }
@@ -2003,7 +2014,7 @@ function aitrongcay_is_friend_with_garden_owner(string $garden_key, int $user_id
     }
 
     $owner = aitrongcay_get_garden_owner_user($garden_key);
-    if (! $owner instanceof WP_User) {
+    if (!$owner instanceof WP_User) {
         return false;
     }
 
@@ -2098,7 +2109,7 @@ function aitrongcay_get_active_garden_owners(int $viewer_user_id, string $search
     $results = [];
     foreach ($owner_map as $owner_id => $row) {
         $owner = get_user_by('id', $owner_id);
-        if (! $owner instanceof WP_User) {
+        if (!$owner instanceof WP_User) {
             continue;
         }
 
@@ -2130,7 +2141,7 @@ function aitrongcay_sync_friend_memberships_for_garden(string $garden_key): void
     }
 
     $owner = aitrongcay_get_garden_owner_user($garden_key);
-    if (! $owner instanceof WP_User) {
+    if (!$owner instanceof WP_User) {
         return;
     }
 
@@ -2140,7 +2151,7 @@ function aitrongcay_sync_friend_memberships_for_garden(string $garden_key): void
     }
 
     $friends = aitrongcay_get_user_friends($owner_id);
-    if (! is_array($friends) || $friends === []) {
+    if (!is_array($friends) || $friends === []) {
         return;
     }
 
@@ -2159,7 +2170,7 @@ function aitrongcay_sync_friend_memberships_for_garden(string $garden_key): void
             $friend_id
         ), ARRAY_A);
 
-        if (is_array($existing) && ! empty($existing['id'])) {
+        if (is_array($existing) && !empty($existing['id'])) {
             $patch = [];
             if (($existing['status'] ?? '') !== 'active') {
                 $patch['status'] = 'active';
@@ -2236,7 +2247,7 @@ function aitrongcay_get_garden_owner_user(string $garden_key): ?WP_User
         "SELECT user_id FROM {$table} WHERE garden_key = %s AND role = 'owner' AND status = 'active' ORDER BY id ASC LIMIT 1",
         $garden_key
     ));
-    if (! $owner_id) {
+    if (!$owner_id) {
         $cache[$garden_key] = null;
         return null;
     }
@@ -2250,7 +2261,7 @@ function aitrongcay_resolve_active_garden_key(?WP_User $user = null): string
 {
     $user = $user instanceof WP_User ? $user : wp_get_current_user();
     $default_garden_key = aitrongcay_preferred_garden_key_for_user($user);
-    if (! $user instanceof WP_User || ! $user->exists()) {
+    if (!$user instanceof WP_User || !$user->exists()) {
         return $default_garden_key;
     }
 
@@ -2268,7 +2279,7 @@ function aitrongcay_resolve_active_garden_key(?WP_User $user = null): string
 
     $active_memberships = aitrongcay_get_user_garden_memberships($user_id, ['active']);
     foreach ($active_memberships as $membership) {
-        if (($membership['role'] ?? '') === 'owner' && ! empty($membership['garden_key'])) {
+        if (($membership['role'] ?? '') === 'owner' && !empty($membership['garden_key'])) {
             $garden_key = (string) $membership['garden_key'];
             aitrongcay_remember_selected_garden_key($user_id, $garden_key);
             return $garden_key;
@@ -2276,7 +2287,7 @@ function aitrongcay_resolve_active_garden_key(?WP_User $user = null): string
     }
 
     foreach ($active_memberships as $membership) {
-        if (! empty($membership['garden_key'])) {
+        if (!empty($membership['garden_key'])) {
             $garden_key = (string) $membership['garden_key'];
             aitrongcay_remember_selected_garden_key($user_id, $garden_key);
             return $garden_key;
@@ -2321,7 +2332,7 @@ function aitrongcay_get_member_status_label(string $status): string
 function aitrongcay_get_viewable_gardens_for_user(?WP_User $user = null): array
 {
     $user = $user instanceof WP_User ? $user : wp_get_current_user();
-    if (! $user instanceof WP_User || ! $user->exists()) {
+    if (!$user instanceof WP_User || !$user->exists()) {
         return [];
     }
 
@@ -2334,7 +2345,7 @@ function aitrongcay_get_viewable_gardens_for_user(?WP_User $user = null): array
         }
 
         $profile = aitrongcay_portal_profile_for_garden_context($garden_key, $user);
-        if (! is_array($profile)) {
+        if (!is_array($profile)) {
             return;
         }
 
@@ -2357,7 +2368,7 @@ function aitrongcay_get_viewable_gardens_for_user(?WP_User $user = null): array
 
     foreach (aitrongcay_get_friend_ids($user_id) as $friend_id) {
         $friend = get_user_by('id', $friend_id);
-        if (! $friend instanceof WP_User) {
+        if (!$friend instanceof WP_User) {
             continue;
         }
 
@@ -2376,7 +2387,7 @@ function aitrongcay_portal_profile_for_garden_context(string $garden_key, ?WP_Us
 
     if ($garden_key !== '' && function_exists('aitrongcay_get_garden_record') && function_exists('aitrongcay_upsert_garden_record')) {
         $record_probe = aitrongcay_get_garden_record($garden_key);
-        if (! is_array($record_probe) || trim((string) ($record_probe['garden_name'] ?? '')) === '') {
+        if (!is_array($record_probe) || trim((string) ($record_probe['garden_name'] ?? '')) === '') {
             $owner_id = (int) ($owner->ID ?? 0);
             $viewer_id = (int) ($viewer->ID ?? 0);
             $override_name = $owner_id > 0 ? aitrongcay_get_garden_name_override($garden_key, $owner_id) : '';
@@ -2419,7 +2430,7 @@ function aitrongcay_portal_profile_for_garden_context(string $garden_key, ?WP_Us
         }
     }
 
-    if (! empty($garden_key)) {
+    if (!empty($garden_key)) {
         $profile['garden_name'] = aitrongcay_get_garden_display_name($garden_key, $base_user instanceof WP_User ? $base_user : null);
     }
 
@@ -2456,9 +2467,11 @@ function aitrongcay_user_garden_role(string $garden_key, int $user_id): ?string
         $_ot = $wpdb->prefix . 'aitr_orders';
         if ($wpdb->get_var("SHOW TABLES LIKE '{$_ot}'") === $_ot) {
             $user_email = (string) get_userdata($user_id)?->user_email;
-            $has_order  = (bool) $wpdb->get_var($wpdb->prepare(
+            $has_order = (bool) $wpdb->get_var($wpdb->prepare(
                 "SELECT 1 FROM {$_ot} WHERE (user_id = %d OR customer_email = %s) AND garden_key = %s AND status = 'active' LIMIT 1",
-                $user_id, $user_email, $garden_key
+                $user_id,
+                $user_email,
+                $garden_key
             ));
             if ($has_order) {
                 return 'owner';
@@ -2532,12 +2545,12 @@ function aitrongcay_upsert_garden_record(string $garden_key, int $owner_user_id,
         'updated_at' => $now,
     ];
     if ($existing) {
-        return false !== $wpdb->update($table, $data, ['garden_key' => $garden_key], ['%d','%s','%s','%s','%s','%s'], ['%s']);
+        return false !== $wpdb->update($table, $data, ['garden_key' => $garden_key], ['%d', '%s', '%s', '%s', '%s', '%s'], ['%s']);
     }
     return false !== $wpdb->insert(
         $table,
         array_merge(['garden_key' => $garden_key], $data, ['created_at' => $now]),
-        ['%s','%d','%s','%s','%s','%s','%s','%s']
+        ['%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s']
     );
 }
 
@@ -2552,38 +2565,102 @@ function aitrongcay_get_db_pots(string $garden_key): array
         return $cache[$garden_key];
     }
     $table = aitrongcay_garden_pots_table();
-    
+
     // TỰ ĐỘNG ĐỒNG BỘ KHOANG TỪ SLOTS
     if (function_exists('aitrongcay_get_rack_slots')) {
         $slots = aitrongcay_get_rack_slots($garden_key);
         if (!empty($slots)) {
-            $existing_pots = $wpdb->get_col($wpdb->prepare("SELECT pot_code FROM {$table} WHERE garden_key = %s", $garden_key));
+            $existing_pots_data = $wpdb->get_results($wpdb->prepare("SELECT pot_code, plant_name, plant_id, video_url FROM {$table} WHERE garden_key = %s", $garden_key), ARRAY_A);
+            $existing_map = [];
+            if ($existing_pots_data) {
+                foreach ($existing_pots_data as $p) {
+                    $existing_map[$p['pot_code']] = $p;
+                }
+            }
+
+            // Tối ưu hóa N+1: Lấy trước toàn bộ plant_id dựa vào danh sách tên cây trong $slots
+            $plant_names_to_query = [];
+            foreach ($slots as $slot) {
+                $name = trim((string) ($slot['plant_name'] ?? ''));
+                if ($name !== '' && $name !== 'Cây chưa xác định') {
+                    $plant_names_to_query[] = $name;
+                }
+            }
+            
+            $plant_name_to_id_map = [];
+            if (!empty($plant_names_to_query)) {
+                $plant_names_to_query = array_unique($plant_names_to_query);
+                $onboarding_table = $wpdb->prefix . 'aitr_onboarding_plants';
+                
+                $placeholders = implode(', ', array_fill(0, count($plant_names_to_query), '%s'));
+                $query = $wpdb->prepare("SELECT id, public_name FROM {$onboarding_table} WHERE public_name IN ($placeholders)", ...$plant_names_to_query);
+                $results = $wpdb->get_results($query);
+                
+                if ($results) {
+                    foreach ($results as $row) {
+                        $plant_name_to_id_map[$row->public_name] = (int) $row->id;
+                    }
+                }
+            }
+
             foreach ($slots as $slot) {
                 $pot_code = trim((string) ($slot['pot_code'] ?? ''));
-                if ($pot_code !== '' && !in_array($pot_code, $existing_pots, true)) {
+                if ($pot_code === '')
+                    continue;
+
+                $slot_plant_name = trim((string) ($slot['plant_name'] ?? ''));
+                if ($slot_plant_name === '') {
+                    $slot_plant_name = 'Cây chưa xác định';
+                }
+
+                $slot_plant_id = 0;
+                if ($slot_plant_name !== 'Cây chưa xác định' && isset($plant_name_to_id_map[$slot_plant_name])) {
+                    $slot_plant_id = $plant_name_to_id_map[$slot_plant_name];
+                }
+
+                $slot_camera = trim((string) ($slot['camera_stream_url'] ?? ''));
+
+                if (!isset($existing_map[$pot_code])) {
                     $slot_label = (string) ($slot['slot_name'] ?? '');
                     if ($slot_label === '') {
                         $slot_index = (int) ($slot['slot_index'] ?? 0);
                         $slot_label = 'Khoang trống ' . $slot_index;
                     }
-                    $plant_name = trim((string) ($slot['plant_name'] ?? ''));
-                    if ($plant_name === '') {
-                        $plant_name = 'Cây chưa xác định';
-                    }
 
                     aitrongcay_upsert_db_pot($garden_key, [
                         'code' => $pot_code,
                         'name' => $slot_label,
-                        'plant_name' => $plant_name,
+                        'plant_name' => $slot_plant_name,
+                        'plant_id' => $slot_plant_id,
                         'status' => 'Đang theo dõi',
                         'status_summary' => 'Khoang vừa được kích hoạt, đang bắt đầu theo dõi Ngày 1.',
                         'ai_note' => 'Khu vườn bắt đầu ghi nhận dữ liệu sinh trưởng của khoang mới.',
                         'created_at' => current_time('mysql'),
                         'sort_order' => (int) ($slot['slot_index'] ?? 0),
                         'light_device' => trim((string) ($slot['control_channel'] ?? '')),
-                        'video_url' => trim((string) ($slot['camera_stream_url'] ?? ''))
+                        'video_url' => $slot_camera
                     ]);
-                    $existing_pots[] = $pot_code;
+                    $existing_map[$pot_code] = ['plant_name' => $slot_plant_name, 'plant_id' => $slot_plant_id, 'video_url' => $slot_camera];
+                } else {
+                    $current_plant = trim((string) ($existing_map[$pot_code]['plant_name'] ?? ''));
+                    $current_plant_id = (int) ($existing_map[$pot_code]['plant_id'] ?? 0);
+                    $current_video = trim((string) ($existing_map[$pot_code]['video_url'] ?? ''));
+
+                    if ($current_plant !== $slot_plant_name || $current_plant_id !== $slot_plant_id || $current_video !== $slot_camera) {
+                        $wpdb->update(
+                            $table,
+                            [
+                                'plant_name' => $slot_plant_name,
+                                'plant_id' => $slot_plant_id,
+                                'video_url' => $slot_camera,
+                                'updated_at' => current_time('mysql')
+                            ],
+                            ['garden_key' => $garden_key, 'pot_code' => $pot_code]
+                        );
+                        $existing_map[$pot_code]['plant_name'] = $slot_plant_name;
+                        $existing_map[$pot_code]['plant_id'] = $slot_plant_id;
+                        $existing_map[$pot_code]['video_url'] = $slot_camera;
+                    }
                 }
             }
         }
@@ -2620,7 +2697,7 @@ function aitrongcay_upsert_db_pot(string $garden_key, array $pot): bool
         'video_url' => (string) ($pot['video_url'] ?? $pot['video'] ?? ''),
         'image_url' => (string) ($pot['image_url'] ?? $pot['image'] ?? ''),
         'latest_photo_id' => (int) ($pot['latest_photo_id'] ?? 0),
-        'latest_photo_at' => ! empty($pot['latest_photo_at']) ? (string) $pot['latest_photo_at'] : null,
+        'latest_photo_at' => !empty($pot['latest_photo_at']) ? (string) $pot['latest_photo_at'] : null,
         'latest_analysis_level' => (int) ($pot['latest_analysis_level'] ?? 0),
         'latest_analysis_color' => (string) ($pot['latest_analysis_color'] ?? ''),
         'latest_analysis_label' => (string) ($pot['latest_analysis_label'] ?? ''),
@@ -2628,12 +2705,15 @@ function aitrongcay_upsert_db_pot(string $garden_key, array $pot): bool
         'latest_analysis_summary' => (string) ($pot['latest_analysis_summary'] ?? ''),
         'latest_analysis_actions' => is_array($pot['latest_analysis_actions'] ?? null) ? wp_json_encode(array_values($pot['latest_analysis_actions']), JSON_UNESCAPED_UNICODE) : (string) ($pot['latest_analysis_actions'] ?? ''),
         'latest_analysis_escalate' => is_array($pot['latest_analysis_escalate'] ?? null) ? wp_json_encode(array_values($pot['latest_analysis_escalate']), JSON_UNESCAPED_UNICODE) : (string) ($pot['latest_analysis_escalate'] ?? ''),
-        'latest_analysis_updated_at' => ! empty($pot['latest_analysis_updated_at']) ? (string) $pot['latest_analysis_updated_at'] : null,
+        'latest_analysis_updated_at' => !empty($pot['latest_analysis_updated_at']) ? (string) $pot['latest_analysis_updated_at'] : null,
         'ai_note' => (string) ($pot['ai_note'] ?? ''),
         'harvest_eta' => (string) ($pot['harvest_eta'] ?? ''),
         'sort_order' => (int) ($pot['sort_order'] ?? 0),
         'updated_at' => $now,
     ];
+    if (isset($pot['plant_id'])) {
+        $data['plant_id'] = (int) $pot['plant_id'];
+    }
     if ($normalized_created_at !== '') {
         $data['created_at'] = $normalized_created_at;
     }
@@ -2678,7 +2758,7 @@ function aitrongcay_landscape_preview_url(int $attachment_id): string
     }
 
     $source_path = get_attached_file($attachment_id);
-    if (! is_string($source_path) || $source_path === '' || ! file_exists($source_path)) {
+    if (!is_string($source_path) || $source_path === '' || !file_exists($source_path)) {
         return '';
     }
 
@@ -2698,7 +2778,7 @@ function aitrongcay_landscape_preview_url(int $attachment_id): string
     $baseurl = (string) ($upload['baseurl'] ?? '');
     $basedir = (string) ($upload['basedir'] ?? '');
     $saved_path = (string) ($saved['path'] ?? '');
-    if ($baseurl === '' || $basedir === '' || $saved_path === '' || ! str_starts_with($saved_path, $basedir)) {
+    if ($baseurl === '' || $basedir === '' || $saved_path === '' || !str_starts_with($saved_path, $basedir)) {
         return '';
     }
 
@@ -2772,7 +2852,7 @@ function aitrongcay_get_latest_pot_photo_context(string $garden_key, string $pot
 function aitrongcay_get_same_day_pot_photo_context(string $garden_key, string $pot_code): array
 {
     $base = aitrongcay_get_latest_pot_photo_context($garden_key, $pot_code);
-    if (! $base || empty($base['captured_at'])) {
+    if (!$base || empty($base['captured_at'])) {
         return $base;
     }
 
@@ -2840,7 +2920,7 @@ function aitrongcay_onboarding_analysis_palette(): array
 function aitrongcay_onboarding_plant_record(int $plant_id): ?array
 {
     global $wpdb;
-    if ($plant_id <= 0 || ! function_exists('aitrongcay_onboarding_tables')) {
+    if ($plant_id <= 0 || !function_exists('aitrongcay_onboarding_tables')) {
         return null;
     }
 
@@ -2868,7 +2948,7 @@ function aitrongcay_build_onboarding_analysis_context(array $pot): array
     }
 
     $plant = aitrongcay_onboarding_plant_record($plant_id);
-    if (! is_array($plant)) {
+    if (!is_array($plant)) {
         return [
             'has_onboarding' => false,
             'plant_name' => $plant_name,
@@ -2945,7 +3025,7 @@ function aitrongcay_build_onboarding_analysis_context(array $pot): array
     if ($checklists !== []) {
         $chunks = [];
         foreach (array_slice($checklists, 0, 12) as $item) {
-            if (! is_array($item)) {
+            if (!is_array($item)) {
                 continue;
             }
             $line = trim((string) ($item['item_text'] ?? ''));
@@ -2963,7 +3043,7 @@ function aitrongcay_build_onboarding_analysis_context(array $pot): array
     if ($health_issues !== []) {
         $chunks = [];
         foreach (array_slice($health_issues, 0, 8) as $issue) {
-            if (! is_array($issue)) {
+            if (!is_array($issue)) {
                 continue;
             }
             $issue_name = trim((string) ($issue['issue_name'] ?? ''));
@@ -2993,7 +3073,7 @@ function aitrongcay_build_onboarding_analysis_context(array $pot): array
         'plant_robot_tasks' => 'Robot tasks',
     ];
     foreach ($longtext_tables as $table_key => $title) {
-        if (! function_exists('aitrongcay_plant_longtext_pack')) {
+        if (!function_exists('aitrongcay_plant_longtext_pack')) {
             continue;
         }
         $text = trim((string) aitrongcay_plant_longtext_pack($plant_id, $table_key));
@@ -3007,7 +3087,7 @@ function aitrongcay_build_onboarding_analysis_context(array $pot): array
     $stage_reference = [];
     $growth_stages = function_exists('aitrongcay_plant_growth_stages') ? aitrongcay_plant_growth_stages($plant_id) : [];
     foreach ($growth_stages as $stage_row) {
-        if (! is_array($stage_row)) {
+        if (!is_array($stage_row)) {
             continue;
         }
         $stage_name = trim((string) ($stage_row['stage_name'] ?? ''));
@@ -3064,20 +3144,20 @@ function aitrongcay_build_data_image_url_from_attachment(int $attachment_id): st
     }
 
     $path = get_attached_file($attachment_id);
-    if (! is_string($path) || $path === '' || ! file_exists($path) || ! is_readable($path)) {
+    if (!is_string($path) || $path === '' || !file_exists($path) || !is_readable($path)) {
         return '';
     }
 
     $mime = (string) get_post_mime_type($attachment_id);
-    if ($mime === '' || ! str_starts_with($mime, 'image/')) {
+    if ($mime === '' || !str_starts_with($mime, 'image/')) {
         $mime = (string) mime_content_type($path);
     }
-    if ($mime === '' || ! str_starts_with($mime, 'image/')) {
+    if ($mime === '' || !str_starts_with($mime, 'image/')) {
         $mime = 'image/jpeg';
     }
 
     $bytes = @file_get_contents($path);
-    if (! is_string($bytes) || $bytes === '') {
+    if (!is_string($bytes) || $bytes === '') {
         return '';
     }
 
@@ -3157,7 +3237,7 @@ function aitrongcay_analysis_debug_sanitize(mixed $value, int $depth = 0): mixed
         return $sanitized;
     }
 
-    if (! is_string($value)) {
+    if (!is_string($value)) {
         return $value;
     }
 
@@ -3181,10 +3261,10 @@ function aitrongcay_analysis_debug_log(string $event, array $data = []): void
     }
 
     $dir = trailingslashit($base_dir) . 'aitrongcay-debug';
-    if (! is_dir($dir)) {
+    if (!is_dir($dir)) {
         wp_mkdir_p($dir);
     }
-    if (! is_dir($dir)) {
+    if (!is_dir($dir)) {
         return;
     }
 
@@ -3210,11 +3290,11 @@ function aitrongcay_extract_openresponses_text(array $response_json): string
 
     $chunks = [];
     foreach ((array) ($response_json['output'] ?? []) as $item) {
-        if (! is_array($item)) {
+        if (!is_array($item)) {
             continue;
         }
         foreach ((array) ($item['content'] ?? []) as $content) {
-            if (! is_array($content)) {
+            if (!is_array($content)) {
                 continue;
             }
             $text = trim((string) ($content['text'] ?? $content['output_text'] ?? ''));
@@ -3236,7 +3316,7 @@ function aitrongcay_normalize_onboarding_stage_label(array $pot, string $raw_sta
 
     $onboarding = aitrongcay_build_onboarding_analysis_context($pot);
     $plant_id = (int) ($onboarding['plant_id'] ?? 0);
-    if ($plant_id <= 0 || ! function_exists('aitrongcay_plant_growth_stages')) {
+    if ($plant_id <= 0 || !function_exists('aitrongcay_plant_growth_stages')) {
         return $raw_stage;
     }
 
@@ -3315,27 +3395,37 @@ function aitrongcay_build_stage_specific_recommendation(array $pot, string $curr
     if (str_contains($stage_lc, 'qua') || str_contains($stage_lc, 'fruit') || str_contains($stage_lc, 'dau qua')) {
         $line = 'Giữ';
         $details = [];
-        if ($ec !== '') $details[] = 'EC khoảng ' . $ec;
-        if ($ph !== '') $details[] = 'pH khoảng ' . $ph;
+        if ($ec !== '')
+            $details[] = 'EC khoảng ' . $ec;
+        if ($ph !== '')
+            $details[] = 'pH khoảng ' . $ph;
         $line .= $details ? ' ' . implode(', ', $details) : ' dinh dưỡng và pH ổn định';
         $line .= ' để cây giữ nhịp nuôi quả ổn định.';
         $parts[] = $line;
 
         $monitor = [];
-        if ($water_ml > 0) $monitor[] = 'lượng nước khoảng ' . rtrim(rtrim(number_format($water_ml, 0, ',', '.'), '0'), ',') . ' ml/khoang/ngày';
-        else $monitor[] = 'mực nước mỗi ngày';
-        if ($temperature_range !== '') $monitor[] = 'nhiệt độ dung dịch trong vùng ' . $temperature_range;
-        else $monitor[] = 'nhiệt độ nước không tăng bất thường';
+        if ($water_ml > 0)
+            $monitor[] = 'lượng nước khoảng ' . rtrim(rtrim(number_format($water_ml, 0, ',', '.'), '0'), ',') . ' ml/khoang/ngày';
+        else
+            $monitor[] = 'mực nước mỗi ngày';
+        if ($temperature_range !== '')
+            $monitor[] = 'nhiệt độ dung dịch trong vùng ' . $temperature_range;
+        else
+            $monitor[] = 'nhiệt độ nước không tăng bất thường';
         $parts[] = 'Theo dõi ' . implode(' và ', $monitor) . ', đồng thời quan sát BER, nứt quả hoặc rụng quả non trong 1 đến 3 ngày tới.';
     }
 
     if ($parts === []) {
         $line = 'Giữ điều kiện môi trường và dinh dưỡng ổn định';
         $details = [];
-        if ($ec !== '') $details[] = 'EC khoảng ' . $ec;
-        if ($ph !== '') $details[] = 'pH khoảng ' . $ph;
-        if ($temperature_range !== '') $details[] = 'nhiệt độ ' . $temperature_range;
-        if ($details) $line .= ' với ' . implode(', ', $details);
+        if ($ec !== '')
+            $details[] = 'EC khoảng ' . $ec;
+        if ($ph !== '')
+            $details[] = 'pH khoảng ' . $ph;
+        if ($temperature_range !== '')
+            $details[] = 'nhiệt độ ' . $temperature_range;
+        if ($details)
+            $line .= ' với ' . implode(', ', $details);
         $line .= '.';
         $parts[] = $line;
         $parts[] = trim((string) ($fallback_analysis['actions'][0] ?? 'Theo dõi thêm ảnh mới trong 1 đến 3 ngày tới để đối chiếu đúng nhịp phát triển của cây.'));
@@ -3346,7 +3436,7 @@ function aitrongcay_build_stage_specific_recommendation(array $pot, string $curr
 
 function aitrongcay_generate_cindy_onboarding_analysis(array $pot, array $photo_context, array $fallback_analysis): array
 {
-    if (! function_exists('aitrongcay_ai_agent_config') || ! function_exists('aitrongcay_ai_agent_is_remote_enabled')) {
+    if (!function_exists('aitrongcay_ai_agent_config') || !function_exists('aitrongcay_ai_agent_is_remote_enabled')) {
         return ['ok' => false, 'message' => 'AI bridge chưa sẵn sàng.'];
     }
 
@@ -3370,7 +3460,7 @@ function aitrongcay_generate_cindy_onboarding_analysis(array $pot, array $photo_
     }
 
     $config = aitrongcay_ai_agent_config();
-    if (! aitrongcay_ai_agent_is_remote_enabled() || (string) ($config['mode'] ?? '') !== 'openai-chat' || trim((string) ($config['endpoint_url'] ?? '')) === '') {
+    if (!aitrongcay_ai_agent_is_remote_enabled() || (string) ($config['mode'] ?? '') !== 'openai-chat' || trim((string) ($config['endpoint_url'] ?? '')) === '') {
         return ['ok' => false, 'message' => 'Cindy image analysis chỉ bật khi AI remote đang ở mode OpenClaw Chat API.'];
     }
 
@@ -3391,7 +3481,7 @@ function aitrongcay_generate_cindy_onboarding_analysis(array $pot, array $photo_
     $environment_profile = (array) ($onboarding['environment'] ?? []);
     $checklist_lines = [];
     foreach ((array) ($onboarding['checklists'] ?? []) as $item) {
-        if (! is_array($item)) {
+        if (!is_array($item)) {
             continue;
         }
         $line = trim((string) ($item['item_text'] ?? ''));
@@ -3401,7 +3491,7 @@ function aitrongcay_generate_cindy_onboarding_analysis(array $pot, array $photo_
     }
     $health_lines = [];
     foreach ((array) ($onboarding['health_issues'] ?? []) as $issue) {
-        if (! is_array($issue)) {
+        if (!is_array($issue)) {
             continue;
         }
         $title = trim((string) ($issue['issue_name'] ?? $issue['symptom_title'] ?? ''));
@@ -3485,7 +3575,7 @@ function aitrongcay_generate_cindy_onboarding_analysis(array $pot, array $photo_
 
     $image_candidates = [];
     foreach ((array) ($photo_context['daily_photos'] ?? []) as $item) {
-        if (! is_array($item)) {
+        if (!is_array($item)) {
             continue;
         }
         $attachment_id = absint($item['attachment_id'] ?? 0);
@@ -3554,21 +3644,23 @@ function aitrongcay_generate_cindy_onboarding_analysis(array $pot, array $photo_
             $endpoint_url = str_replace('/v1/chat/completions', '/v1/responses', $endpoint_url);
         }
 
-        $response_input = [[
-            'type' => 'message',
-            'role' => 'user',
-            'content' => array_merge([
-                ['type' => 'input_text', 'text' => $user_prompt],
-            ], array_map(static function (array $image): array {
-                return [
-                    'type' => 'input_image',
-                    'source' => [
-                        'type' => 'url',
-                        'url' => (string) ($image['url'] ?? ''),
-                    ],
-                ];
-            }, array_slice($image_candidates, -3))),
-        ]];
+        $response_input = [
+            [
+                'type' => 'message',
+                'role' => 'user',
+                'content' => array_merge([
+                    ['type' => 'input_text', 'text' => $user_prompt],
+                ], array_map(static function (array $image): array {
+                    return [
+                        'type' => 'input_image',
+                        'source' => [
+                            'type' => 'url',
+                            'url' => (string) ($image['url'] ?? ''),
+                        ],
+                    ];
+                }, array_slice($image_candidates, -3))),
+            ]
+        ];
 
         $body = [
             'model' => (string) ($config['model'] ?? 'openclaw'),
@@ -3625,7 +3717,7 @@ function aitrongcay_generate_cindy_onboarding_analysis(array $pot, array $photo_
         'http_code' => $http_code,
         'raw_body' => strlen($raw_body) > 1500 ? (substr($raw_body, 0, 1500) . '…[truncated]') : $raw_body,
     ]);
-    if ($http_code < 200 || $http_code >= 300 || ! is_array($json)) {
+    if ($http_code < 200 || $http_code >= 300 || !is_array($json)) {
         return ['ok' => false, 'message' => 'Cindy trả về dữ liệu chưa hợp lệ.', 'http_code' => $http_code, 'raw_body' => $raw_body];
     }
 
@@ -3661,7 +3753,7 @@ function aitrongcay_generate_cindy_onboarding_analysis(array $pot, array $photo_
     if ($summary === '') {
         $summary = (string) ($fallback_analysis['summary'] ?? '');
     }
-    if ($summary !== '' && $captured_at !== '' && ! preg_match('/ảnh|bộ ảnh/u', $summary)) {
+    if ($summary !== '' && $captured_at !== '' && !preg_match('/ảnh|bộ ảnh/u', $summary)) {
         $summary .= ' Kết luận này dựa trên ' . ($photo_count > 1 ? ('bộ ' . $photo_count . ' ảnh cùng ngày') : 'ảnh mới nhất của khoang') . ', cập nhật lúc ' . wp_date('H:i d/m/Y', strtotime((string) $captured_at . ' UTC'), new DateTimeZone('Asia/Ho_Chi_Minh')) . '.';
     }
 
@@ -3780,12 +3872,12 @@ function aitrongcay_generate_pot_analysis(array $pot, array $photo_context = [])
             ];
         }
 
-        if ($fruiting && $lower_leaf_yellowing && ! $top_decline) {
+        if ($fruiting && $lower_leaf_yellowing && !$top_decline) {
             $level = 2;
             $color = 'xanh-non';
             $label = 'Ổn nhưng cần theo dõi';
             $short = 'Cà chua đang ở giai đoạn nuôi quả. Hiện có dấu hiệu lá già tầng dưới xuống màu, nhưng nếu phần ngọn vẫn ổn thì trước mắt nên theo dõi sát thay vì nâng cảnh báo quá cao.';
-            if (! empty($photo_context['captured_at'])) {
+            if (!empty($photo_context['captured_at'])) {
                 $short .= ' Kết luận này dựa trên ' . ($photo_count > 1 ? ('bộ ' . $photo_count . ' ảnh cùng ngày') : 'ảnh mới nhất') . ', cập nhật gần nhất lúc ' . wp_date('H:i d/m/Y', strtotime((string) $photo_context['captured_at'] . ' UTC'), new DateTimeZone('Asia/Ho_Chi_Minh')) . '.';
             }
             $actions = [
@@ -3827,7 +3919,7 @@ function aitrongcay_generate_pot_analysis(array $pot, array $photo_context = [])
             'Nếu nhiều vị trí cùng chậm kéo dài hoặc một vùng khoang đi xuống rõ, nên nâng cảnh báo.',
         ];
 
-        if ($early_stage && $uneven && ! $severe_decline) {
+        if ($early_stage && $uneven && !$severe_decline) {
             $short = 'Cải cúc đang ở giai đoạn cây con sớm và nhìn chung vẫn đi lên được. Điểm cần theo dõi chính lúc này là độ đồng đều giữa các cốc, ẩm độ nền và khả năng cần tỉa bớt ở những vị trí mọc dày hơn.';
             $actions = [
                 'Giữ điều kiện ổn định vài ngày liên tiếp trước khi điều chỉnh mạnh.',
@@ -3869,7 +3961,7 @@ function aitrongcay_generate_pot_analysis(array $pot, array $photo_context = [])
             'Nếu quá mốc theo dõi mà nhiều vùng vẫn không có tiến triển, nên nâng cảnh báo.',
         ];
 
-        if ($just_seeded && ! $germinating && ! $delayed) {
+        if ($just_seeded && !$germinating && !$delayed) {
             $short = 'Theo ảnh hiện tại, cải xoong vừa gieo hạt và chưa thấy mầm rõ trên bề mặt. Đây vẫn là giai đoạn còn sớm, nên việc ưu tiên lúc này là giữ nền ổn định và theo dõi thêm các mốc nảy mầm tiếp theo.';
             $actions = [
                 'Chưa nên kết luận mạnh tay khi còn quá sớm.',
@@ -3911,7 +4003,7 @@ function aitrongcay_generate_pot_analysis(array $pot, array $photo_context = [])
             'Nếu nhiều cốc cùng đi xuống rõ hoặc chênh lệch kéo dài hơn qua nhiều mốc, nên nâng cảnh báo.',
         ];
 
-        if ($very_early && $uneven && ! $decline) {
+        if ($very_early && $uneven && !$decline) {
             $short = 'Theo ảnh hiện tại, sâm ngọc linh đang ở giai đoạn cây con rất sớm. Nhiều cốc đã có cây non, nhưng mức phát triển chưa đồng đều hoàn toàn. Việc ưu tiên lúc này là giữ môi trường ổn định và theo dõi thêm diễn biến trong các mốc tiếp theo.';
             $actions = [
                 'Giữ điều kiện ổn định và chụp lại cùng góc trong vài ngày tới.',
@@ -3953,7 +4045,7 @@ function aitrongcay_generate_pot_analysis(array $pot, array $photo_context = [])
             'Nếu dấu hiệu lan lên lá non, phần ngọn hoặc ảnh hưởng rõ tới nhịp nuôi trái, nên nâng cảnh báo.',
         ];
 
-        if ($fruiting && $lower_leaf_signal && ! $top_decline) {
+        if ($fruiting && $lower_leaf_signal && !$top_decline) {
             $short = 'Ớt đang ở giai đoạn ra hoa hoặc nuôi trái. Nếu thay đổi chủ yếu còn nằm ở lá già phía dưới trong khi phần ngọn vẫn ổn, trước mắt nên theo dõi sát thay vì nâng cảnh báo quá mạnh.';
             $actions = [
                 'Theo dõi tiếp lá gốc và tình trạng hoa / trái trong 1–3 ngày tới.',
@@ -3979,8 +4071,8 @@ function aitrongcay_generate_pot_analysis(array $pot, array $photo_context = [])
         }
     }
 
-    if (! empty($photo_context['captured_at'])) {
-        if (! str_contains($short, 'Ảnh') && ! str_contains($short, 'ảnh') && ! str_contains($short, 'bộ')) {
+    if (!empty($photo_context['captured_at'])) {
+        if (!str_contains($short, 'Ảnh') && !str_contains($short, 'ảnh') && !str_contains($short, 'bộ')) {
             $short .= ' Kết luận này dựa trên ' . ($photo_count > 1 ? ('bộ ' . $photo_count . ' ảnh của chậu trong ngày') : 'ảnh mới nhất của chậu') . ', cập nhật lúc ' . wp_date('H:i d/m/Y', strtotime((string) $photo_context['captured_at'] . ' UTC'), new DateTimeZone('Asia/Ho_Chi_Minh')) . '.';
         }
     }
@@ -4020,7 +4112,7 @@ function aitrongcay_generate_pot_analysis(array $pot, array $photo_context = [])
     $fallback_analysis['recommendation'] = aitrongcay_build_stage_specific_recommendation($pot, (string) ($fallback_analysis['current_stage'] ?? ''), $fallback_analysis);
 
     $cindy_analysis = aitrongcay_generate_cindy_onboarding_analysis($pot, $photo_context, $fallback_analysis);
-    if (! empty($cindy_analysis['ok']) && is_array($cindy_analysis['analysis'] ?? null)) {
+    if (!empty($cindy_analysis['ok']) && is_array($cindy_analysis['analysis'] ?? null)) {
         return $cindy_analysis['analysis'];
     }
 
@@ -4067,8 +4159,8 @@ function aitrongcay_store_pot_analysis(string $garden_key, string $pot_code, arr
             'updated_at' => current_time('mysql'),
         ],
         ['garden_key' => $garden_key, 'pot_code' => $pot_code],
-        ['%d','%s','%s','%s','%s','%s','%s','%s','%s','%s'],
-        ['%s','%s']
+        ['%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s'],
+        ['%s', '%s']
     );
 }
 
@@ -4081,7 +4173,7 @@ function aitrongcay_replace_garden_pots(string $garden_key, array $pots): bool
     $table = aitrongcay_garden_pots_table();
     $wpdb->delete($table, ['garden_key' => $garden_key], ['%s']);
     foreach (array_values($pots) as $index => $pot) {
-        if (! is_array($pot)) {
+        if (!is_array($pot)) {
             continue;
         }
         $pot_code = trim((string) ($pot['pot_code'] ?? $pot['code'] ?? ''));
@@ -4120,7 +4212,7 @@ function aitrongcay_replace_garden_tools(string $garden_key, array $tools): bool
     $wpdb->delete($table, ['garden_key' => $garden_key], ['%s']);
     $now = current_time('mysql');
     foreach (array_values($tools) as $index => $tool) {
-        if (! is_array($tool)) {
+        if (!is_array($tool)) {
             continue;
         }
         $name = trim((string) ($tool['name'] ?? ''));
@@ -4140,7 +4232,7 @@ function aitrongcay_replace_garden_tools(string $garden_key, array $tools): bool
             'sort_order' => $index + 1,
             'created_at' => $now,
             'updated_at' => $now,
-        ], ['%s','%s','%s','%s','%s','%d','%d','%s','%d','%s','%s']);
+        ], ['%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%s']);
     }
     return true;
 }
@@ -4179,12 +4271,18 @@ function aitrongcay_get_rack_slots(string $garden_key): array
 
     $racks_table = aitrongcay_garden_racks_table();
     $racks = $wpdb->get_col($wpdb->prepare("SELECT id FROM {$racks_table} WHERE garden_key = %s", $garden_key));
-    
+
+    $cloned_rack_ids = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
+    $cloned_rack_ids = is_array($cloned_rack_ids) ? array_values($cloned_rack_ids) : (is_string($cloned_rack_ids) && $cloned_rack_ids !== '' ? explode(',', $cloned_rack_ids) : array_values((array) $cloned_rack_ids));
+    if (!empty($cloned_rack_ids)) {
+        $racks = array_unique(array_merge($racks, array_map('intval', $cloned_rack_ids)));
+    }
+
     if (empty($racks)) {
         $cache[$garden_key] = [];
         return [];
     }
-    
+
     $rack_ids_placeholder = implode(',', array_map('intval', $racks));
     $table = aitrongcay_garden_rack_slots_table();
     $cache[$garden_key] = $wpdb->get_results("SELECT * FROM {$table} WHERE rack_id IN ({$rack_ids_placeholder}) ORDER BY rack_id ASC, slot_index ASC, id ASC", ARRAY_A) ?: [];
@@ -4205,13 +4303,13 @@ function aitrongcay_upsert_rack_record(string $garden_key, array $payload = []):
     if ($rack_id > 0) {
         $existing = function_exists('aitrongcay_get_rack_by_id') ? aitrongcay_get_rack_by_id($rack_id) : null;
     }
-    if (! $existing) {
+    if (!$existing) {
         $rack_code = trim((string) ($payload['rack_code'] ?? ''));
         if ($rack_code !== '') {
             $existing = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE rack_code = %s LIMIT 1", $rack_code), ARRAY_A);
         }
     }
-    if (! $existing) {
+    if (!$existing) {
         $existing = aitrongcay_get_rack_record($garden_key);
     }
     $now = current_time('mysql');
@@ -4229,7 +4327,7 @@ function aitrongcay_upsert_rack_record(string $garden_key, array $payload = []):
         'blynk_auth_token' => array_key_exists('blynk_auth_token', $payload) ? (string) $payload['blynk_auth_token'] : (string) ($existing['blynk_auth_token'] ?? ''),
         'blynk_email' => trim((string) ($payload['blynk_email'] ?? ($existing['blynk_email'] ?? ''))),
         'connectivity_status' => trim((string) ($payload['connectivity_status'] ?? ($existing['connectivity_status'] ?? 'unknown'))),
-        'last_seen_at' => ! empty($payload['last_seen_at']) ? (string) $payload['last_seen_at'] : ($existing['last_seen_at'] ?? null),
+        'last_seen_at' => !empty($payload['last_seen_at']) ? (string) $payload['last_seen_at'] : ($existing['last_seen_at'] ?? null),
         'notes' => array_key_exists('notes', $payload) ? (string) $payload['notes'] : (string) ($existing['notes'] ?? ''),
         'updated_at' => $now,
     ];
@@ -4277,7 +4375,7 @@ function aitrongcay_replace_rack_slots(string $garden_key, array $slots): bool
     $now = current_time('mysql');
 
     foreach (array_values($slots) as $index => $slot) {
-        if (! is_array($slot)) {
+        if (!is_array($slot)) {
             continue;
         }
         $slot_index = (int) ($slot['slot_index'] ?? ($index + 1));
@@ -4294,13 +4392,13 @@ function aitrongcay_replace_rack_slots(string $garden_key, array $slots): bool
             'camera_stream_url' => (string) ($slot['camera_stream_url'] ?? ''),
             'control_channel' => (string) ($slot['control_channel'] ?? ('light' . $slot_index)),
             'control_vpin' => (string) ($slot['control_vpin'] ?? ''),
-            'is_enabled' => ! empty($slot['is_enabled']) ? 1 : 0,
+            'is_enabled' => !empty($slot['is_enabled']) ? 1 : 0,
             'crop_id' => isset($slot['crop_id']) ? (int) $slot['crop_id'] : null,
             'crop_cycle_id' => isset($slot['crop_cycle_id']) ? (int) $slot['crop_cycle_id'] : null,
             'status' => (string) ($slot['status'] ?? 'empty'),
             'created_at' => $now,
             'updated_at' => $now,
-        ], ['%d','%d','%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%s','%s','%s']);
+        ], ['%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']);
     }
 
     return true;
@@ -4347,7 +4445,7 @@ function aitrongcay_sync_rack_from_blynk_config(string $garden_key, array $confi
         'last_seen_at' => $meta['last_seen_at'] ?? null,
         'notes' => (string) ($meta['notes'] ?? ''),
     ]);
-    if (! $saved) {
+    if (!$saved) {
         return false;
     }
 
@@ -4532,7 +4630,7 @@ function aitrongcay_describe_rack_holder(array $rack): string
 {
     $rack_id = (int) ($rack['id'] ?? 0);
     $active_assignment = $rack_id > 0 ? aitrongcay_get_active_rack_assignment($rack_id) : null;
-    if (is_array($active_assignment) && ! empty($active_assignment['garden_key'])) {
+    if (is_array($active_assignment) && !empty($active_assignment['garden_key'])) {
         $garden_key = trim((string) ($active_assignment['garden_key'] ?? ''));
     } else {
         $garden_key = trim((string) ($rack['garden_key'] ?? ''));
@@ -4626,7 +4724,7 @@ function aitrongcay_blynk_probe_rack(array $rack): array
     $results['summary'] = $results['errors'] === []
         ? 'Kết nối Blynk ổn, các điểm kiểm tra chính đều phản hồi.'
         : ('Có ' . count($results['errors']) . ' mục chưa ổn, cần kiểm tra lại token/VPin/thiết bị.');
-    $results['connectivity_status'] = $results['errors'] === [] ? 'online' : (! empty($results['ok']) ? 'degraded' : 'offline');
+    $results['connectivity_status'] = $results['errors'] === [] ? 'online' : (!empty($results['ok']) ? 'degraded' : 'offline');
     if ($results['connectivity_status'] !== 'offline') {
         $results['last_seen_at'] = current_time('mysql');
     }
@@ -4642,7 +4740,7 @@ function aitrongcay_format_rack_slot_summary(array $slots): string
 
     $parts = [];
     foreach ($slots as $slot) {
-        if (! is_array($slot)) {
+        if (!is_array($slot)) {
             continue;
         }
         $slot_index = (int) ($slot['slot_index'] ?? 0);
@@ -4656,7 +4754,7 @@ function aitrongcay_format_rack_slot_summary(array $slots): string
         $camera_label = trim((string) ($slot['camera_label'] ?? ''));
         $camera_stream_url = trim((string) ($slot['camera_stream_url'] ?? ''));
         $water_text = '';
-        if (! empty($slot_meta['inlet_device']) || ! empty($slot_meta['drain_device'])) {
+        if (!empty($slot_meta['inlet_device']) || !empty($slot_meta['drain_device'])) {
             $water_text = ' · cấp: ' . strtoupper((string) ($slot_meta['inlet_device'] ?? '')) . ' · thoát: ' . strtoupper((string) ($slot_meta['drain_device'] ?? ''));
         }
         $camera_text = $camera_label !== ''
@@ -4692,7 +4790,7 @@ function aitrongcay_build_rack_slots_payload(string $rack_code, int $slot_count)
 
 function aitrongcay_save_rack_blynk_config(string $garden_key, string $auth_token, int $slot_count): void
 {
-    if ($garden_key === '' || ! function_exists('aitrongcay_blynk_default_config') || ! function_exists('aitrongcay_get_saved_blynk_configs') || ! function_exists('aitrongcay_save_blynk_configs')) {
+    if ($garden_key === '' || !function_exists('aitrongcay_blynk_default_config') || !function_exists('aitrongcay_get_saved_blynk_configs') || !function_exists('aitrongcay_save_blynk_configs')) {
         return;
     }
     $configs = aitrongcay_get_saved_blynk_configs();
@@ -4726,7 +4824,7 @@ function aitrongcay_save_rack_blynk_config(string $garden_key, string $auth_toke
 function aitrongcay_blynk_runtime_config(string $garden_key = '', $rack_id_or_code = null): array
 {
     $config = function_exists('aitrongcay_blynk_config') ? aitrongcay_blynk_config($garden_key) : [];
-    if (! is_array($config)) {
+    if (!is_array($config)) {
         $config = [];
     }
 
@@ -4748,7 +4846,7 @@ function aitrongcay_blynk_runtime_config(string $garden_key = '', $rack_id_or_co
             $rack = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE rack_code = %s LIMIT 1", trim((string) $rack_id_or_code)), ARRAY_A);
         }
     }
-    if (! is_array($rack)) {
+    if (!is_array($rack)) {
         $rack = function_exists('aitrongcay_get_rack_record') ? aitrongcay_get_rack_record($garden_key) : null;
     }
 
@@ -4763,7 +4861,7 @@ function aitrongcay_blynk_runtime_config(string $garden_key = '', $rack_id_or_co
             $slots = function_exists('aitrongcay_get_rack_slots') ? aitrongcay_get_rack_slots($garden_key) : [];
         }
         foreach ($slots as $slot) {
-            if (! is_array($slot)) {
+            if (!is_array($slot)) {
                 continue;
             }
             $device = sanitize_key((string) ($slot['control_channel'] ?? ''));
@@ -4794,7 +4892,7 @@ function aitrongcay_build_merged_rack_slots_payload(array $rack, int $slot_count
     $existing_slots = aitrongcay_get_rack_slots_by_rack_id((int) ($rack['id'] ?? 0));
     $existing_map = [];
     foreach ($existing_slots as $slot) {
-        if (! is_array($slot)) {
+        if (!is_array($slot)) {
             continue;
         }
         $slot_index = (int) ($slot['slot_index'] ?? 0);
@@ -4816,7 +4914,7 @@ function aitrongcay_build_merged_rack_slots_payload(array $rack, int $slot_count
             'camera_stream_url' => (string) ($existing['camera_stream_url'] ?? ''),
             'control_channel' => (string) ($existing['control_channel'] ?? ($slot_meta['light_device'] ?? ('light' . $i))),
             'control_vpin' => (string) ($existing['control_vpin'] ?? ('V' . (4 + $i))),
-            'is_enabled' => array_key_exists('is_enabled', $existing) ? (int) (! empty($existing['is_enabled'])) : 1,
+            'is_enabled' => array_key_exists('is_enabled', $existing) ? (int) (!empty($existing['is_enabled'])) : 1,
             'crop_id' => isset($existing['crop_id']) ? (int) $existing['crop_id'] : null,
             'crop_cycle_id' => isset($existing['crop_cycle_id']) ? (int) $existing['crop_cycle_id'] : null,
             'status' => (string) ($existing['status'] ?? 'empty'),
@@ -4836,10 +4934,10 @@ function aitrongcay_get_rack_slot_camera_stream_url(string $garden_key, string $
         return '';
     }
 
-    if (! isset($cache[$garden_key])) {
+    if (!isset($cache[$garden_key])) {
         $cache[$garden_key] = [];
         foreach (aitrongcay_get_rack_slots($garden_key) as $slot) {
-            if (! is_array($slot)) {
+            if (!is_array($slot)) {
                 continue;
             }
             $slot_pot_code = trim((string) ($slot['pot_code'] ?? ''));
@@ -4856,7 +4954,7 @@ function aitrongcay_get_rack_slot_camera_stream_url(string $garden_key, string $
 function aitrongcay_update_rack_slot_cameras(int $rack_id, array $slot_cameras): array
 {
     $rack = aitrongcay_get_rack_by_id($rack_id);
-    if (! $rack) {
+    if (!$rack) {
         return ['error' => 'Không tìm thấy rack để cập nhật camera.'];
     }
 
@@ -4866,14 +4964,14 @@ function aitrongcay_update_rack_slot_cameras(int $rack_id, array $slot_cameras):
     }
 
     $slots = aitrongcay_get_rack_slots_by_rack_id($rack_id);
-    if (! $slots) {
+    if (!$slots) {
         return ['error' => 'Rack này chưa có slot để gắn camera.'];
     }
 
     $updated = [];
     $changed_count = 0;
     foreach ($slots as $slot) {
-        if (! is_array($slot)) {
+        if (!is_array($slot)) {
             continue;
         }
         $slot_index = (int) ($slot['slot_index'] ?? 0);
@@ -4888,7 +4986,7 @@ function aitrongcay_update_rack_slot_cameras(int $rack_id, array $slot_cameras):
         $updated[] = $slot;
     }
 
-    if (! aitrongcay_replace_rack_slots($garden_key, $updated)) {
+    if (!aitrongcay_replace_rack_slots($garden_key, $updated)) {
         return ['error' => 'Không lưu được camera theo khoang.'];
     }
 
@@ -4948,7 +5046,7 @@ function aitrongcay_probe_camera_stream_url(string $url): array
         return ['ok' => false, 'summary' => 'Chưa có link stream để kiểm tra.'];
     }
 
-    if (! wp_http_validate_url($url)) {
+    if (!wp_http_validate_url($url)) {
         return ['ok' => false, 'summary' => 'Link stream không hợp lệ.'];
     }
 
@@ -4977,7 +5075,7 @@ function aitrongcay_probe_camera_stream_url(string $url): array
         || str_contains(strtolower($content_type), 'video/')
         || str_contains(strtolower($content_type), 'octet-stream')
     );
-    if (! $looks_like_stream && $body !== '') {
+    if (!$looks_like_stream && $body !== '') {
         $looks_like_stream = str_contains($body, '#EXTM3U') || str_contains($body, '#EXTINF');
     }
 
@@ -5005,7 +5103,7 @@ function aitrongcay_probe_camera_stream_url(string $url): array
 function aitrongcay_update_rack_hardware(int $rack_id, array $payload): array
 {
     $rack = aitrongcay_get_rack_by_id($rack_id);
-    if (! $rack) {
+    if (!$rack) {
         return ['error' => 'Không tìm thấy rack để cập nhật.'];
     }
 
@@ -5031,7 +5129,7 @@ function aitrongcay_update_rack_hardware(int $rack_id, array $payload): array
             $has_crop = (int) ($slot['crop_id'] ?? 0) > 0 || (int) ($slot['crop_cycle_id'] ?? 0) > 0;
             $status_text = strtolower(trim((string) ($slot['status'] ?? 'empty')));
             $is_empty_status = in_array($status_text, ['', 'empty', 'available', 'inactive', 'disabled'], true);
-            if ($has_crop || ! $is_empty_status) {
+            if ($has_crop || !$is_empty_status) {
                 $slot_meta = function_exists('aitrongcay_slot_to_compartment') ? aitrongcay_slot_to_compartment($slot_index) : ['slot_label' => 'Khoang ' . $slot_index];
                 $blocked_slots[] = (string) ($slot_meta['slot_label'] ?? ('Khoang ' . $slot_index));
             }
@@ -5058,7 +5156,7 @@ function aitrongcay_update_rack_hardware(int $rack_id, array $payload): array
         'last_seen_at' => (string) ($rack['last_seen_at'] ?? ''),
         'notes' => (string) ($rack['notes'] ?? ''),
     ]);
-    if (! $ok) {
+    if (!$ok) {
         return ['error' => 'Không cập nhật được cấu hình rack.'];
     }
 
@@ -5102,7 +5200,7 @@ function aitrongcay_create_inventory_rack(array $payload): array
         'blynk_auth_token' => $auth_token,
         'notes' => (string) ($payload['notes'] ?? 'Nhập kho rack mới'),
     ]);
-    if (! $saved) {
+    if (!$saved) {
         return ['error' => 'Không tạo được rack mới trong kho. Có thể mã rack đang bị trùng.'];
     }
 
@@ -5119,7 +5217,7 @@ function aitrongcay_delete_rack(int $rack_id): bool
 {
     global $wpdb;
     $rack = aitrongcay_get_rack_by_id($rack_id);
-    if (! $rack) {
+    if (!$rack) {
         return false;
     }
     $wpdb->delete(aitrongcay_garden_rack_slots_table(), ['rack_id' => $rack_id], ['%d']);
@@ -5140,14 +5238,14 @@ function aitrongcay_release_rack_to_inventory(int $rack_id): array
 {
     global $wpdb;
     $rack = aitrongcay_get_rack_by_id($rack_id);
-    if (! $rack) {
+    if (!$rack) {
         return ['error' => 'Không tìm thấy rack để thu hồi.'];
     }
     $current_status = (string) ($rack['status'] ?? '');
     if ($current_status === 'inventory') {
         return ['rack' => $rack, 'already_inventory' => true];
     }
-    $inventory_key   = aitrongcay_build_inventory_rack_key((string) ($rack['rack_code'] ?? ''));
+    $inventory_key = aitrongcay_build_inventory_rack_key((string) ($rack['rack_code'] ?? ''));
     $from_garden_key = (string) ($rack['garden_key'] ?? '');
 
     // ── DATA HANDOFF: Đóng gói dữ liệu của KH cũ TRƯỚC khi thu hồi ──────────
@@ -5156,28 +5254,28 @@ function aitrongcay_release_rack_to_inventory(int $rack_id): array
     $updated = false !== $wpdb->update(
         aitrongcay_garden_racks_table(),
         [
-            'garden_key'   => $inventory_key,
-            'owner_user_id'=> 0,
-            'status'       => 'inventory',
-            'updated_at'   => current_time('mysql'),
+            'garden_key' => $inventory_key,
+            'owner_user_id' => 0,
+            'status' => 'inventory',
+            'updated_at' => current_time('mysql'),
         ],
         ['id' => $rack_id],
-        ['%s','%d','%s','%s'],
+        ['%s', '%d', '%s', '%s'],
         ['%d']
     );
-    if (! $updated) {
+    if (!$updated) {
         return ['error' => 'Không thu hồi rack về kho được.'];
     }
     $wpdb->update(
         aitrongcay_garden_rack_assignments_table(),
         [
             'released_at' => current_time('mysql'),
-            'status'      => 'released',
-            'notes'       => 'Thu hồi rack về kho',
+            'status' => 'released',
+            'notes' => 'Thu hồi rack về kho',
         ],
         ['rack_id' => $rack_id, 'status' => 'active'],
-        ['%s','%s','%s'],
-        ['%d','%s']
+        ['%s', '%s', '%s'],
+        ['%d', '%s']
     );
     aitrongcay_move_blynk_config_key($from_garden_key, $inventory_key);
     aitrongcay_log_rack_inventory_event($rack_id, 'release', $current_status, 'inventory', 0, 'Thu hồi rack về kho', get_current_user_id());
@@ -5212,7 +5310,7 @@ function aitrongcay_log_rack_inventory_event(int $rack_id, string $event_type, s
         'notes' => $notes,
         'created_by_user_id' => $created_by_user_id > 0 ? $created_by_user_id : null,
         'created_at' => current_time('mysql'),
-    ], ['%d','%s','%s','%s','%d','%s','%d','%s']);
+    ], ['%d', '%s', '%s', '%s', '%d', '%s', '%d', '%s']);
 }
 
 function aitrongcay_move_blynk_config_key(string $from_garden_key, string $to_garden_key): void
@@ -5220,11 +5318,11 @@ function aitrongcay_move_blynk_config_key(string $from_garden_key, string $to_ga
     if ($from_garden_key === '' || $to_garden_key === '' || $from_garden_key === $to_garden_key) {
         return;
     }
-    if (! function_exists('aitrongcay_get_saved_blynk_configs') || ! function_exists('aitrongcay_save_blynk_configs')) {
+    if (!function_exists('aitrongcay_get_saved_blynk_configs') || !function_exists('aitrongcay_save_blynk_configs')) {
         return;
     }
     $configs = aitrongcay_get_saved_blynk_configs();
-    if (! isset($configs[$from_garden_key])) {
+    if (!isset($configs[$from_garden_key])) {
         return;
     }
     $configs[$to_garden_key] = $configs[$from_garden_key];
@@ -5241,7 +5339,7 @@ function aitrongcay_assign_inventory_rack_to_garden(string $garden_key, int $use
     }
 
     $inventory_rack = aitrongcay_find_available_inventory_rack(2);
-    if (! $inventory_rack) {
+    if (!$inventory_rack) {
         aitrongcay_log_rack_inventory_event(0, 'out_of_stock', 'inventory', 'empty', $user_id, 'Kho rack đã hết khi yêu cầu cấp cho khu vườn ' . $garden_key, $user_id);
         return ['error' => 'Kho rack hiện đang hết. Anh vui lòng chờ thêm để em bổ sung rack mới rồi mình khởi tạo tiếp.'];
     }
@@ -5258,10 +5356,10 @@ function aitrongcay_assign_inventory_rack_to_garden(string $garden_key, int $use
             'updated_at' => $now,
         ],
         ['id' => $rack_id],
-        ['%s','%d','%s','%s'],
+        ['%s', '%d', '%s', '%s'],
         ['%d']
     );
-    if (! $updated) {
+    if (!$updated) {
         return ['error' => 'Em chưa cấp rack từ kho sang khu vườn này được.'];
     }
 
@@ -5274,7 +5372,7 @@ function aitrongcay_assign_inventory_rack_to_garden(string $garden_key, int $use
         'assigned_at' => $now,
         'status' => 'active',
         'notes' => 'Cấp rack từ kho cho khu vườn người dùng',
-    ], ['%d','%d','%s','%s','%s','%s','%s']);
+    ], ['%d', '%d', '%s', '%s', '%s', '%s', '%s']);
 
     aitrongcay_move_blynk_config_key($from_garden_key, $garden_key);
     aitrongcay_log_rack_inventory_event($rack_id, 'assign', (string) ($inventory_rack['status'] ?? 'inventory'), 'assigned', $user_id, 'Cấp rack từ kho sang khu vườn ' . $garden_key, $user_id);
@@ -5404,7 +5502,7 @@ function aitrongcay_create_placeholder_rack_for_garden(WP_User $user, string $ga
         'connectivity_status' => 'not_provisioned',
         'notes' => 'Rack mặc định cho user mới đăng nhập, chưa gắn thiết bị thật.',
     ]);
-    if (! $saved) {
+    if (!$saved) {
         return ['error' => 'Không tạo được rack mặc định cho user.'];
     }
 
@@ -5422,7 +5520,7 @@ function aitrongcay_create_placeholder_rack_for_garden(WP_User $user, string $ga
             'assigned_at' => current_time('mysql'),
             'status' => 'active',
             'notes' => 'Khởi tạo rack mặc định chưa gắn thiết bị cho user',
-        ], ['%d','%d','%s','%s','%s','%s','%s']);
+        ], ['%d', '%d', '%s', '%s', '%s', '%s', '%s']);
         aitrongcay_log_rack_inventory_event((int) ($rack['id'] ?? 0), 'auto_create_placeholder', '', 'assigned', (int) $user->ID, 'Tạo rack mặc định chưa gắn thiết bị cho user mới', (int) $user->ID);
     }
 
@@ -5446,7 +5544,7 @@ function aitrongcay_initialize_rack_for_user(WP_User $user, string $garden_key):
     }
 
     $assigned = aitrongcay_assign_inventory_rack_to_garden($garden_key, (int) $user->ID);
-    if (! empty($assigned['error'])) {
+    if (!empty($assigned['error'])) {
         return $assigned;
     }
 
@@ -5464,8 +5562,8 @@ function aitrongcay_initialize_rack_for_user(WP_User $user, string $garden_key):
     return [
         'rack' => $rack,
         'garden_key' => $garden_key,
-        'assigned' => ! empty($assigned['assigned']),
-        'already_assigned' => ! empty($assigned['already_assigned']),
+        'assigned' => !empty($assigned['assigned']),
+        'already_assigned' => !empty($assigned['already_assigned']),
     ];
 }
 
@@ -5575,19 +5673,19 @@ function aitrongcay_normalize_pot_note_text(string $note_text, string $today_lab
             $line = trim((string) $line);
             return $line === '' ? null : $line;
         }, $lines)));
-        if (! $lines) {
+        if (!$lines) {
             continue;
         }
 
         $first_line = $lines[0] ?? '';
-        if (! preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $first_line)) {
+        if (!preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $first_line)) {
             array_unshift($lines, $today_label);
         }
 
         $normalized_segments[] = implode("\n", $lines);
     }
 
-    if (! $normalized_segments) {
+    if (!$normalized_segments) {
         return '';
     }
 
@@ -5608,7 +5706,7 @@ function aitrongcay_preferred_garden_key_for_user(?WP_User $user = null): string
     global $wpdb;
 
     $user = $user instanceof WP_User ? $user : wp_get_current_user();
-    if (! $user instanceof WP_User || ! $user->exists()) {
+    if (!$user instanceof WP_User || !$user->exists()) {
         return aitrongcay_legacy_garden_key_for_user($user);
     }
 
@@ -5616,7 +5714,7 @@ function aitrongcay_preferred_garden_key_for_user(?WP_User $user = null): string
     if ($user_id > 0 && function_exists('aitrongcay_get_user_garden_memberships')) {
         $active_memberships = aitrongcay_get_user_garden_memberships($user_id, ['active']);
         foreach ($active_memberships as $membership) {
-            if (($membership['role'] ?? '') === 'owner' && ! empty($membership['garden_key'])) {
+            if (($membership['role'] ?? '') === 'owner' && !empty($membership['garden_key'])) {
                 return trim((string) $membership['garden_key']);
             }
         }
@@ -5637,7 +5735,7 @@ function aitrongcay_preferred_garden_key_for_user(?WP_User $user = null): string
     if ($user_id > 0 && function_exists('aitrongcay_get_user_garden_memberships')) {
         $active_memberships = aitrongcay_get_user_garden_memberships($user_id, ['active']);
         foreach ($active_memberships as $membership) {
-            if (! empty($membership['garden_key'])) {
+            if (!empty($membership['garden_key'])) {
                 return trim((string) $membership['garden_key']);
             }
         }
@@ -5672,7 +5770,7 @@ function aitrongcay_preferred_garden_key_for_user(?WP_User $user = null): string
 
 function aitrongcay_seed_owner_membership(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         return;
     }
 
@@ -5686,7 +5784,7 @@ function aitrongcay_seed_owner_membership(): void
     $garden_key = aitrongcay_preferred_garden_key_for_user($user);
     $table = aitrongcay_garden_members_table();
     $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$table} WHERE garden_key = %s AND user_id = %d LIMIT 1", $garden_key, $user_id));
-    if (! $exists) {
+    if (!$exists) {
         $wpdb->insert($table, [
             'garden_key' => $garden_key,
             'user_id' => $user_id,
@@ -5737,7 +5835,7 @@ function aitrongcay_market_owner_garden_key_from_post(WP_Post $post): string
 
 function aitrongcay_market_context_garden_key(): string
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         return '';
     }
 
@@ -5752,7 +5850,7 @@ function aitrongcay_migrate_attachment_garden_key(int $attachment_id): string
     }
 
     $attachment = get_post($attachment_id);
-    if (! $attachment || $attachment->post_type !== 'attachment') {
+    if (!$attachment || $attachment->post_type !== 'attachment') {
         return '';
     }
 
@@ -5787,7 +5885,7 @@ function aitrongcay_migrate_attachment_garden_key(int $attachment_id): string
 function aitrongcay_migrate_market_post_garden_key(int $post_id): string
 {
     $post = get_post($post_id);
-    if (! $post || $post->post_type !== 'aitr_market_post') {
+    if (!$post || $post->post_type !== 'aitr_market_post') {
         return '';
     }
 
@@ -5933,12 +6031,12 @@ function aitrongcay_blynk_get_status_ajax(): void
     if ($garden_key === '') {
         $garden_key = function_exists('aitrongcay_market_context_garden_key') ? aitrongcay_market_context_garden_key() : '';
     }
-    if ($garden_key !== '' && ! aitrongcay_user_can_view_garden($garden_key, get_current_user_id())) {
+    if ($garden_key !== '' && !aitrongcay_user_can_view_garden($garden_key, get_current_user_id())) {
         wp_send_json_error(['message' => 'Không có quyền xem trạng thái khu vườn này.'], 403);
     }
 
-    $req_rack_index = isset($_POST['rack_index']) ? (int)$_POST['rack_index'] : 0;
-    $req_tray_index = isset($_POST['tray_index']) ? (int)$_POST['tray_index'] : 0;
+    $req_rack_index = isset($_POST['rack_index']) ? (int) $_POST['rack_index'] : 0;
+    $req_tray_index = isset($_POST['tray_index']) ? (int) $_POST['tray_index'] : 0;
 
     $cache_key = 'aitr_blynk_status_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
     $cooldown_key = 'aitr_blynk_status_cooldown_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
@@ -5967,7 +6065,7 @@ function aitrongcay_blynk_get_status_ajax(): void
             $cfg['token'] = $rack_token;
         }
         $trays = (array) ($target_rack['trays'] ?? []);
-        
+
         // Map all lights from the rack's trays
         foreach ($trays as $idx => $tray) {
             $light_key = 'light' . ($idx + 1);
@@ -6002,7 +6100,7 @@ function aitrongcay_blynk_get_status_ajax(): void
     $payload = ['garden_key' => $garden_key];
     $shared_vpins = [];
     foreach (['temp', 'hum', 'soil', 'pump'] as $device) {
-        if (! empty($vpins[$device])) {
+        if (!empty($vpins[$device])) {
             $shared_vpins[$device] = (string) $vpins[$device];
         }
     }
@@ -6042,7 +6140,7 @@ function aitrongcay_blynk_get_status_ajax(): void
             continue;
         }
 
-        if (! isset($light_requests[$token])) {
+        if (!isset($light_requests[$token])) {
             $light_requests[$token] = [
                 'vpins' => [],
                 'devices' => [],
@@ -6063,7 +6161,7 @@ function aitrongcay_blynk_get_status_ajax(): void
         }
     }
 
-    if ($shared_data === [] && ! $has_any_light) {
+    if ($shared_data === [] && !$has_any_light) {
         set_transient($cooldown_key, ['message' => 'Blynk đang giới hạn quota hoặc chưa phản hồi, tạm ngưng gọi lại trong ít phút.'], 300);
         wp_send_json_error(['message' => 'Không đọc được dữ liệu Blynk.'], 502);
     }
@@ -6076,7 +6174,7 @@ add_action('wp_ajax_aitrongcay_blynk_get_status', 'aitrongcay_blynk_get_status_a
 
 function aitrongcay_blynk_send_control(string $device, int $state, string $garden_key = '', string $pot_code = '', int $req_rack_index = -1, int $req_tray_index = -1)
 {
-    if (! in_array($state, [0, 1], true)) {
+    if (!in_array($state, [0, 1], true)) {
         return new WP_Error('invalid_command', 'Lệnh điều khiển không hợp lệ.');
     }
 
@@ -6085,7 +6183,7 @@ function aitrongcay_blynk_send_control(string $device, int $state, string $garde
     // Fallback: đọc từ rack monitor config
     if (function_exists('aitrongcay_get_rack_monitor_configs')) {
         $rack_configs = aitrongcay_get_rack_monitor_configs($garden_key);
-        
+
         $target_rack_id = 0;
         $target_tray_index = -1;
 
@@ -6106,7 +6204,7 @@ function aitrongcay_blynk_send_control(string $device, int $state, string $garde
             $target_tray_index = $req_tray_index;
         } else if ($target_rack_id > 0 && $target_tray_index >= 0) {
             foreach ($rack_configs as $rack) {
-                if ((int)($rack['rack_id'] ?? 0) === $target_rack_id) {
+                if ((int) ($rack['rack_id'] ?? 0) === $target_rack_id) {
                     $target_rack = $rack;
                     break;
                 }
@@ -6121,10 +6219,12 @@ function aitrongcay_blynk_send_control(string $device, int $state, string $garde
                     $tray = $target_rack['trays'][$target_tray_index];
                     if ($device === 'pump') {
                         $vpin = strtoupper(trim((string) ($tray['vpin_pump'] ?? '')));
-                        if ($vpin !== '') $cfg['vpins']['pump'] = $vpin;
+                        if ($vpin !== '')
+                            $cfg['vpins']['pump'] = $vpin;
                     } else if (strpos($device, 'light') !== false) {
                         $vpin = strtoupper(trim((string) ($tray['vpin_light'] ?? '')));
-                        if ($vpin !== '') $cfg['vpins'][$device] = $vpin;
+                        if ($vpin !== '')
+                            $cfg['vpins'][$device] = $vpin;
                     }
                 }
             }
@@ -6187,12 +6287,12 @@ function aitrongcay_blynk_send_control(string $device, int $state, string $garde
     $body = (string) wp_remote_retrieve_body($response);
     $data = json_decode($body, true);
     if ($code < 200 || $code >= 300) {
-        $message = is_array($data) && ! empty($data['error']['message'])
+        $message = is_array($data) && !empty($data['error']['message'])
             ? (string) $data['error']['message']
             : ('Blynk phản hồi HTTP ' . $code);
         return new WP_Error('blynk_http_error', $message);
     }
-    if (is_array($data) && ! empty($data['error']['message'])) {
+    if (is_array($data) && !empty($data['error']['message'])) {
         return new WP_Error('blynk_api_error', (string) $data['error']['message']);
     }
 
@@ -6208,7 +6308,7 @@ function aitrongcay_blynk_control_ajax(): void
     if ($garden_key === '') {
         $garden_key = function_exists('aitrongcay_resolve_active_garden_key') ? aitrongcay_resolve_active_garden_key(wp_get_current_user()) : '';
     }
-    if (! aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
+    if (!aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
         wp_send_json_error(['message' => 'Anh/chị chỉ có quyền xem khu vườn này.'], 403);
     }
 
@@ -6241,7 +6341,7 @@ function aitrongcay_blynk_control_direct_url(string $device, int $state): string
 
 function aitrongcay_blynk_control_direct_submit(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -6269,14 +6369,15 @@ add_action('admin_post_aitrongcay_blynk_control_direct', 'aitrongcay_blynk_contr
 /**
  * Grant +5 Eco Points for the first photo of the day.
  */
-function aitrongcay_grant_daily_photo_points(int $user_id): int {
+function aitrongcay_grant_daily_photo_points(int $user_id): int
+{
     $today = current_time('Ymd');
     $last_date = get_user_meta($user_id, '_aitrongcay_last_photo_bonus_date', true);
     if ($last_date !== $today) {
         update_user_meta($user_id, '_aitrongcay_last_photo_bonus_date', $today);
         $points = (int) get_user_meta($user_id, '_aitrongcay_eco_points', true);
         update_user_meta($user_id, '_aitrongcay_eco_points', $points + 5);
-        
+
         if (function_exists('aitrongcay_add_notification')) {
             aitrongcay_add_notification(
                 $user_id,
@@ -6299,12 +6400,12 @@ function aitrongcay_capture_photo_ajax(): void
     if ($garden_key === '' || $pot_code === '') {
         wp_send_json_error(['message' => 'Thiếu thông tin khoang để lưu ảnh.'], 400);
     }
-    if (! aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
+    if (!aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
         wp_send_json_error(['message' => 'Không có quyền chụp ảnh cho khu vườn này.'], 403);
     }
 
     $image_data = (string) wp_unslash($_POST['image'] ?? '');
-    if (! preg_match('#^data:image/(png|jpeg);base64,#', $image_data, $matches)) {
+    if (!preg_match('#^data:image/(png|jpeg);base64,#', $image_data, $matches)) {
         wp_send_json_error(['message' => 'Không đọc được ảnh chụp.'], 400);
     }
 
@@ -6316,7 +6417,7 @@ function aitrongcay_capture_photo_ajax(): void
     $extension = $matches[1] === 'jpeg' ? 'jpg' : $matches[1];
     $filename = 'livecam-' . strtolower($pot_code) . '-' . wp_date('Ymd-His') . '.' . $extension;
     $uploaded = wp_upload_bits($filename, null, $binary);
-    if (! empty($uploaded['error'])) {
+    if (!empty($uploaded['error'])) {
         wp_send_json_error(['message' => $uploaded['error']], 500);
     }
 
@@ -6328,7 +6429,7 @@ function aitrongcay_capture_photo_ajax(): void
         'post_author' => get_current_user_id(),
     ], $uploaded['file']);
 
-    if (is_wp_error($attachment_id) || ! $attachment_id) {
+    if (is_wp_error($attachment_id) || !$attachment_id) {
         wp_send_json_error(['message' => 'Không tạo được attachment.'], 500);
     }
 
@@ -6369,12 +6470,12 @@ function aitrongcay_capture_photo_server_ajax(): void
     aitrongcay_require_portal_nonce();
 
     $garden_key = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? aitrongcay_resolve_active_garden_key()));
-    $pot_code   = strtoupper(sanitize_text_field((string) wp_unslash($_POST['pot_code'] ?? '')));
+    $pot_code = strtoupper(sanitize_text_field((string) wp_unslash($_POST['pot_code'] ?? '')));
 
     if ($garden_key === '' || $pot_code === '') {
         wp_send_json_error(['message' => 'Thiếu thông tin khoang.'], 400);
     }
-    if (! aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
+    if (!aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
         wp_send_json_error(['message' => 'Không có quyền chụp ảnh.'], 403);
     }
 
@@ -6405,7 +6506,7 @@ function aitrongcay_capture_photo_server_ajax(): void
             ? aitrongcay_resolve_pot_webcam_info($garden_key, $pot_code)
             : [];
 
-        if (! empty($webcam['slug']) && ! empty($webcam['base_url'])) {
+        if (!empty($webcam['slug']) && !empty($webcam['base_url'])) {
             $live = function_exists('aitrongcay_fetch_live_frame')
                 ? aitrongcay_fetch_live_frame($webcam['base_url'], $webcam['slug'])
                 : null;
@@ -6416,43 +6517,43 @@ function aitrongcay_capture_photo_server_ajax(): void
     }
 
     // 2. Fallback: đọc file timelapse mới nhất từ disk
-    if ($binary === null && ! empty($webcam['slug'])) {
+    if ($binary === null && !empty($webcam['slug'])) {
         $tl = function_exists('aitrongcay_get_latest_timelapse_for_pot')
             ? aitrongcay_get_latest_timelapse_for_pot($garden_key, $webcam['slug'])
             : null;
-        if ($tl !== null && ! empty($tl['path']) && file_exists($tl['path'])) {
+        if ($tl !== null && !empty($tl['path']) && file_exists($tl['path'])) {
             $binary = @file_get_contents($tl['path']);
             $source = 'timelapse';
         }
     }
 
-    if (! $binary) {
+    if (!$binary) {
         wp_send_json_error(['message' => 'Không lấy được ảnh. Kiểm tra go2rtc hoặc cấu hình webcam của khoang.'], 500);
     }
 
     $filename = 'capture-' . strtolower($pot_code) . '-' . wp_date('Ymd-His', null, new DateTimeZone('Asia/Ho_Chi_Minh')) . '.jpg';
     $uploaded = wp_upload_bits($filename, null, $binary);
-    if (! empty($uploaded['error'])) {
+    if (!empty($uploaded['error'])) {
         wp_send_json_error(['message' => $uploaded['error']], 500);
     }
 
     $attachment_id = wp_insert_attachment([
         'post_mime_type' => 'image/jpeg',
-        'post_title'     => 'Ảnh ' . $pot_code . ' · ' . wp_date('H:i d/m/Y', null, new DateTimeZone('Asia/Ho_Chi_Minh')),
-        'post_status'    => 'inherit',
-        'post_author'    => get_current_user_id(),
+        'post_title' => 'Ảnh ' . $pot_code . ' · ' . wp_date('H:i d/m/Y', null, new DateTimeZone('Asia/Ho_Chi_Minh')),
+        'post_status' => 'inherit',
+        'post_author' => get_current_user_id(),
     ], $uploaded['file']);
 
-    if (is_wp_error($attachment_id) || ! $attachment_id) {
+    if (is_wp_error($attachment_id) || !$attachment_id) {
         wp_send_json_error(['message' => 'Không tạo được attachment.'], 500);
     }
 
     require_once ABSPATH . 'wp-admin/includes/image.php';
     wp_update_attachment_metadata($attachment_id, wp_generate_attachment_metadata($attachment_id, $uploaded['file']));
-    update_post_meta($attachment_id, '_aitrongcay_photo_owner',     get_current_user_id());
+    update_post_meta($attachment_id, '_aitrongcay_photo_owner', get_current_user_id());
     update_post_meta($attachment_id, '_aitrongcay_photo_garden_key', $garden_key);
-    update_post_meta($attachment_id, '_aitrongcay_photo_source',    $source);
-    update_post_meta($attachment_id, '_aitrongcay_pot_code',        $pot_code);
+    update_post_meta($attachment_id, '_aitrongcay_photo_source', $source);
+    update_post_meta($attachment_id, '_aitrongcay_pot_code', $pot_code);
 
     aitrongcay_set_latest_pot_photo($garden_key, $pot_code, (int) $attachment_id);
 
@@ -6463,11 +6564,11 @@ function aitrongcay_capture_photo_server_ajax(): void
     $bonus_points = aitrongcay_grant_daily_photo_points(get_current_user_id());
 
     wp_send_json_success([
-        'id'      => $attachment_id,
-        'url'     => $url,
-        'label'   => get_the_title($attachment_id),
+        'id' => $attachment_id,
+        'url' => $url,
+        'label' => get_the_title($attachment_id),
         'pot_code' => $pot_code,
-        'source'  => $source,
+        'source' => $source,
         'bonus_points' => $bonus_points,
     ]);
 }
@@ -6475,14 +6576,14 @@ add_action('wp_ajax_aitrongcay_capture_photo_server', 'aitrongcay_capture_photo_
 
 function aitrongcay_generate_demo_snapshot_attachment(int $user_id)
 {
-    if (! function_exists('imagecreatetruecolor')) {
+    if (!function_exists('imagecreatetruecolor')) {
         return new WP_Error('gd_missing', 'Server chưa bật GD để tạo ảnh demo.');
     }
 
     $width = 1600;
     $height = 900;
     $image = imagecreatetruecolor($width, $height);
-    if (! $image) {
+    if (!$image) {
         return new WP_Error('canvas_failed', 'Không tạo được canvas ảnh demo.');
     }
 
@@ -6509,13 +6610,13 @@ function aitrongcay_generate_demo_snapshot_attachment(int $user_id)
     $contents = ob_get_clean();
     imagedestroy($image);
 
-    if (! is_string($contents) || $contents === '') {
+    if (!is_string($contents) || $contents === '') {
         return new WP_Error('render_failed', 'Không render được ảnh demo.');
     }
 
     $filename = 'anh-vuon-' . $user_id . '-' . wp_generate_password(8, false, false) . '.png';
     $uploaded = wp_upload_bits($filename, null, $contents);
-    if (! empty($uploaded['error'])) {
+    if (!empty($uploaded['error'])) {
         return new WP_Error('upload_failed', (string) $uploaded['error']);
     }
 
@@ -6526,7 +6627,7 @@ function aitrongcay_generate_demo_snapshot_attachment(int $user_id)
         'post_author' => $user_id,
     ], $uploaded['file']);
 
-    if (is_wp_error($attachment_id) || ! $attachment_id) {
+    if (is_wp_error($attachment_id) || !$attachment_id) {
         return new WP_Error('attachment_failed', 'Không tạo được attachment demo.');
     }
 
@@ -6557,7 +6658,7 @@ add_action('wp_ajax_aitrongcay_capture_demo_photo', 'aitrongcay_capture_demo_pho
 
 function aitrongcay_capture_demo_photo_submit(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -6565,7 +6666,7 @@ function aitrongcay_capture_demo_photo_submit(): void
     check_admin_referer('aitrongcay_capture_demo_photo_submit', 'aitrongcay_capture_demo_nonce');
     $result = aitrongcay_generate_demo_snapshot_attachment(get_current_user_id());
     $redirect = home_url('/portal/dashboard-2/#photo-library');
-    if (! is_wp_error($result) && ! empty($result['id'])) {
+    if (!is_wp_error($result) && !empty($result['id'])) {
         $redirect = add_query_arg('photo_added', (string) $result['id'], home_url('/portal/dashboard-2/')) . '#photo-library';
     }
     wp_safe_redirect($redirect);
@@ -6706,7 +6807,7 @@ function aitrongcay_upload_market_photo_ajax(): void
 {
     aitrongcay_require_portal_nonce();
 
-    if (empty($_FILES['market_photo']) || ! is_array($_FILES['market_photo'])) {
+    if (empty($_FILES['market_photo']) || !is_array($_FILES['market_photo'])) {
         wp_send_json_error(['message' => 'Chưa nhận được ảnh tải lên.'], 400);
     }
 
@@ -6715,7 +6816,7 @@ function aitrongcay_upload_market_photo_ajax(): void
     require_once ABSPATH . 'wp-admin/includes/media.php';
 
     $attachment_id = media_handle_upload('market_photo', 0);
-    if (is_wp_error($attachment_id) || ! $attachment_id) {
+    if (is_wp_error($attachment_id) || !$attachment_id) {
         wp_send_json_error(['message' => 'Không tải được ảnh lên hệ thống.'], 500);
     }
 
@@ -6754,7 +6855,7 @@ function aitrongcay_create_market_post_ajax(): void
         'comment_status' => 'open',
     ], true);
 
-    if (is_wp_error($post_id) || ! $post_id) {
+    if (is_wp_error($post_id) || !$post_id) {
         wp_send_json_error(['message' => 'Không tạo được tin Chợ quê.'], 500);
     }
 
@@ -6781,7 +6882,7 @@ function aitrongcay_update_market_post_ajax(): void
     aitrongcay_require_portal_nonce();
     $post_id = absint($_POST['post_id'] ?? 0);
     $post = get_post($post_id);
-    if (! $post || $post->post_type !== 'aitr_market_post' || (int) $post->post_author !== get_current_user_id()) {
+    if (!$post || $post->post_type !== 'aitr_market_post' || (int) $post->post_author !== get_current_user_id()) {
         wp_send_json_error(['message' => 'Không có quyền sửa tin này.'], 403);
     }
 
@@ -6818,7 +6919,7 @@ function aitrongcay_update_market_post_ajax(): void
     $gallery_items = [];
     foreach ($final_photo_ids as $attachment_id) {
         $url = (string) (wp_get_attachment_image_url($attachment_id, 'large') ?: wp_get_attachment_url($attachment_id));
-        if (! $url) {
+        if (!$url) {
             continue;
         }
         $gallery_items[] = [
@@ -6829,7 +6930,7 @@ function aitrongcay_update_market_post_ajax(): void
     }
 
     $thumb_url = has_post_thumbnail($post_id) ? (string) get_the_post_thumbnail_url($post_id, 'large') : '';
-    $gallery_url = ($gallery_items && ! empty($gallery_items[0]['url'])) ? (string) $gallery_items[0]['url'] : '';
+    $gallery_url = ($gallery_items && !empty($gallery_items[0]['url'])) ? (string) $gallery_items[0]['url'] : '';
     $image_url = $thumb_url ? wp_make_link_relative($thumb_url) : $gallery_url;
 
     wp_send_json_success([
@@ -6849,7 +6950,7 @@ function aitrongcay_delete_market_post_ajax(): void
     aitrongcay_require_portal_nonce();
     $post_id = absint($_POST['post_id'] ?? 0);
     $post = get_post($post_id);
-    if (! $post || $post->post_type !== 'aitr_market_post' || (int) $post->post_author !== get_current_user_id()) {
+    if (!$post || $post->post_type !== 'aitr_market_post' || (int) $post->post_author !== get_current_user_id()) {
         wp_send_json_error(['message' => 'Không có quyền xóa tin này.'], 403);
     }
     wp_trash_post($post_id);
@@ -6889,15 +6990,15 @@ function aitrongcay_user_zalo_phone(int $user_id): string
 function aitrongcay_market_zalo_link_for_post(int $post_id): string
 {
     $post = get_post($post_id);
-    if (! $post || $post->post_type !== 'aitr_market_post') {
+    if (!$post || $post->post_type !== 'aitr_market_post') {
         return '';
     }
-    
+
     // Ưu tiên lấy số điện thoại người dùng điền trong form bài đăng (trường Liên hệ)
     $structured = function_exists('aitrongcay_get_market_structured_data') ? aitrongcay_get_market_structured_data($post_id) : [];
     $post_contact = (string) ($structured['contact_text'] ?? '');
     $post_phone = aitrongcay_normalize_phone_digits($post_contact);
-    
+
     // Nếu trong bài có số điện thoại hợp lệ, dùng số đó. Nếu không, lấy số từ Profile của tài khoản.
     if (strlen($post_phone) >= 9) {
         $phone = $post_phone;
@@ -6924,13 +7025,16 @@ function aitrongcay_notify_plant_stage_change(string $garden_key, string $pot_co
 {
     $owner = function_exists('aitrongcay_get_garden_owner_user') ? aitrongcay_get_garden_owner_user($garden_key) : null;
     $user_id = $owner instanceof WP_User ? (int) $owner->ID : 0;
-    
-    if ($user_id <= 0) return;
+
+    if ($user_id <= 0)
+        return;
     $user = get_userdata($user_id);
-    if (!$user) return;
+    if (!$user)
+        return;
 
     $to = $user->user_email;
-    if (empty($to)) return;
+    if (empty($to))
+        return;
 
     $subject = "[Ai Trồng Cây] Thông báo: Cây {$plant_name} đã chuyển sang giai đoạn {$new_stage}";
     $message = "Chào {$user->display_name},\n\n";
@@ -6939,7 +7043,7 @@ function aitrongcay_notify_plant_stage_change(string $garden_key, string $pot_co
     $message .= "Đăng nhập ngay: " . home_url('/portal/dashboard-2/') . "\n";
 
     wp_mail($to, $subject, $message);
-    
+
     // Zalo ZNS API Stub
     $phone = function_exists('aitrongcay_user_zalo_phone') ? aitrongcay_user_zalo_phone($user_id) : '';
     if ($phone !== '') {
@@ -7058,7 +7162,7 @@ function aitrongcay_get_custom_pots(string $garden_key, int $user_id): array
     }
 
     $bucket = get_user_meta($user_id, aitrongcay_custom_pots_meta_key(), true);
-    if (! is_array($bucket)) {
+    if (!is_array($bucket)) {
         return [];
     }
 
@@ -7075,7 +7179,8 @@ function aitrongcay_store_custom_pots(string $garden_key, int $user_id, array $p
 
     if (function_exists('aitrongcay_upsert_db_pot')) {
         foreach (array_values($pots) as $index => $pot) {
-            if (! is_array($pot)) continue;
+            if (!is_array($pot))
+                continue;
             $pot['sort_order'] = $index + 1;
             aitrongcay_upsert_db_pot($garden_key, $pot);
         }
@@ -7086,7 +7191,7 @@ function aitrongcay_store_custom_pots(string $garden_key, int $user_id, array $p
     }
 
     $bucket = get_user_meta($user_id, aitrongcay_custom_pots_meta_key(), true);
-    if (! is_array($bucket)) {
+    if (!is_array($bucket)) {
         $bucket = [];
     }
 
@@ -7112,7 +7217,7 @@ function aitrongcay_get_pot_name_overrides(string $garden_key, int $user_id): ar
     }
 
     $bucket = get_user_meta($user_id, aitrongcay_pot_name_overrides_meta_key(), true);
-    if (! is_array($bucket)) {
+    if (!is_array($bucket)) {
         return [];
     }
 
@@ -7128,7 +7233,7 @@ function aitrongcay_store_pot_name_overrides(string $garden_key, int $user_id, a
     }
 
     $bucket = get_user_meta($user_id, aitrongcay_pot_name_overrides_meta_key(), true);
-    if (! is_array($bucket)) {
+    if (!is_array($bucket)) {
         $bucket = [];
     }
 
@@ -7153,7 +7258,7 @@ function aitrongcay_update_pot_name_for_garden(string $garden_key, int $user_id,
             continue;
         }
         $pot['name'] = $pot_name;
-        if (empty($pot['trays']) || ! is_array($pot['trays'])) {
+        if (empty($pot['trays']) || !is_array($pot['trays'])) {
             $pot['trays'] = [$pot_name];
         } else {
             $pot['trays'][0] = $pot_name;
@@ -7178,7 +7283,7 @@ function aitrongcay_update_pot_name_for_garden(string $garden_key, int $user_id,
         }
     }
 
-    if (! $known) {
+    if (!$known) {
         return false;
     }
 
@@ -7256,7 +7361,7 @@ function aitrongcay_normalize_pot_created_at(string $raw_value): string
     }
 
     $timestamp = strtotime($raw_value);
-    if (! $timestamp) {
+    if (!$timestamp) {
         return '';
     }
 
@@ -7274,7 +7379,7 @@ function aitrongcay_create_custom_pot_for_user(WP_User $user, string $garden_key
 
     $rack = aitrongcay_get_rack_record($garden_key);
     $rack_slots = aitrongcay_get_rack_slots($garden_key);
-    if (! $rack || count($rack_slots) < 2) {
+    if (!$rack || count($rack_slots) < 2) {
         return ['error' => 'Anh cần khởi tạo rack trước rồi mới tạo khoang trồng cây.'];
     }
 
@@ -7300,7 +7405,7 @@ function aitrongcay_create_custom_pot_for_user(WP_User $user, string $garden_key
         $available_slot = $slot;
         break;
     }
-    if (! is_array($available_slot)) {
+    if (!is_array($available_slot)) {
         $slot_count = max((int) ($rack['slot_count'] ?? 0), count($rack_slots));
         return ['error' => 'Rack này đã dùng hết ' . $slot_count . ' khoang. Muốn thêm khoang mới, mình cần đổi hoặc cấp thêm rack khác trước.'];
     }
@@ -7352,7 +7457,7 @@ function aitrongcay_garden_assistant_build_reply(string $message, WP_User $user,
             break;
         }
     }
-    if (! $matched_pot && ! empty($pots[0])) {
+    if (!$matched_pot && !empty($pots[0])) {
         $matched_pot = $pots[0];
     }
     $photo_context = [];
@@ -7375,7 +7480,7 @@ function aitrongcay_garden_assistant_build_reply(string $message, WP_User $user,
     if ($photo_context) {
         $pot_label = (string) ($photo_context['pot_name'] ?: ($photo_context['pot_code'] ?? $sample_pot));
         $photo_hint = ' Em sẽ ưu tiên bám ảnh mới nhất của ' . $pot_label;
-        if (! empty($photo_context['captured_at'])) {
+        if (!empty($photo_context['captured_at'])) {
             $photo_hint .= ' (cập nhật gần nhất: ' . wp_date('H:i d/m/Y', strtotime((string) $photo_context['captured_at'] . ' UTC'), new DateTimeZone('Asia/Ho_Chi_Minh')) . ')';
         }
         $photo_hint .= ' khi phân tích và đưa cảnh báo.';
@@ -7403,33 +7508,33 @@ function aitrongcay_garden_assistant_chat_ajax(): void
     }
 
     // ----- GUEST (not logged in) -----
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         $guest_user = new WP_User(0);
         $assistant = aitrongcay_garden_assistant_build_reply($message, $guest_user, '');
         wp_send_json_success([
-            'sessionId'    => 0,
-            'sessionKey'   => 'guest',
+            'sessionId' => 0,
+            'sessionKey' => 'guest',
             'sessionTitle' => 'Tư vấn nhanh',
-            'messages'     => [
-                ['role' => 'user',      'text' => $message,                           'time' => wp_date('c')],
+            'messages' => [
+                ['role' => 'user', 'text' => $message, 'time' => wp_date('c')],
                 ['role' => 'assistant', 'text' => (string) ($assistant['reply'] ?? ''), 'time' => wp_date('c')],
             ],
-            'reply'        => (string) ($assistant['reply'] ?? ''),
+            'reply' => (string) ($assistant['reply'] ?? ''),
             'sessionLabel' => 'guest',
-            'mode'         => (string) ($assistant['mode'] ?? 'guest-local'),
-            'agentStatus'  => (string) ($assistant['agentStatus'] ?? 'guest-ready'),
-            'latestPhoto'  => $assistant['latestPhoto'] ?? [],
-            'latencyMs'    => 0,
+            'mode' => (string) ($assistant['mode'] ?? 'guest-local'),
+            'agentStatus' => (string) ($assistant['agentStatus'] ?? 'guest-ready'),
+            'latestPhoto' => $assistant['latestPhoto'] ?? [],
+            'latencyMs' => 0,
         ]);
     }
 
     // ----- LOGGED IN -----
-    $user             = wp_get_current_user();
-    $session_id       = (int) ($_POST['session_id'] ?? 0);
-    $force_new        = ! empty($_POST['new_session']);
-    $session_mode     = sanitize_key((string) wp_unslash($_POST['mode'] ?? ''));
-    $garden_key       = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? aitrongcay_resolve_active_garden_key($user)));
-    if ($garden_key === '' || ! aitrongcay_user_can_view_garden($garden_key, (int) $user->ID)) {
+    $user = wp_get_current_user();
+    $session_id = (int) ($_POST['session_id'] ?? 0);
+    $force_new = !empty($_POST['new_session']);
+    $session_mode = sanitize_key((string) wp_unslash($_POST['mode'] ?? ''));
+    $garden_key = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? aitrongcay_resolve_active_garden_key($user)));
+    if ($garden_key === '' || !aitrongcay_user_can_view_garden($garden_key, (int) $user->ID)) {
         $garden_key = aitrongcay_resolve_active_garden_key($user);
     }
     aitrongcay_remember_selected_garden_key((int) $user->ID, $garden_key);
@@ -7437,7 +7542,7 @@ function aitrongcay_garden_assistant_chat_ajax(): void
     $request_started_at = microtime(true);
 
     // --- Get / create session ---
-    $thread    = function_exists('aitrongcay_ai_get_or_create_session')
+    $thread = function_exists('aitrongcay_ai_get_or_create_session')
         ? aitrongcay_ai_get_or_create_session($garden_key, $user, ['session_id' => $session_id, 'force_new' => $force_new, 'mode' => $session_mode])
         : [];
     $thread_id = (int) ($thread['id'] ?? 0);
@@ -7460,11 +7565,11 @@ function aitrongcay_garden_assistant_chat_ajax(): void
         : ['ok' => false, 'mode' => 'adapter-ready'];
 
     // --- Fallback to local reply if remote failed ---
-    $used_fallback  = false;
-    $remote_error   = '';
+    $used_fallback = false;
+    $remote_error = '';
     if (empty($assistant['ok'])) {
-        $remote_error   = (string) ($assistant['message'] ?? 'remote-disabled-or-failed');
-        $assistant      = aitrongcay_garden_assistant_build_reply($message, $user, $garden_key);
+        $remote_error = (string) ($assistant['message'] ?? 'remote-disabled-or-failed');
+        $assistant = aitrongcay_garden_assistant_build_reply($message, $user, $garden_key);
         // Append the error info so the user sees it
         if ($remote_error !== '') {
             $assistant['reply'] = (string) ($assistant['reply'] ?? '') . "\n\n(Lỗi kết nối AI: {$remote_error})";
@@ -7478,8 +7583,8 @@ function aitrongcay_garden_assistant_chat_ajax(): void
     if ($thread_id > 0 && function_exists('aitrongcay_ai_append_message_to_session')) {
         aitrongcay_ai_append_message_to_session($thread_id, 'user', $message, ['source' => 'portal-chat']);
         aitrongcay_ai_append_message_to_session($thread_id, 'assistant', $reply_text, [
-            'mode'         => (string) ($assistant['mode'] ?? 'adapter-ready'),
-            'session_label'=> (string) ($assistant['sessionLabel'] ?? ''),
+            'mode' => (string) ($assistant['mode'] ?? 'adapter-ready'),
+            'session_label' => (string) ($assistant['sessionLabel'] ?? ''),
         ]);
     }
 
@@ -7492,17 +7597,17 @@ function aitrongcay_garden_assistant_chat_ajax(): void
                 return $text !== '' ? (($role === 'user' ? 'Anh/chị' : 'Cindy') . ': ' . wp_trim_words($text, 18, '...')) : '';
             }, is_array($history) ? $history : []),
             ['Anh/chị: ' . wp_trim_words($message, 18, '...')],
-            ['Cindy: '   . wp_trim_words($reply_text, 18, '...')]
+            ['Cindy: ' . wp_trim_words($reply_text, 18, '...')]
         ), -4);
 
         aitrongcay_ai_update_session_state($thread_id, [
-            'remote_thread_key'      => (string) ($assistant['remoteThreadKey'] ?? ($thread['remote_thread_key'] ?? '')),
-            'status'                 => $used_fallback ? 'fallback-local' : 'remote-ok',
-            'last_error'             => $used_fallback ? $remote_error : '',
-            'last_user_message'      => $message,
+            'remote_thread_key' => (string) ($assistant['remoteThreadKey'] ?? ($thread['remote_thread_key'] ?? '')),
+            'status' => $used_fallback ? 'fallback-local' : 'remote-ok',
+            'last_error' => $used_fallback ? $remote_error : '',
+            'last_user_message' => $message,
             'last_assistant_message' => $reply_text,
-            'working_summary'        => implode("\n", array_filter($summary_lines)),
-            'last_message_at'        => current_time('mysql'),
+            'working_summary' => implode("\n", array_filter($summary_lines)),
+            'last_message_at' => current_time('mysql'),
         ]);
     }
 
@@ -7515,7 +7620,7 @@ function aitrongcay_garden_assistant_chat_ajax(): void
         array_merge(
             is_array($history) ? $history : [],
             [
-                ['role' => 'user',      'text' => $message,    'time' => wp_date('c')],
+                ['role' => 'user', 'text' => $message, 'time' => wp_date('c')],
                 ['role' => 'assistant', 'text' => $reply_text, 'time' => wp_date('c')],
             ]
         ),
@@ -7523,16 +7628,16 @@ function aitrongcay_garden_assistant_chat_ajax(): void
     );
 
     wp_send_json_success([
-        'sessionId'    => $thread_id,
-        'sessionKey'   => (string) ($thread['session_key'] ?? ''),
+        'sessionId' => $thread_id,
+        'sessionKey' => (string) ($thread['session_key'] ?? ''),
         'sessionTitle' => (string) ($thread['title'] ?? ''),
-        'messages'     => $messages_for_response,
-        'reply'        => $reply_text,
+        'messages' => $messages_for_response,
+        'reply' => $reply_text,
         'sessionLabel' => $assistant['sessionLabel'] ?? '',
-        'mode'         => $assistant['mode'] ?? 'adapter-ready',
-        'agentStatus'  => $assistant['agentStatus'] ?? '',
-        'latestPhoto'  => $assistant['latestPhoto'] ?? [],
-        'latencyMs'    => (int) round((microtime(true) - $request_started_at) * 1000),
+        'mode' => $assistant['mode'] ?? 'adapter-ready',
+        'agentStatus' => $assistant['agentStatus'] ?? '',
+        'latestPhoto' => $assistant['latestPhoto'] ?? [],
+        'latencyMs' => (int) round((microtime(true) - $request_started_at) * 1000),
     ]);
 }
 add_action('wp_ajax_aitrongcay_garden_assistant_chat', 'aitrongcay_garden_assistant_chat_ajax');
@@ -7541,7 +7646,7 @@ add_action('wp_ajax_nopriv_aitrongcay_garden_assistant_chat', 'aitrongcay_garden
 function aitrongcay_ai_list_sessions_ajax(): void
 {
     aitrongcay_require_portal_nonce();
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Anh/chị cần đăng nhập.'], 403);
     }
     $user = wp_get_current_user();
@@ -7570,18 +7675,18 @@ add_action('wp_ajax_nopriv_aitrongcay_ai_list_sessions', static function (): voi
 function aitrongcay_ai_create_session_ajax(): void
 {
     aitrongcay_require_portal_nonce();
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Anh/chị cần đăng nhập.'], 403);
     }
     $user = wp_get_current_user();
     $garden_key = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? ''));
-    if ($garden_key !== '' && ! aitrongcay_user_can_view_garden($garden_key, (int) $user->ID)) {
+    if ($garden_key !== '' && !aitrongcay_user_can_view_garden($garden_key, (int) $user->ID)) {
         $garden_key = '';
     }
     $title = sanitize_text_field((string) wp_unslash($_POST['title'] ?? ''));
     $mode = sanitize_key((string) wp_unslash($_POST['mode'] ?? ''));
     $session = function_exists('aitrongcay_ai_create_session') ? aitrongcay_ai_create_session($user, $garden_key, ['title' => $title, 'mode' => $mode]) : [];
-    if (! $session) {
+    if (!$session) {
         wp_send_json_error(['message' => 'Chưa tạo được session mới.'], 500);
     }
     wp_send_json_success(['session' => $session]);
@@ -7595,13 +7700,13 @@ add_action('wp_ajax_nopriv_aitrongcay_ai_create_session', static function (): vo
 function aitrongcay_ai_load_session_ajax(): void
 {
     aitrongcay_require_portal_nonce();
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Anh/chị cần đăng nhập.'], 403);
     }
     $user = wp_get_current_user();
     $session_id = (int) ($_POST['session_id'] ?? 0);
     $session = function_exists('aitrongcay_ai_get_session_by_id') ? aitrongcay_ai_get_session_by_id($session_id, $user) : [];
-    if (! $session) {
+    if (!$session) {
         wp_send_json_error(['message' => 'Không tìm thấy session.'], 404);
     }
     $messages = function_exists('aitrongcay_ai_get_session_history') ? aitrongcay_ai_get_session_history($session_id, 50) : [];
@@ -7612,13 +7717,13 @@ add_action('wp_ajax_aitrongcay_ai_load_session', 'aitrongcay_ai_load_session_aja
 function aitrongcay_ai_update_session_ajax(): void
 {
     aitrongcay_require_portal_nonce();
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Anh/chị cần đăng nhập.'], 403);
     }
     $user = wp_get_current_user();
     $session_id = (int) ($_POST['session_id'] ?? 0);
     $session = function_exists('aitrongcay_ai_get_session_by_id') ? aitrongcay_ai_get_session_by_id($session_id, $user) : [];
-    if (! $session) {
+    if (!$session) {
         wp_send_json_error(['message' => 'Không tìm thấy session.'], 404);
     }
     $patch = [];
@@ -7656,12 +7761,12 @@ function aitrongcay_init_rack_redirect_url(string $garden_key = '', string $stat
 
 function aitrongcay_init_rack_for_current_user_action(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
 
-    if (! current_user_can('manage_options')) {
+    if (!current_user_can('manage_options')) {
         wp_die('Chức năng tự động nhận Rack đã bị khóa. Khách hàng chỉ được sở hữu rack khi được quản trị viên giao vườn.');
     }
 
@@ -7669,19 +7774,19 @@ function aitrongcay_init_rack_for_current_user_action(): void
 
     $user = wp_get_current_user();
     $garden_key = sanitize_text_field((string) wp_unslash($_REQUEST['garden_key'] ?? aitrongcay_resolve_active_garden_key($user)));
-    if ($garden_key === '' || ! aitrongcay_user_can_view_garden($garden_key, (int) $user->ID)) {
+    if ($garden_key === '' || !aitrongcay_user_can_view_garden($garden_key, (int) $user->ID)) {
         $garden_key = aitrongcay_resolve_active_garden_key($user);
     }
 
     $result = aitrongcay_initialize_rack_for_user($user, $garden_key);
-    if (! empty($result['error'])) {
+    if (!empty($result['error'])) {
         wp_safe_redirect(aitrongcay_init_rack_redirect_url($garden_key, 'empty', (string) $result['error']));
         exit;
     }
 
     $rack = (array) ($result['rack'] ?? []);
     $slot_count = (int) ($rack['slot_count'] ?? 0);
-    $message = ! empty($result['already_assigned'])
+    $message = !empty($result['already_assigned'])
         ? 'Rack của khu vườn này đã có sẵn rồi, mình có thể khởi tạo khoang tiếp.'
         : ('Em đã cấp 1 rack ' . ($slot_count > 0 ? ($slot_count . ' khoang') : '') . ' từ kho cho khu vườn này.');
     wp_safe_redirect(aitrongcay_init_rack_redirect_url($garden_key, 'ok', $message));
@@ -7692,7 +7797,7 @@ add_action('admin_post_aitrongcay_init_rack', 'aitrongcay_init_rack_for_current_
 function aitrongcay_create_first_pot_ajax(): void
 {
     aitrongcay_require_portal_nonce();
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Anh/chị cần đăng nhập để tạo khoang cây.'], 403);
     }
 
@@ -7707,12 +7812,12 @@ function aitrongcay_create_first_pot_ajax(): void
     }
 
     $garden_key = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? aitrongcay_resolve_active_garden_key($user)));
-    if ($garden_key === '' || ! aitrongcay_user_can_view_garden($garden_key, (int) $user->ID)) {
+    if ($garden_key === '' || !aitrongcay_user_can_view_garden($garden_key, (int) $user->ID)) {
         $garden_key = aitrongcay_resolve_active_garden_key($user);
     }
 
     $created = aitrongcay_create_custom_pot_for_user($user, $garden_key, $plant_name, $created_at_raw);
-    if (! empty($created['error'])) {
+    if (!empty($created['error'])) {
         wp_send_json_error(['message' => (string) $created['error']], 400);
     }
 
@@ -7733,13 +7838,13 @@ add_action('wp_ajax_aitrongcay_create_first_pot', 'aitrongcay_create_first_pot_a
 function aitrongcay_rename_pot_ajax(): void
 {
     aitrongcay_require_portal_nonce();
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Anh/chị cần đăng nhập để đổi tên khoang.'], 403);
     }
 
     $user = wp_get_current_user();
     $garden_key = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? aitrongcay_resolve_active_garden_key($user)));
-    if ($garden_key === '' || ! aitrongcay_user_can_control_garden($garden_key, (int) $user->ID)) {
+    if ($garden_key === '' || !aitrongcay_user_can_control_garden($garden_key, (int) $user->ID)) {
         wp_send_json_error(['message' => 'Anh/chị chưa có quyền đổi tên khoang này.'], 403);
     }
 
@@ -7760,7 +7865,7 @@ function aitrongcay_rename_pot_ajax(): void
         $pot_name = mb_substr($pot_name, 0, 120);
     }
 
-    if (! aitrongcay_update_pot_name_for_garden($garden_key, $target_user_id, $pot_code, $pot_name)) {
+    if (!aitrongcay_update_pot_name_for_garden($garden_key, $target_user_id, $pot_code, $pot_name)) {
         wp_send_json_error(['message' => 'Khoang này hiện chưa hỗ trợ đổi tên trực tiếp.'], 400);
     }
 
@@ -7775,13 +7880,13 @@ add_action('wp_ajax_aitrongcay_rename_pot', 'aitrongcay_rename_pot_ajax');
 function aitrongcay_save_pot_note_ajax(): void
 {
     aitrongcay_require_portal_nonce();
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Anh/chị cần đăng nhập để lưu ghi chú.'], 403);
     }
 
     $user = wp_get_current_user();
     $garden_key = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? aitrongcay_resolve_active_garden_key($user)));
-    if ($garden_key === '' || ! aitrongcay_user_can_control_garden($garden_key, (int) $user->ID)) {
+    if ($garden_key === '' || !aitrongcay_user_can_control_garden($garden_key, (int) $user->ID)) {
         wp_send_json_error(['message' => 'Anh/chị chưa có quyền cập nhật nhật ký của khu vườn này.'], 403);
     }
 
@@ -7799,7 +7904,7 @@ function aitrongcay_save_pot_note_ajax(): void
         $note_text = mb_substr($note_text, 0, 2000);
     }
 
-    if (! aitrongcay_save_garden_pot_note($garden_key, $pot_code, $note_text, (int) $user->ID)) {
+    if (!aitrongcay_save_garden_pot_note($garden_key, $pot_code, $note_text, (int) $user->ID)) {
         wp_send_json_error(['message' => 'Chưa lưu được ghi chú cho khoang này.'], 500);
     }
 
@@ -7816,13 +7921,13 @@ add_action('wp_ajax_aitrongcay_save_pot_note', 'aitrongcay_save_pot_note_ajax');
 function aitrongcay_rename_garden_ajax(): void
 {
     aitrongcay_require_portal_nonce();
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Anh/chị cần đăng nhập để đổi tên vườn.'], 403);
     }
 
     $user = wp_get_current_user();
     $garden_key = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? aitrongcay_resolve_active_garden_key($user)));
-    if ($garden_key === '' || ! aitrongcay_user_can_control_garden($garden_key, (int) $user->ID)) {
+    if ($garden_key === '' || !aitrongcay_user_can_control_garden($garden_key, (int) $user->ID)) {
         wp_send_json_error(['message' => 'Anh/chị chưa có quyền đổi tên khu vườn này.'], 403);
     }
 
@@ -7875,7 +7980,7 @@ function aitrongcay_delete_photo_attachment_ajax(): void
     aitrongcay_require_portal_nonce();
     $attachment_id = absint($_POST['attachment_id'] ?? 0);
     $attachment = get_post($attachment_id);
-    if (! $attachment || $attachment->post_type !== 'attachment') {
+    if (!$attachment || $attachment->post_type !== 'attachment') {
         wp_send_json_error(['message' => 'Không tìm thấy ảnh cần xóa.'], 404);
     }
     $owner_id = (int) get_post_meta($attachment_id, '_aitrongcay_photo_owner', true);
@@ -7893,7 +7998,7 @@ function aitrongcay_rename_photo_attachment_ajax(): void
     $attachment_id = absint($_POST['attachment_id'] ?? 0);
     $title = sanitize_text_field((string) wp_unslash($_POST['title'] ?? ''));
     $attachment = get_post($attachment_id);
-    if (! $attachment || $attachment->post_type !== 'attachment') {
+    if (!$attachment || $attachment->post_type !== 'attachment') {
         wp_send_json_error(['message' => 'Không tìm thấy ảnh cần đổi tên.'], 404);
     }
     $owner_id = (int) get_post_meta($attachment_id, '_aitrongcay_photo_owner', true);
@@ -7921,7 +8026,7 @@ function aitrongcay_upload_photo_attachment_ajax(): void
     if ($garden_key === '') {
         wp_send_json_error(['message' => 'Không xác định được khu vườn đang thao tác.'], 400);
     }
-    if (! aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
+    if (!aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
         wp_send_json_error(['message' => 'Anh/chị chưa có quyền upload ảnh cho khu vườn này.'], 403);
     }
     if ($pot_code === '') {
@@ -7935,7 +8040,7 @@ function aitrongcay_upload_photo_attachment_ajax(): void
             break;
         }
     }
-    if (! is_array($pot_record)) {
+    if (!is_array($pot_record)) {
         $pot_record = [
             'pot_code' => $pot_code,
             'code' => $pot_code,
@@ -7946,8 +8051,8 @@ function aitrongcay_upload_photo_attachment_ajax(): void
     require_once ABSPATH . 'wp-admin/includes/file.php';
     require_once ABSPATH . 'wp-admin/includes/image.php';
     $uploaded = wp_handle_upload($_FILES['photo'], ['test_form' => false]);
-    if (! is_array($uploaded) || ! empty($uploaded['error']) || empty($uploaded['file'])) {
-        wp_send_json_error(['message' => ! empty($uploaded['error']) ? (string) $uploaded['error'] : 'Không thể lưu file ảnh đã upload.'], 500);
+    if (!is_array($uploaded) || !empty($uploaded['error']) || empty($uploaded['file'])) {
+        wp_send_json_error(['message' => !empty($uploaded['error']) ? (string) $uploaded['error'] : 'Không thể lưu file ảnh đã upload.'], 500);
     }
     $attachment_id = wp_insert_attachment([
         'post_mime_type' => (string) ($uploaded['type'] ?? 'image/jpeg'),
@@ -7955,7 +8060,7 @@ function aitrongcay_upload_photo_attachment_ajax(): void
         'post_status' => 'inherit',
         'post_author' => get_current_user_id(),
     ], (string) $uploaded['file']);
-    if (is_wp_error($attachment_id) || ! $attachment_id) {
+    if (is_wp_error($attachment_id) || !$attachment_id) {
         wp_send_json_error(['message' => is_wp_error($attachment_id) ? $attachment_id->get_error_message() : 'Không tạo được attachment ảnh.'], 500);
     }
     $attach_data = wp_generate_attachment_metadata($attachment_id, (string) $uploaded['file']);
@@ -7967,7 +8072,7 @@ function aitrongcay_upload_photo_attachment_ajax(): void
     wp_update_post(['ID' => $attachment_id, 'post_title' => 'Ảnh ' . strtoupper($pot_code) . ' · ' . wp_date('H:i')]);
     aitrongcay_upsert_db_pot($garden_key, array_merge($pot_record, ['pot_code' => $pot_code, 'code' => $pot_code, 'pot_name' => $pot_name !== '' ? $pot_name : (string) ($pot_record['pot_name'] ?? $pot_code), 'name' => $pot_name !== '' ? $pot_name : (string) ($pot_record['name'] ?? $pot_code)]));
     $updated_latest = aitrongcay_set_latest_pot_photo($garden_key, $pot_code, $attachment_id);
-    if (! $updated_latest) {
+    if (!$updated_latest) {
         wp_send_json_error(['message' => 'Ảnh đã upload nhưng chưa gắn được vào ảnh mới nhất của khoang. Em đã chặn để tránh báo thành công giả.'], 500);
     }
     $preview_url = aitrongcay_landscape_preview_url($attachment_id);
@@ -7987,7 +8092,7 @@ add_action('wp_ajax_aitrongcay_upload_photo_attachment', 'aitrongcay_upload_phot
 
 function aitrongcay_upload_photo_attachment_submit(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -8000,7 +8105,7 @@ function aitrongcay_upload_photo_attachment_submit(): void
     if ($pot_code !== '') {
         $redirect .= '#photo-' . strtolower($pot_code);
     }
-    if (empty($_FILES['photo']) || $garden_key === '' || $pot_code === '' || ! aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
+    if (empty($_FILES['photo']) || $garden_key === '' || $pot_code === '' || !aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
         wp_safe_redirect(add_query_arg('photo_upload', 'failed', $redirect));
         exit;
     }
@@ -8012,7 +8117,7 @@ function aitrongcay_upload_photo_attachment_submit(): void
             break;
         }
     }
-    if (! is_array($pot_record)) {
+    if (!is_array($pot_record)) {
         $pot_record = [
             'pot_code' => $pot_code,
             'code' => $pot_code,
@@ -8023,7 +8128,7 @@ function aitrongcay_upload_photo_attachment_submit(): void
     require_once ABSPATH . 'wp-admin/includes/file.php';
     require_once ABSPATH . 'wp-admin/includes/image.php';
     $uploaded = wp_handle_upload($_FILES['photo'], ['test_form' => false]);
-    if (! is_array($uploaded) || ! empty($uploaded['error']) || empty($uploaded['file'])) {
+    if (!is_array($uploaded) || !empty($uploaded['error']) || empty($uploaded['file'])) {
         wp_safe_redirect(add_query_arg('photo_upload', 'failed', $redirect));
         exit;
     }
@@ -8033,7 +8138,7 @@ function aitrongcay_upload_photo_attachment_submit(): void
         'post_status' => 'inherit',
         'post_author' => get_current_user_id(),
     ], (string) $uploaded['file']);
-    if (is_wp_error($attachment_id) || ! $attachment_id) {
+    if (is_wp_error($attachment_id) || !$attachment_id) {
         wp_safe_redirect(add_query_arg('photo_upload', 'failed', $redirect));
         exit;
     }
@@ -8053,17 +8158,17 @@ add_action('admin_post_aitrongcay_upload_photo_submit', 'aitrongcay_upload_photo
 
 function aitrongcay_food_safety_heuristic_counts(string $file_path): array
 {
-    if (! function_exists('getimagesize') || ! function_exists('imagecreatefromstring')) {
+    if (!function_exists('getimagesize') || !function_exists('imagecreatefromstring')) {
         return [];
     }
 
     $blob = @file_get_contents($file_path);
-    if (! is_string($blob) || $blob === '') {
+    if (!is_string($blob) || $blob === '') {
         return [];
     }
 
     $image = @imagecreatefromstring($blob);
-    if (! $image) {
+    if (!$image) {
         return [];
     }
 
@@ -8192,7 +8297,7 @@ function aitrongcay_food_safety_build_analysis(int $attachment_id): array
 
     $cholera_hint = '';
     foreach ($items as $item) {
-        if (! empty($item['possible_match']) && (string) $item['possible_match'] === 'Vibrio cholerae (khuẩn tả)' && (int) ($item['count'] ?? 0) > 0) {
+        if (!empty($item['possible_match']) && (string) $item['possible_match'] === 'Vibrio cholerae (khuẩn tả)' && (int) ($item['count'] ?? 0) > 0) {
             $cholera_hint = ' Trong ảnh có nhóm khuẩn lạc vàng, nên hệ thống đã gắn thêm tham chiếu TCBS agar cho Vibrio cholerae (khuẩn tả): khuẩn lạc vàng, dẹt, thường khoảng 2–3 mm.';
             break;
         }
@@ -8200,7 +8305,7 @@ function aitrongcay_food_safety_build_analysis(int $attachment_id): array
 
     $highlight = null;
     foreach ($items as $item) {
-        if (! empty($item['risk_flag']) && (int) ($item['count'] ?? 0) > 0) {
+        if (!empty($item['risk_flag']) && (int) ($item['count'] ?? 0) > 0) {
             $highlight = [
                 'title' => (string) $item['risk_flag'],
                 'match' => (string) ($item['possible_match'] ?? ''),
@@ -8214,7 +8319,7 @@ function aitrongcay_food_safety_build_analysis(int $attachment_id): array
         }
     }
 
-    if (! $highlight && ! empty($items[0])) {
+    if (!$highlight && !empty($items[0])) {
         $top = $items[0];
         $highlight = [
             'title' => (string) ($top['status_label'] ?? 'Cần test xác nhận'),
@@ -8257,7 +8362,7 @@ function aitrongcay_save_food_safety_scan(int $attachment_id, array $analysis): 
         'post_content' => (string) ($analysis['summary'] ?? ''),
     ], true);
 
-    if (is_wp_error($post_id) || ! $post_id) {
+    if (is_wp_error($post_id) || !$post_id) {
         return 0;
     }
 
@@ -8283,7 +8388,7 @@ function aitrongcay_get_food_safety_scans(int $limit = 12): array
     $items = [];
     foreach ($posts as $post) {
         $payload = json_decode((string) get_post_meta($post->ID, '_aitrongcay_food_scan_payload', true), true);
-        if (! is_array($payload)) {
+        if (!is_array($payload)) {
             continue;
         }
         $payload['scan_id'] = (int) $post->ID;
@@ -8297,7 +8402,7 @@ function aitrongcay_upload_food_safety_image_ajax(): void
 {
     check_ajax_referer('aitrongcay_portal_actions', 'nonce');
 
-    if (empty($_FILES['food_safety_image']) || ! is_array($_FILES['food_safety_image'])) {
+    if (empty($_FILES['food_safety_image']) || !is_array($_FILES['food_safety_image'])) {
         wp_send_json_error(['message' => 'Chưa nhận được ảnh tải lên.'], 400);
     }
 
@@ -8306,7 +8411,7 @@ function aitrongcay_upload_food_safety_image_ajax(): void
     require_once ABSPATH . 'wp-admin/includes/image.php';
 
     $attachment_id = media_handle_upload('food_safety_image', 0);
-    if (is_wp_error($attachment_id) || ! $attachment_id) {
+    if (is_wp_error($attachment_id) || !$attachment_id) {
         wp_send_json_error(['message' => 'Không tải được ảnh lên hệ thống.'], 500);
     }
 
@@ -8343,7 +8448,7 @@ add_action('wp_ajax_nopriv_aitrongcay_analyze_food_safety_image', 'aitrongcay_an
 function aitrongcay_analyze_latest_pot_photo_ajax(): void
 {
     aitrongcay_require_portal_nonce();
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Anh/chị cần đăng nhập để phân tích ảnh.'], 403);
     }
     $user = wp_get_current_user();
@@ -8352,7 +8457,7 @@ function aitrongcay_analyze_latest_pot_photo_ajax(): void
     if ($garden_key === '' || $pot_code === '') {
         wp_send_json_error(['message' => 'Thiếu thông tin chậu cần phân tích.'], 400);
     }
-    if (! aitrongcay_user_can_view_garden($garden_key, (int) $user->ID)) {
+    if (!aitrongcay_user_can_view_garden($garden_key, (int) $user->ID)) {
         wp_send_json_error(['message' => 'Anh/chị chưa có quyền phân tích chậu này.'], 403);
     }
     $pot_record = null;
@@ -8362,11 +8467,11 @@ function aitrongcay_analyze_latest_pot_photo_ajax(): void
             break;
         }
     }
-    if (! is_array($pot_record)) {
+    if (!is_array($pot_record)) {
         wp_send_json_error(['message' => 'Không tìm thấy chậu cần phân tích.'], 404);
     }
     $photo_context = aitrongcay_get_same_day_pot_photo_context($garden_key, $pot_code);
-    if (! $photo_context) {
+    if (!$photo_context) {
         wp_send_json_error(['message' => 'Chậu này chưa có ảnh mới nhất để phân tích.'], 400);
     }
     $analysis = aitrongcay_generate_pot_analysis($pot_record, $photo_context);
@@ -8384,7 +8489,7 @@ function aitrongcay_toggle_market_like_ajax(): void
     aitrongcay_require_portal_nonce();
     $post_id = absint($_POST['post_id'] ?? 0);
     $post = get_post($post_id);
-    if (! $post || $post->post_type !== 'aitr_market_post') {
+    if (!$post || $post->post_type !== 'aitr_market_post') {
         wp_send_json_error(['message' => 'Không tìm thấy tin đăng.'], 404);
     }
     $user_id = get_current_user_id();
@@ -8409,7 +8514,7 @@ function aitrongcay_send_friend_request_ajax(): void
     $target = sanitize_text_field((string) ($_POST['target'] ?? ''));
     $current_user_id = get_current_user_id();
     $target_user = is_email($target) ? get_user_by('email', $target) : get_user_by('login', $target);
-    if (! $target_user instanceof WP_User) {
+    if (!$target_user instanceof WP_User) {
         wp_send_json_error(['message' => 'Không tìm thấy người dùng.'], 404);
     }
     if ((int) $target_user->ID === $current_user_id) {
@@ -8440,7 +8545,7 @@ function aitrongcay_accept_friend_request_ajax(): void
     $id = isset($_POST['friendship_id']) ? (int) $_POST['friendship_id'] : 0;
     $table = aitrongcay_friendships_table();
     $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d LIMIT 1", $id), ARRAY_A);
-    if (! is_array($row) || (int) $row['addressee_user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'pending') {
+    if (!is_array($row) || (int) $row['addressee_user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'pending') {
         wp_send_json_error(['message' => 'Không tìm thấy lời mời hợp lệ.'], 404);
     }
     $wpdb->update($table, [
@@ -8458,7 +8563,7 @@ function aitrongcay_reject_friend_request_ajax(): void
     $id = isset($_POST['friendship_id']) ? (int) $_POST['friendship_id'] : 0;
     $table = aitrongcay_friendships_table();
     $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d LIMIT 1", $id), ARRAY_A);
-    if (! is_array($row) || (int) $row['addressee_user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'pending') {
+    if (!is_array($row) || (int) $row['addressee_user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'pending') {
         wp_send_json_error(['message' => 'Không tìm thấy lời mời hợp lệ.'], 404);
     }
     $wpdb->update($table, [
@@ -8489,7 +8594,7 @@ function aitrongcay_remove_friend_ajax(): void
         $current_user_id
     ), ARRAY_A);
 
-    if (! is_array($row)) {
+    if (!is_array($row)) {
         wp_send_json_error(['message' => 'Không tìm thấy kết nối hàng xóm để hủy.'], 404);
     }
 
@@ -8589,7 +8694,7 @@ function aitrongcay_reject_friend_request_url(int $friendship_id, string $redire
 
 function aitrongcay_friend_toggle_share_submit(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -8601,13 +8706,13 @@ function aitrongcay_friend_toggle_share_submit(): void
 
     check_admin_referer('aitrongcay_friend_toggle_share_' . $friend_user_id . '_' . $membership_id . '_' . $role);
 
-    if (! in_array($role, ['co_owner', 'viewer'], true) || $friend_user_id <= 0) {
+    if (!in_array($role, ['co_owner', 'viewer'], true) || $friend_user_id <= 0) {
         wp_safe_redirect(add_query_arg('friend_action', 'invalid', $redirect_to));
         exit;
     }
 
     global $wpdb;
-    
+
     // Explicitly check for the garden_key we want to share, otherwise fallback to primary owned
     $garden_key = isset($_GET['garden_key']) ? sanitize_text_field((string) wp_unslash($_GET['garden_key'])) : '';
     if ($garden_key === '') {
@@ -8622,7 +8727,7 @@ function aitrongcay_friend_toggle_share_submit(): void
     $table = aitrongcay_garden_members_table();
     if ($membership_id > 0) {
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d LIMIT 1", $membership_id), ARRAY_A);
-        if (! is_array($row) || $row['garden_key'] !== $garden_key) {
+        if (!is_array($row) || $row['garden_key'] !== $garden_key) {
             // If membership_id belongs to a different garden or not found, treat as new insert
             $membership_id = 0;
         }
@@ -8673,7 +8778,7 @@ add_action('admin_post_aitrongcay_friend_toggle_share', 'aitrongcay_friend_toggl
 
 function aitrongcay_remove_friend_direct_submit(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -8699,7 +8804,7 @@ function aitrongcay_remove_friend_direct_submit(): void
         $current_user_id
     ), ARRAY_A);
 
-    if (! is_array($row)) {
+    if (!is_array($row)) {
         wp_safe_redirect(add_query_arg('friend_action', 'notfound', $redirect_to));
         exit;
     }
@@ -8732,7 +8837,7 @@ add_action('admin_post_aitrongcay_remove_friend_direct', 'aitrongcay_remove_frie
 
 function aitrongcay_send_friend_request_direct_submit(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -8754,10 +8859,10 @@ function aitrongcay_send_friend_request_direct_submit(): void
     global $wpdb;
     $current_user_id = get_current_user_id();
     $target_user = get_user_by('login', $target);
-    if (! $target_user instanceof WP_User && is_email($target)) {
+    if (!$target_user instanceof WP_User && is_email($target)) {
         $target_user = get_user_by('email', $target);
     }
-    if (! $target_user instanceof WP_User || (int) $target_user->ID === $current_user_id) {
+    if (!$target_user instanceof WP_User || (int) $target_user->ID === $current_user_id) {
         wp_safe_redirect(add_query_arg('friend_action', 'notfound', $redirect_to));
         exit;
     }
@@ -8786,7 +8891,7 @@ add_action('admin_post_aitrongcay_send_friend_request_direct', 'aitrongcay_send_
 
 function aitrongcay_cancel_friend_request_direct_submit(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -8814,7 +8919,7 @@ function aitrongcay_cancel_friend_request_direct_submit(): void
         $friend_user_id
     ), ARRAY_A);
 
-    if (! is_array($row)) {
+    if (!is_array($row)) {
         wp_safe_redirect(add_query_arg('friend_action', 'notfound', $redirect_to));
         exit;
     }
@@ -8827,7 +8932,7 @@ add_action('admin_post_aitrongcay_cancel_friend_request_direct', 'aitrongcay_can
 
 function aitrongcay_accept_friend_request_direct_submit(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -8839,7 +8944,7 @@ function aitrongcay_accept_friend_request_direct_submit(): void
 
     $table = aitrongcay_friendships_table();
     $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d LIMIT 1", $friendship_id), ARRAY_A);
-    if (! is_array($row) || (int) $row['addressee_user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'pending') {
+    if (!is_array($row) || (int) $row['addressee_user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'pending') {
         wp_safe_redirect(add_query_arg('friend_action', 'notfound', $redirect_to));
         exit;
     }
@@ -8856,7 +8961,7 @@ add_action('admin_post_aitrongcay_accept_friend_request_direct', 'aitrongcay_acc
 
 function aitrongcay_reject_friend_request_direct_submit(): void
 {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_safe_redirect(home_url('/dang-nhap/?auth_status=login-required'));
         exit;
     }
@@ -8868,7 +8973,7 @@ function aitrongcay_reject_friend_request_direct_submit(): void
 
     $table = aitrongcay_friendships_table();
     $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d LIMIT 1", $friendship_id), ARRAY_A);
-    if (! is_array($row) || (int) $row['addressee_user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'pending') {
+    if (!is_array($row) || (int) $row['addressee_user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'pending') {
         wp_safe_redirect(add_query_arg('friend_action', 'notfound', $redirect_to));
         exit;
     }
@@ -8893,7 +8998,7 @@ function aitrongcay_invite_garden_member_ajax(): void
     }
     $user_id = isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
     $role = sanitize_key((string) ($_POST['role'] ?? 'viewer'));
-    if (! in_array($role, ['co_owner', 'viewer'], true)) {
+    if (!in_array($role, ['co_owner', 'viewer'], true)) {
         wp_send_json_error(['message' => 'Vai trò không hợp lệ.'], 400);
     }
     if ($user_id <= 0 || $user_id === get_current_user_id()) {
@@ -8921,7 +9026,7 @@ function aitrongcay_invite_garden_member_ajax(): void
         'updated_at' => current_time('mysql'),
     ];
 
-    if (is_array($existing) && ! empty($existing['id'])) {
+    if (is_array($existing) && !empty($existing['id'])) {
         $wpdb->update($table, $payload, ['id' => (int) $existing['id']], ['%s', '%s', '%d', '%s'], ['%d']);
     } else {
         $wpdb->insert($table, array_merge([
@@ -8950,7 +9055,7 @@ function aitrongcay_accept_garden_invite_ajax(): void
     $id = isset($_POST['membership_id']) ? (int) $_POST['membership_id'] : 0;
     $table = aitrongcay_garden_members_table();
     $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d LIMIT 1", $id), ARRAY_A);
-    if (! is_array($row) || (int) $row['user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'invited') {
+    if (!is_array($row) || (int) $row['user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'invited') {
         wp_send_json_error(['message' => 'Không tìm thấy lời mời hợp lệ.'], 404);
     }
     $wpdb->update($table, [
@@ -8970,7 +9075,7 @@ function aitrongcay_decline_garden_invite_ajax(): void
     $id = isset($_POST['membership_id']) ? (int) $_POST['membership_id'] : 0;
     $table = aitrongcay_garden_members_table();
     $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d LIMIT 1", $id), ARRAY_A);
-    if (! is_array($row) || (int) $row['user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'invited') {
+    if (!is_array($row) || (int) $row['user_id'] !== get_current_user_id() || ($row['status'] ?? '') !== 'invited') {
         wp_send_json_error(['message' => 'Không tìm thấy lời mời hợp lệ.'], 404);
     }
     $wpdb->update($table, [
@@ -8987,12 +9092,12 @@ function aitrongcay_update_garden_member_role_ajax(): void
     global $wpdb;
     $membership_id = isset($_POST['membership_id']) ? (int) $_POST['membership_id'] : 0;
     $role = sanitize_key((string) ($_POST['role'] ?? 'viewer'));
-    if (! in_array($role, ['co_owner', 'viewer'], true)) {
+    if (!in_array($role, ['co_owner', 'viewer'], true)) {
         wp_send_json_error(['message' => 'Vai trò không hợp lệ.'], 400);
     }
     $table = aitrongcay_garden_members_table();
     $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d LIMIT 1", $membership_id), ARRAY_A);
-    if (! is_array($row)) {
+    if (!is_array($row)) {
         wp_send_json_error(['message' => 'Không tìm thấy thành viên.'], 404);
     }
     if (aitrongcay_user_garden_role((string) $row['garden_key'], get_current_user_id()) !== 'owner') {
@@ -9016,7 +9121,7 @@ function aitrongcay_remove_garden_member_ajax(): void
     $membership_id = isset($_POST['membership_id']) ? (int) $_POST['membership_id'] : 0;
     $table = aitrongcay_garden_members_table();
     $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d LIMIT 1", $membership_id), ARRAY_A);
-    if (! is_array($row)) {
+    if (!is_array($row)) {
         wp_send_json_error(['message' => 'Không tìm thấy thành viên.'], 404);
     }
     if (aitrongcay_user_garden_role((string) $row['garden_key'], get_current_user_id()) !== 'owner') {
@@ -9037,7 +9142,7 @@ function aitrongcay_apply_pending_rack3_mapping(): void
         return;
     }
 
-    if (! function_exists('aitrongcay_get_saved_blynk_configs') || ! function_exists('aitrongcay_save_blynk_configs') || ! function_exists('aitrongcay_blynk_default_config') || ! function_exists('aitrongcay_list_racks')) {
+    if (!function_exists('aitrongcay_get_saved_blynk_configs') || !function_exists('aitrongcay_save_blynk_configs') || !function_exists('aitrongcay_blynk_default_config') || !function_exists('aitrongcay_list_racks')) {
         return;
     }
 
@@ -9048,7 +9153,7 @@ function aitrongcay_apply_pending_rack3_mapping(): void
             break;
         }
     }
-    if (! is_array($rack)) {
+    if (!is_array($rack)) {
         return;
     }
 
@@ -9097,33 +9202,33 @@ function aitrongcay_apply_pending_rack3_mapping(): void
 }
 add_action('init', 'aitrongcay_apply_pending_rack3_mapping', 80);
 // ─── AJAX: Resolve Robot Node to Garden & Pot ─────────────────────────────────
-add_action('wp_ajax_aitrongcay_resolve_robot_node', function() {
+add_action('wp_ajax_aitrongcay_resolve_robot_node', function () {
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Permission denied');
     }
-    
+
     $cmd = sanitize_text_field($_POST['command'] ?? '');
     if (strlen($cmd) !== 5) {
         wp_send_json_error('Invalid command');
     }
-    
+
     $node = substr($cmd, 0, 3); // N01
     $tier = substr($cmd, 3, 2); // H0
-    
+
     $nodeNum = (int) substr($node, 1);
     $rackIndex = floor($nodeNum / 3);
-    
+
     $trayIndex = (int) substr($tier, 1);
     $slotIndex = $trayIndex + 1; // 1-based
-    
+
     global $wpdb;
     $rack_table = $wpdb->prefix . 'aitr_garden_racks';
     $slot_table = $wpdb->prefix . 'aitr_garden_rack_slots';
-    
+
     // Racks are physically ordered, we assume ID or chronological order.
     $racks = $wpdb->get_results("SELECT * FROM {$rack_table} ORDER BY id ASC", ARRAY_A);
     $target_rack = $racks[$rackIndex] ?? null;
-    
+
     if (!$target_rack) {
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Permission denied for unassigned rack');
@@ -9134,15 +9239,15 @@ add_action('wp_ajax_aitrongcay_resolve_robot_node', function() {
         ]);
         return;
     }
-    
+
     $garden_key = $target_rack['garden_key'] ?? '';
-    
+
     if (!current_user_can('manage_options')) {
         if ($garden_key === '' || !aitrongcay_user_can_control_garden($garden_key, get_current_user_id())) {
             wp_send_json_error('Permission denied for this garden');
         }
     }
-    
+
     // Find slot
     $pot_code = sprintf('P-%03d', $slotIndex);
     if ($target_rack['id']) {
@@ -9151,7 +9256,7 @@ add_action('wp_ajax_aitrongcay_resolve_robot_node', function() {
             $pot_code = $slot['pot_code'];
         }
     }
-    
+
     wp_send_json_success([
         'garden_key' => $garden_key,
         'pot_code' => $pot_code
@@ -9160,7 +9265,8 @@ add_action('wp_ajax_aitrongcay_resolve_robot_node', function() {
 
 add_action('wp_ajax_aitrongcay_dismiss_notice', 'aitrongcay_dismiss_notice');
 add_action('wp_ajax_nopriv_aitrongcay_dismiss_notice', 'aitrongcay_dismiss_notice');
-function aitrongcay_dismiss_notice() {
+function aitrongcay_dismiss_notice()
+{
     $id = sanitize_text_field($_GET['id'] ?? '');
     $garden_key = sanitize_text_field($_GET['garden_key'] ?? '');
     if ($id && $garden_key) {
@@ -9177,7 +9283,8 @@ function aitrongcay_dismiss_notice() {
 }
 
 add_filter('comment_post_redirect', function ($location, $comment) {
-    if (empty($comment->comment_post_ID)) return $location;
+    if (empty($comment->comment_post_ID))
+        return $location;
     $post = get_post($comment->comment_post_ID);
     if ($post && $post->post_type === 'aitr_market_post') {
         $referer = wp_get_referer();
@@ -9196,7 +9303,7 @@ add_filter('comment_post_redirect', function ($location, $comment) {
     return $location;
 }, 10, 2);
 
-add_action('wp_ajax_aitrongcay_water_friend_garden', function() {
+add_action('wp_ajax_aitrongcay_water_friend_garden', function () {
     $current_user_id = get_current_user_id();
     if (!$current_user_id) {
         wp_send_json_error(['message' => 'Bạn cần đăng nhập.']);
@@ -9205,7 +9312,7 @@ add_action('wp_ajax_aitrongcay_water_friend_garden', function() {
     if (!$friend_id) {
         wp_send_json_error(['message' => 'Lỗi xác định hàng xóm.']);
     }
-    
+
     // Ensure they are actually friends
     $is_friend = false;
     $friends = aitrongcay_get_user_friends($current_user_id);
@@ -9218,22 +9325,22 @@ add_action('wp_ajax_aitrongcay_water_friend_garden', function() {
     if (!$is_friend) {
         wp_send_json_error(['message' => 'Chỉ có thể tưới nước cho hàng xóm đã kết nối.']);
     }
-    
+
     // Rate limit: 3 times per day TOTAL, and max 1 time per friend per day
     $today = current_time('Ymd');
     $daily_waters_key = "_aitrongcay_daily_waters_count_{$today}";
     $daily_waters_count = (int) get_user_meta($current_user_id, $daily_waters_key, true);
-    
+
     if ($daily_waters_count >= 3) {
         wp_send_json_error(['message' => 'Hôm nay bạn đã hết 3 lượt tưới nước hộ hàng xóm rồi. Hãy quay lại vào ngày mai nhé!']);
     }
-    
+
     $last_water_friend_key = "_aitrongcay_watered_{$friend_id}_{$today}";
     $has_watered_friend = get_user_meta($current_user_id, $last_water_friend_key, true);
     if ($has_watered_friend) {
         wp_send_json_error(['message' => 'Hôm nay bạn đã tưới nước cho vườn này rồi!']);
     }
-    
+
     update_user_meta($current_user_id, $last_water_friend_key, 1);
     update_user_meta($current_user_id, $daily_waters_key, $daily_waters_count + 1);
 
@@ -9241,56 +9348,56 @@ add_action('wp_ajax_aitrongcay_water_friend_garden', function() {
     if (function_exists('aitrongcay_add_notification')) {
         $sender = get_user_by('id', $current_user_id);
         $sender_name = $sender ? ($sender->display_name ?: $sender->user_login) : 'Một người hàng xóm';
-        
+
         $msg_title = '💦 Tưới nước hộ';
         $msg_body = 'Hàng xóm <b>' . esc_html($sender_name) . '</b> vừa ghé thăm và tặng 1 gáo nước mát cho khu vườn của bạn trên ứng dụng!';
-        
+
         aitrongcay_add_notification(
             $friend_id,
             $msg_title,
             $msg_body,
             home_url('/portal/hang-xom/')
         );
-        
+
         // Push to Email if enabled (remind them of their REAL plants)
         $friend_user = get_user_by('id', $friend_id);
         $wants_email = (string) get_user_meta($friend_id, 'aitrongcay_notify_email', true) !== '0';
-        
+
         if ($friend_user && $wants_email) {
             $email_subject = '[Ai trồng cây] Hàng xóm vừa ghé thăm khu vườn của bạn!';
             $email_content = "Chào " . ($friend_user->display_name ?: 'bạn') . ",\n\n"
-                           . "Hàng xóm " . $sender_name . " vừa ghé thăm và tưới nước ảo cho khu vườn của bạn.\n"
-                           . "Hành động này mang ý nghĩa nhắc nhở: Những chậu cây thật của bạn ngoài đời có đang khát nước không? Đừng quên ra thăm và tưới cho chúng nhé!\n\n"
-                           . "Xem chi tiết tại: " . home_url('/portal/hang-xom/');
+                . "Hàng xóm " . $sender_name . " vừa ghé thăm và tưới nước ảo cho khu vườn của bạn.\n"
+                . "Hành động này mang ý nghĩa nhắc nhở: Những chậu cây thật của bạn ngoài đời có đang khát nước không? Đừng quên ra thăm và tưới cho chúng nhé!\n\n"
+                . "Xem chi tiết tại: " . home_url('/portal/hang-xom/');
             wp_mail($friend_user->user_email, $email_subject, $email_content);
         }
     }
-    
+
     // Track watered count for the receiver's garden
     $watered_count = (int) get_user_meta($friend_id, '_aitrongcay_garden_watered_count', true);
     update_user_meta($friend_id, '_aitrongcay_garden_watered_count', $watered_count + 1);
-    
+
     // Track helpful count for the sender
     $helpful_count = (int) get_user_meta($current_user_id, '_aitrongcay_helpful_water_count', true);
     update_user_meta($current_user_id, '_aitrongcay_helpful_water_count', $helpful_count + 1);
-    
+
     // Add 10 Eco Points
     $points = 10;
     $current_points = (int) get_user_meta($current_user_id, '_aitrongcay_eco_points', true);
     update_user_meta($current_user_id, '_aitrongcay_eco_points', $current_points + $points);
-    
+
     wp_send_json_success(['message' => 'Tưới nước thành công!', 'points' => $points]);
 });
 
 /**
  * Gamification functions for Eco Points
  */
-add_action('wp_ajax_aitrongcay_complete_daily_mission', function() {
+add_action('wp_ajax_aitrongcay_complete_daily_mission', function () {
     $user_id = get_current_user_id();
     if (!$user_id) {
         wp_send_json_error(['message' => 'Bạn cần đăng nhập.']);
     }
-    
+
     // Nonce check can be added if needed, skipping for brevity in this internal API
     $mission_id = sanitize_key((string) ($_POST['mission_id'] ?? ''));
     if (!$mission_id) {
@@ -9300,7 +9407,7 @@ add_action('wp_ajax_aitrongcay_complete_daily_mission', function() {
     $today = current_time('Ymd');
     $progress_key = "_aitrongcay_daily_{$mission_id}_{$today}";
     $current_progress = (int) get_user_meta($user_id, $progress_key, true);
-    
+
     // Modular event dispatcher for missions
     $mission_data = apply_filters('aitrongcay_daily_mission_data', false, $mission_id, $user_id);
     if (!is_array($mission_data) || !isset($mission_data['points'], $mission_data['max'], $mission_data['message'])) {
@@ -9308,15 +9415,15 @@ add_action('wp_ajax_aitrongcay_complete_daily_mission', function() {
     }
 
     $points = (int) $mission_data['points'];
-    $max    = (int) $mission_data['max'];
-    $msg    = (string) $mission_data['message'];
+    $max = (int) $mission_data['max'];
+    $msg = (string) $mission_data['message'];
 
     if ($current_progress >= $max) {
         wp_send_json_error(['message' => 'Bạn đã hoàn thành tối đa nhiệm vụ này trong hôm nay rồi!']);
     }
 
     update_user_meta($user_id, $progress_key, $current_progress + 1);
-    
+
     // Add points
     $current_points = (int) get_user_meta($user_id, '_aitrongcay_eco_points', true);
     update_user_meta($user_id, '_aitrongcay_eco_points', $current_points + $points);
@@ -9328,11 +9435,11 @@ add_action('wp_ajax_aitrongcay_complete_daily_mission', function() {
     wp_send_json_success(['message' => $msg, 'points' => $points, 'current' => $current_progress + 1, 'max' => $max, 'total_points' => $total_points]);
 });
 
-add_filter('aitrongcay_daily_mission_data', function($data, $mission_id, $user_id) {
+add_filter('aitrongcay_daily_mission_data', function ($data, $mission_id, $user_id) {
     if ($data !== false) {
         return $data;
     }
-    
+
     // Modular registry for simple static missions
     $missions = apply_filters('aitrongcay_daily_missions_registry', [
         'chup_anh' => [
@@ -9346,17 +9453,19 @@ add_filter('aitrongcay_daily_mission_data', function($data, $mission_id, $user_i
             'message' => 'Bạn nhận được +50đ từ nhiệm vụ Thu hoạch rau!'
         ]
     ]);
-    
+
     if (isset($missions[$mission_id])) {
         return $missions[$mission_id];
     }
-    
+
     // Dynamic dispatcher for complex missions
     return apply_filters("aitrongcay_daily_mission_{$mission_id}_data", $data, $user_id);
 }, 10, 3);
 
-function aitrongcay_daily_login_bonus(): void {
-    if (!is_user_logged_in() || is_admin() || wp_doing_ajax()) return;
+function aitrongcay_daily_login_bonus(): void
+{
+    if (!is_user_logged_in() || is_admin() || wp_doing_ajax())
+        return;
     $user_id = get_current_user_id();
     $today = current_time('Ymd');
     $last_login = get_user_meta($user_id, '_aitrongcay_last_login_date', true);
@@ -9364,7 +9473,7 @@ function aitrongcay_daily_login_bonus(): void {
         update_user_meta($user_id, '_aitrongcay_last_login_date', $today);
         $points = (int) get_user_meta($user_id, '_aitrongcay_eco_points', true);
         update_user_meta($user_id, '_aitrongcay_eco_points', $points + 5);
-        
+
         if (function_exists('aitrongcay_add_notification')) {
             aitrongcay_add_notification(
                 $user_id,
@@ -9378,7 +9487,7 @@ function aitrongcay_daily_login_bonus(): void {
 add_action('wp', 'aitrongcay_daily_login_bonus');
 
 // ─── Referral Gamification ───────────────────────────────────────────────────
-add_action('init', function() {
+add_action('init', function () {
     if (isset($_GET['ref']) && !is_user_logged_in()) {
         $ref_id = (int) $_GET['ref'];
         if ($ref_id > 0) {
@@ -9387,17 +9496,17 @@ add_action('init', function() {
     }
 });
 
-add_action('user_register', function($user_id) {
+add_action('user_register', function ($user_id) {
     if (isset($_COOKIE['aitrongcay_ref'])) {
         $referrer_id = (int) $_COOKIE['aitrongcay_ref'];
         if ($referrer_id > 0 && $referrer_id !== $user_id) {
             // Reward the referrer
             $total_referrals = (int) get_user_meta($referrer_id, '_aitrongcay_total_referrals', true);
             update_user_meta($referrer_id, '_aitrongcay_total_referrals', $total_referrals + 1);
-            
+
             $current_points = (int) get_user_meta($referrer_id, '_aitrongcay_eco_points', true);
             update_user_meta($referrer_id, '_aitrongcay_eco_points', $current_points + 100);
-            
+
             if (function_exists('aitrongcay_add_notification')) {
                 aitrongcay_add_notification(
                     $referrer_id,
@@ -9406,7 +9515,7 @@ add_action('user_register', function($user_id) {
                     home_url('/portal/doi-diem/')
                 );
             }
-            
+
             // Link them as friends automatically
             $table = aitrongcay_friendships_table();
             $pair_key = function_exists('aitrongcay_friend_pair_key') ? aitrongcay_friend_pair_key($referrer_id, $user_id) : min($referrer_id, $user_id) . '_' . max($referrer_id, $user_id);
@@ -9423,51 +9532,55 @@ add_action('user_register', function($user_id) {
     }
 });
 
-function aitrongcay_calculate_level(int $points): int {
+function aitrongcay_calculate_level(int $points): int
+{
     // RPG curve: Points = 50 * L * (L-1)
     // L=1(0pts), L=2(100pts), L=3(300pts), L=4(600pts), L=5(1000pts)...
-    $level = floor( (1 + sqrt(1 + 8 * $points / 100)) / 2 );
-    return max(1, (int)$level);
+    $level = floor((1 + sqrt(1 + 8 * $points / 100)) / 2);
+    return max(1, (int) $level);
 }
 
-function aitrongcay_points_for_level(int $level): int {
-    if ($level <= 1) return 0;
+function aitrongcay_points_for_level(int $level): int
+{
+    if ($level <= 1)
+        return 0;
     return 50 * $level * ($level - 1);
 }
 
 // ─── Eco Points: Reward Catalogue ────────────────────────────────────────────
-function aitrongcay_eco_reward_catalogue(): array {
+function aitrongcay_eco_reward_catalogue(): array
+{
     $saved = get_option('aitrongcay_eco_rewards');
     if (is_array($saved)) {
         return $saved;
     }
     return [
-        'rau_baby_mix'  => ['name' => 'Rau Baby Mix 200g',      'icon' => '🥗', 'points' => 150, 'stock' => 20],
-        'rau_cai_xanh'  => ['name' => 'Cải xanh 500g',          'icon' => '🥬', 'points' => 200, 'stock' => 15],
-        'rau_xalach'    => ['name' => 'Xà lách Romaine 300g',   'icon' => '🫛', 'points' => 180, 'stock' => 10],
-        'goi_combo_vuon'=> ['name' => 'Combo Vườn Xanh',        'icon' => '🧺', 'points' => 400, 'stock' => 5],
-        'voucher_10k'   => ['name' => 'Voucher Giảm 10.000đ',   'icon' => '🎟️', 'points' => 100, 'stock' => 99],
-        'voucher_50k'   => ['name' => 'Voucher Giảm 50.000đ',   'icon' => '🎫', 'points' => 450, 'stock' => 30],
+        'rau_baby_mix' => ['name' => 'Rau Baby Mix 200g', 'icon' => '🥗', 'points' => 150, 'stock' => 20],
+        'rau_cai_xanh' => ['name' => 'Cải xanh 500g', 'icon' => '🥬', 'points' => 200, 'stock' => 15],
+        'rau_xalach' => ['name' => 'Xà lách Romaine 300g', 'icon' => '🫛', 'points' => 180, 'stock' => 10],
+        'goi_combo_vuon' => ['name' => 'Combo Vườn Xanh', 'icon' => '🧺', 'points' => 400, 'stock' => 5],
+        'voucher_10k' => ['name' => 'Voucher Giảm 10.000đ', 'icon' => '🎟️', 'points' => 100, 'stock' => 99],
+        'voucher_50k' => ['name' => 'Voucher Giảm 50.000đ', 'icon' => '🎫', 'points' => 450, 'stock' => 30],
     ];
 }
 
 // ─── AJAX: Redeem Eco Points ─────────────────────────────────────────────────
 add_action('wp_ajax_aitrongcay_redeem_points', function (): void {
-    if (! is_user_logged_in()) {
+    if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Bạn cần đăng nhập để đổi thưởng.'], 401);
     }
 
     check_ajax_referer('aitrongcay_redeem_points', 'aitrongcay_redeem_nonce');
 
-    $user_id   = get_current_user_id();
+    $user_id = get_current_user_id();
     $reward_id = sanitize_key((string) ($_POST['reward_id'] ?? ''));
     $catalogue = aitrongcay_eco_reward_catalogue();
 
-    if (! isset($catalogue[$reward_id])) {
+    if (!isset($catalogue[$reward_id])) {
         wp_send_json_error(['message' => 'Phần thưởng không tồn tại.'], 400);
     }
 
-    $reward         = $catalogue[$reward_id];
+    $reward = $catalogue[$reward_id];
     $current_points = (int) get_user_meta($user_id, '_aitrongcay_eco_points', true);
 
     if ($current_points < $reward['points']) {
@@ -9475,10 +9588,10 @@ add_action('wp_ajax_aitrongcay_redeem_points', function (): void {
     }
 
     // Validate required fields
-    $recipient_name    = sanitize_text_field((string) ($_POST['recipient_name'] ?? ''));
-    $recipient_phone   = sanitize_text_field((string) ($_POST['recipient_phone'] ?? ''));
+    $recipient_name = sanitize_text_field((string) ($_POST['recipient_name'] ?? ''));
+    $recipient_phone = sanitize_text_field((string) ($_POST['recipient_phone'] ?? ''));
     $recipient_address = sanitize_textarea_field((string) ($_POST['recipient_address'] ?? ''));
-    $note              = sanitize_text_field((string) ($_POST['note'] ?? ''));
+    $note = sanitize_text_field((string) ($_POST['note'] ?? ''));
 
     if ($recipient_name === '' || $recipient_phone === '' || $recipient_address === '') {
         wp_send_json_error(['message' => 'Vui lòng điền đầy đủ họ tên, số điện thoại và địa chỉ.'], 400);
@@ -9489,30 +9602,30 @@ add_action('wp_ajax_aitrongcay_redeem_points', function (): void {
     update_user_meta($user_id, '_aitrongcay_eco_points', $new_points);
 
     // Save redemption history
-    $history   = (array) get_user_meta($user_id, '_aitrongcay_redeem_history', true);
+    $history = (array) get_user_meta($user_id, '_aitrongcay_redeem_history', true);
     $history[] = [
-        'id'        => uniqid('rdm_', true),
+        'id' => uniqid('rdm_', true),
         'reward_id' => $reward_id,
-        'name'      => $reward['name'],
-        'icon'      => $reward['icon'],
-        'points'    => $reward['points'],
-        'time'      => time(),
-        'status'    => 'pending',
+        'name' => $reward['name'],
+        'icon' => $reward['icon'],
+        'points' => $reward['points'],
+        'time' => time(),
+        'status' => 'pending',
         'recipient' => [
-            'name'    => $recipient_name,
-            'phone'   => $recipient_phone,
+            'name' => $recipient_name,
+            'phone' => $recipient_phone,
             'address' => $recipient_address,
-            'note'    => $note,
+            'note' => $note,
         ],
     ];
     update_user_meta($user_id, '_aitrongcay_redeem_history', $history);
 
     // Notify admin via email
-    $admin_email   = get_option('admin_email');
-    $user          = get_user_by('id', $user_id);
-    $user_display  = $user instanceof WP_User ? ($user->display_name ?: $user->user_login) : "User #{$user_id}";
+    $admin_email = get_option('admin_email');
+    $user = get_user_by('id', $user_id);
+    $user_display = $user instanceof WP_User ? ($user->display_name ?: $user->user_login) : "User #{$user_id}";
     $email_subject = '[Ai trồng cây] Yêu cầu đổi thưởng mới: ' . $reward['name'];
-    $email_body    = "Có yêu cầu đổi thưởng mới!\n\n"
+    $email_body = "Có yêu cầu đổi thưởng mới!\n\n"
         . "Người dùng: {$user_display} (ID: {$user_id})\n"
         . "Phần thưởng: {$reward['icon']} {$reward['name']}\n"
         . "Điểm dùng: {$reward['points']} điểm\n"
@@ -9535,7 +9648,7 @@ add_action('wp_ajax_aitrongcay_redeem_points', function (): void {
     }
 
     wp_send_json_success([
-        'message'          => "Yêu cầu đổi {$reward['name']} đã được ghi nhận! Chúng tôi sẽ liên hệ với bạn trong vòng 24 giờ.",
+        'message' => "Yêu cầu đổi {$reward['name']} đã được ghi nhận! Chúng tôi sẽ liên hệ với bạn trong vòng 24 giờ.",
         'remaining_points' => $new_points,
     ]);
 });

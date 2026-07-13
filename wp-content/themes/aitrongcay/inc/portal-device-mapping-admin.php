@@ -869,7 +869,7 @@ function aitrongcay_render_rack_inventory_admin_page(): void
 
     $racks = function_exists('aitrongcay_list_racks') ? aitrongcay_list_racks() : [];
     $events = function_exists('aitrongcay_get_rack_inventory_events') ? aitrongcay_get_rack_inventory_events(80) : [];
-    $rack_defaults = function_exists('aitrongcay_inventory_rack_defaults') ? aitrongcay_inventory_rack_defaults() : ['rack_code' => 'RACK_1', 'rack_name' => 'Rack số 1'];
+    $rack_defaults = function_exists('aitrongcay_inventory_rack_defaults') ? aitrongcay_inventory_rack_defaults() : ['rack_code' => 'R1', 'rack_name' => 'Rack số 1'];
     $status_filter = sanitize_key((string) ($_GET['rack_status'] ?? ''));
     if ($status_filter !== '') {
         $racks = array_values(array_filter($racks, static fn(array $rack): bool => (string) ($rack['status'] ?? '') === $status_filter));
@@ -981,7 +981,7 @@ function aitrongcay_render_rack_inventory_admin_page(): void
                         <?php wp_nonce_field('aitrongcay_add_inventory_rack'); ?>
                         <input type="hidden" name="action" value="aitrongcay_add_inventory_rack">
                         <div class="aitr-form-grid">
-                            <div><label for="rack_code"><strong>Mã rack</strong></label><input class="regular-text" style="width:100%" type="text" name="rack_code" id="rack_code" value="<?php echo esc_attr((string) ($rack_defaults['rack_code'] ?? 'RACK_1')); ?>" required></div>
+                            <div><label for="rack_code"><strong>Mã rack</strong></label><input class="regular-text" style="width:100%" type="text" name="rack_code" id="rack_code" value="<?php echo esc_attr((string) ($rack_defaults['rack_code'] ?? 'R1')); ?>" required></div>
                             <div><label for="rack_name"><strong>Tên rack</strong></label><input class="regular-text" style="width:100%" type="text" name="rack_name" id="rack_name" value="<?php echo esc_attr((string) ($rack_defaults['rack_name'] ?? 'Rack số 1')); ?>"></div>
                             <div><label for="slot_count"><strong>Tổng số khoang</strong></label><input class="small-text" type="number" min="2" max="12" step="2" name="slot_count" id="slot_count" value="4" required><p class="description" style="margin:4px 0 0">2 khoang = 1 khoang, tối đa 6 khoang.</p></div>
                             <div><label for="blynk_auth_token"><strong>Auth token Blynk</strong></label><input class="regular-text" style="width:100%" type="text" name="blynk_auth_token" id="blynk_auth_token" placeholder="Nhập auth token"></div>

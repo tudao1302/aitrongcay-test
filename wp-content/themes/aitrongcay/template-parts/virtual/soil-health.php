@@ -176,7 +176,16 @@ unset($shared_top_link);
       <div class="d2-level">
         <div class="d2-level-badge">🛡</div>
         <div>
-          <div style="font-weight:800;color:var(--primary)">Level 42</div>
+          <?php
+          $_lvl = 1;
+          if (isset($current_user->ID)) {
+              $_pts = (int) get_user_meta($current_user->ID, '_aitrongcay_eco_points', true);
+              if (function_exists('aitrongcay_calculate_level')) {
+                  $_lvl = aitrongcay_calculate_level($_pts);
+              }
+          }
+          ?>
+          <div style="font-weight:800;color:var(--primary)">Level <?php echo esc_html($_lvl); ?></div>
           <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(227,227,222,.46)">
             <?php echo esc_html($owner_name); ?></div>
         </div>
@@ -323,8 +332,7 @@ unset($shared_top_link);
               // Giả lập tính toán vòng đời dựa trên thời gian tạo khoang
               $created_time = strtotime($pot['created_at'] ?? 'now');
               $days_active = max(1, round((time() - $created_time) / 86400));
-              if ($days_active < 2) $days_active = 14 + ($index * 15); // Fallback data
-              
+              // Removed fake fallback data to ensure real values are shown
               $total_days = 90; // Typical lifespan of coco peat
               $percent = min(100, round(($days_active / $total_days) * 100));
               
