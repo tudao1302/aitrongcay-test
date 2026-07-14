@@ -2558,10 +2558,12 @@ function aitrongcay_get_db_pots(string $garden_key): array
 {
     global $wpdb;
     static $cache = [];
+    file_put_contents('d:/laragon/www/aitrongcay/debug_sync.log', "ENTER aitrongcay_get_db_pots for '$garden_key'\n", FILE_APPEND);
     if ($garden_key === '') {
         return [];
     }
     if (isset($cache[$garden_key])) {
+        file_put_contents('d:/laragon/www/aitrongcay/debug_sync.log', "RETURN CACHE for '$garden_key'\n", FILE_APPEND);
         return $cache[$garden_key];
     }
     $table = aitrongcay_garden_pots_table();
@@ -2570,7 +2572,7 @@ function aitrongcay_get_db_pots(string $garden_key): array
     if (function_exists('aitrongcay_get_rack_slots')) {
         $slots = aitrongcay_get_rack_slots($garden_key);
         if (!empty($slots)) {
-            $existing_pots_data = $wpdb->get_results($wpdb->prepare("SELECT pot_code, plant_name, plant_id, video_url FROM {$table} WHERE garden_key = %s", $garden_key), ARRAY_A);
+            $existing_pots_data = $wpdb->get_results($wpdb->prepare("SELECT pot_code, plant_name, video_url FROM {$table} WHERE garden_key = %s", $garden_key), ARRAY_A);
             $existing_map = [];
             if ($existing_pots_data) {
                 foreach ($existing_pots_data as $p) {
@@ -2610,6 +2612,9 @@ function aitrongcay_get_db_pots(string $garden_key): array
                 }
             }
 
+            $pots_to_insert = [];
+            $now = current_time('mysql');
+            
             foreach ($slots as $slot) {
                 $pot_code = trim((string) ($slot['pot_code'] ?? ''));
                 if ($pot_code === '')
@@ -2634,40 +2639,49 @@ function aitrongcay_get_db_pots(string $garden_key): array
                         $slot_label = 'Khoang trống ' . $slot_index;
                     }
 
-                    aitrongcay_upsert_db_pot($garden_key, [
-                        'code' => $pot_code,
-                        'name' => $slot_label,
-                        'plant_name' => $slot_plant_name,
-                        'plant_id' => $slot_plant_id,
-                        'status' => 'Đang theo dõi',
-                        'status_summary' => 'Khoang vừa được kích hoạt, đang bắt đầu theo dõi Ngày 1.',
-                        'ai_note' => 'Khu vườn bắt đầu ghi nhận dữ liệu sinh trưởng của khoang mới.',
-                        'created_at' => current_time('mysql'),
-                        'sort_order' => (int) ($slot['slot_index'] ?? 0),
-                        'light_device' => trim((string) ($slot['control_channel'] ?? '')),
-                        'video_url' => $slot_camera
-                    ]);
-                    $existing_map[$pot_code] = ['plant_name' => $slot_plant_name, 'plant_id' => $slot_plant_id, 'video_url' => $slot_camera];
+                    $pots_to_insert[] = $wpdb->prepare(
+                        "(%s, %s, %s, %s, %s, %s, %s, %s, %d, %s, %s, %s)",
+                        $garden_key,
+                        $pot_code,
+                        $slot_label,
+                        $slot_plant_name,
+                        'Đang theo dõi',
+                        'Khoang vừa được kích hoạt, đang bắt đầu theo dõi Ngày 1.',
+                        'Khu vườn bắt đầu ghi nhận dữ liệu sinh trưởng của khoang mới.',
+                        $now,
+                        (int) ($slot['slot_index'] ?? 0),
+                        trim((string) ($slot['control_channel'] ?? '')),
+                        $slot_camera,
+                        $now
+                    );
+                    
+                    $existing_map[$pot_code] = ['plant_name' => $slot_plant_name, 'video_url' => $slot_camera];
                 } else {
                     $current_plant = trim((string) ($existing_map[$pot_code]['plant_name'] ?? ''));
-                    $current_plant_id = (int) ($existing_map[$pot_code]['plant_id'] ?? 0);
                     $current_video = trim((string) ($existing_map[$pot_code]['video_url'] ?? ''));
 
-                    if ($current_plant !== $slot_plant_name || $current_plant_id !== $slot_plant_id || $current_video !== $slot_camera) {
+                    if ($current_plant !== $slot_plant_name || $current_video !== $slot_camera) {
                         $wpdb->update(
                             $table,
                             [
                                 'plant_name' => $slot_plant_name,
-                                'plant_id' => $slot_plant_id,
                                 'video_url' => $slot_camera,
                                 'updated_at' => current_time('mysql')
                             ],
                             ['garden_key' => $garden_key, 'pot_code' => $pot_code]
                         );
                         $existing_map[$pot_code]['plant_name'] = $slot_plant_name;
-                        $existing_map[$pot_code]['plant_id'] = $slot_plant_id;
                         $existing_map[$pot_code]['video_url'] = $slot_camera;
                     }
+                }
+            }
+            
+            // Execute batch insert if there are any new pots
+            if (!empty($pots_to_insert)) {
+                $chunks = array_chunk($pots_to_insert, 200); // Tối đa 200 dòng mỗi query để không quá tải
+                foreach ($chunks as $chunk) {
+                    $values = implode(", ", $chunk);
+                    $wpdb->query("INSERT INTO {$table} (garden_key, pot_code, pot_name, plant_name, status, status_summary, ai_note, created_at, sort_order, light_device, video_url, updated_at) VALUES {$values}");
                 }
             }
         }
@@ -4394,7 +4408,7 @@ function aitrongcay_replace_rack_slots(string $garden_key, array $slots): bool
             'slot_index' => $slot_index,
             'slot_code' => (string) ($slot['slot_code'] ?? sprintf('%s-S%02d', (string) ($rack['rack_code'] ?? strtoupper($garden_key)), $slot_index)),
             'slot_name' => (string) ($slot['slot_name'] ?? ('Khoang ' . $slot_index)),
-            'pot_code' => (string) ($slot['pot_code'] ?? sprintf('P-%03d', $slot_index)),
+            'pot_code' => (string) ($slot['pot_code'] ?? sprintf('%s_S%02d', (string) ($rack['rack_code'] ?? strtoupper($garden_key)), $slot_index)),
             'camera_label' => (string) ($slot['camera_label'] ?? ''),
             'camera_stream_url' => (string) ($slot['camera_stream_url'] ?? ''),
             'control_channel' => (string) ($slot['control_channel'] ?? ('light' . $slot_index)),
@@ -4463,7 +4477,7 @@ function aitrongcay_sync_rack_from_blynk_config(string $garden_key, array $confi
             'slot_index' => $slot_index,
             'slot_code' => sprintf('%s-S%02d', $rack_code, $slot_index),
             'slot_name' => 'Khoang ' . $slot_index,
-            'pot_code' => sprintf('P-%03d', $slot_index),
+            'pot_code' => sprintf('%s_S%02d', $rack_code, $slot_index),
             'control_channel' => $device,
             'control_vpin' => (string) (($config['vpins'][$device] ?? '')),
             'is_enabled' => 1,
@@ -4783,7 +4797,7 @@ function aitrongcay_build_rack_slots_payload(string $rack_code, int $slot_count)
             'slot_index' => $i,
             'slot_code' => sprintf('%s-%s', $rack_code, (string) ($slot_meta['slot_code'] ?? sprintf('S%02d', $i))),
             'slot_name' => (string) ($slot_meta['slot_label'] ?? ('Khoang ' . $i)),
-            'pot_code' => sprintf('P-%03d', $i),
+            'pot_code' => sprintf('%s_S%02d', $rack_code, $i),
             'camera_label' => '',
             'camera_stream_url' => '',
             'control_channel' => (string) ($slot_meta['light_device'] ?? ('light' . $i)),
@@ -4814,7 +4828,7 @@ function aitrongcay_save_rack_blynk_config(string $garden_key, string $auth_toke
     }
     foreach (range(1, function_exists('aitrongcay_rack_max_slots') ? aitrongcay_rack_max_slots() : 12) as $i) {
         $light_key = 'light' . $i;
-        $pot_code = sprintf('P-%03d', $i);
+        $pot_code = sprintf('R1_S%02d', $i);
         if ($i <= $slot_count) {
             $config['vpins'][$light_key] = $config['vpins'][$light_key] ?? ('V' . (4 + $i));
             $config['devices'][$light_key] = $light_key;
@@ -4916,7 +4930,7 @@ function aitrongcay_build_merged_rack_slots_payload(array $rack, int $slot_count
             'slot_index' => $i,
             'slot_code' => (string) ($existing['slot_code'] ?? sprintf('%s-%s', $rack_code, (string) ($slot_meta['slot_code'] ?? sprintf('S%02d', $i)))),
             'slot_name' => (string) ($existing['slot_name'] ?? ($slot_meta['slot_label'] ?? ('Khoang ' . $i))),
-            'pot_code' => (string) ($existing['pot_code'] ?? sprintf('P-%03d', $i)),
+            'pot_code' => (string) ($existing['pot_code'] ?? sprintf('%s_S%02d', $rack_code, $i)),
             'camera_label' => (string) ($existing['camera_label'] ?? ''),
             'camera_stream_url' => (string) ($existing['camera_stream_url'] ?? ''),
             'control_channel' => (string) ($existing['control_channel'] ?? ($slot_meta['light_device'] ?? ('light' . $i))),
@@ -5441,7 +5455,7 @@ function aitrongcay_build_empty_placeholder_pots(string $garden_key, int $slot_c
     for ($i = 1; $i <= $slot_count; $i++) {
         $slot_meta = function_exists('aitrongcay_slot_to_compartment') ? aitrongcay_slot_to_compartment($i) : ['slot_label' => 'Khoang ' . $i];
         $pots[] = [
-            'pot_code' => sprintf('P-%03d', $i),
+            'pot_code' => sprintf('R1_S%02d', $i),
             'pot_name' => (string) ($slot_meta['slot_label'] ?? ('Khoang ' . $i)),
             'plant_name' => 'Cây chưa xác định',
             'status' => 'Đang theo dõi',
@@ -6049,13 +6063,13 @@ function aitrongcay_blynk_get_status_ajax(): void
     $cache_key = 'aitr_blynk_status_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
     $cooldown_key = 'aitr_blynk_status_cooldown_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
     $cached = get_transient($cache_key);
-    // if (is_array($cached) && isset($cached['garden_key'])) {
-    //     wp_send_json_success($cached);
-    // }
+    if (is_array($cached) && isset($cached['garden_key'])) {
+        wp_send_json_success($cached);
+    }
     $cooldown = get_transient($cooldown_key);
-    // if (is_array($cooldown) && isset($cooldown['message'])) {
-    //     wp_send_json_error($cooldown);
-    // }
+    if (is_array($cooldown) && isset($cooldown['message'])) {
+        wp_send_json_error($cooldown);
+    }
 
     $rack_configs = function_exists('aitrongcay_get_rack_monitor_configs') ? aitrongcay_get_rack_monitor_configs($garden_key) : [];
     $target_rack = $rack_configs[$req_rack_index] ?? null;
@@ -6383,6 +6397,7 @@ function aitrongcay_grant_daily_photo_points(int $user_id): int
     $last_date = get_user_meta($user_id, '_aitrongcay_last_photo_bonus_date', true);
     if ($last_date !== $today) {
         update_user_meta($user_id, '_aitrongcay_last_photo_bonus_date', $today);
+        update_user_meta($user_id, "_aitrongcay_daily_chup_anh_{$today}", 1);
         $points = (int) get_user_meta($user_id, '_aitrongcay_eco_points', true);
         update_user_meta($user_id, '_aitrongcay_eco_points', $points + 5);
 
@@ -9182,7 +9197,7 @@ function aitrongcay_apply_pending_rack3_mapping(): void
 
     foreach (range(1, 12) as $i) {
         $light_key = 'light' . $i;
-        $pot_code = sprintf('P-%03d', $i);
+        $pot_code = sprintf('R1_S%02d', $i);
         $config['vpins'][$light_key] = 'V' . (4 + $i);
         $config['devices'][$light_key] = $light_key;
         $config['pots'][$pot_code] = $light_key;
@@ -9243,7 +9258,7 @@ add_action('wp_ajax_aitrongcay_resolve_robot_node', function () {
         }
         wp_send_json_success([
             'garden_key' => '',
-            'pot_code' => sprintf('P-%03d', $slotIndex)
+            'pot_code' => sprintf('R1_S%02d', $slotIndex)
         ]);
         return;
     }
@@ -9257,7 +9272,7 @@ add_action('wp_ajax_aitrongcay_resolve_robot_node', function () {
     }
 
     // Find slot
-    $pot_code = sprintf('P-%03d', $slotIndex);
+    $pot_code = sprintf('%s_S%02d', $target_rack['rack_code'] ?? 'R1', $slotIndex);
     if ($target_rack['id']) {
         $slot = $wpdb->get_row($wpdb->prepare("SELECT pot_code FROM {$slot_table} WHERE rack_id = %d AND slot_index = %d", $target_rack['id'], $slotIndex), ARRAY_A);
         if (!empty($slot['pot_code'])) {

@@ -207,7 +207,7 @@ function aitrongcay_do_timelapse_capture(): void {
  */
 function aitrongcay_timelapse_fetch_frame(string $frame_url): ?string {
     $args     = [
-        'timeout'   => 10,
+        'timeout'   => 15,
         'sslverify' => false,
         'headers'   => [
             'ngrok-skip-browser-warning' => 'true'
@@ -216,22 +216,12 @@ function aitrongcay_timelapse_fetch_frame(string $frame_url): ?string {
     $response = wp_remote_get($frame_url, $args);
     $code     = is_wp_error($response) ? 0 : wp_remote_retrieve_response_code($response);
 
-    if ($code === 500) {
-        return null; // H.265 codec — go2rtc không encode được JPEG, dùng ISAPI fallback
+    if ($code === 200) {
+        $body = wp_remote_retrieve_body($response);
+        return strlen($body) >= 1000 ? $body : null;
     }
 
-    if ($code !== 200) {
-        // Lazy stream chưa kết nối → đợi 3s rồi retry
-        sleep(3);
-        $response = wp_remote_get($frame_url, $args);
-        $code     = is_wp_error($response) ? 0 : wp_remote_retrieve_response_code($response);
-        if ($code !== 200) {
-            return null;
-        }
-    }
-
-    $body = wp_remote_retrieve_body($response);
-    return strlen($body) >= 1000 ? $body : null;
+    return null;
 }
 
 /**
@@ -280,7 +270,7 @@ function aitrongcay_timelapse_fetch_frame_isapi(string $rtsp_url): ?string {
     // Try channel formats in order: NVR-style (401), simplified (4), single-cam fallback (101)
     $candidates = array_unique([$ch * 100 + 1, $ch, 101]);
     $auth       = 'Basic ' . base64_encode("{$user}:{$pass}");
-    $args       = ['timeout' => 3, 'sslverify' => false, 'headers' => ['Authorization' => $auth]];
+    $args       = ['timeout' => 2, 'sslverify' => false, 'headers' => ['Authorization' => $auth]];
 
     foreach ($candidates as $isapi_ch) {
         $snapshot_url = "http://{$host}/ISAPI/Streaming/channels/{$isapi_ch}/picture";
@@ -438,22 +428,7 @@ function aitrongcay_ajax_timelapse_capture_now(): void {
         return;
     }
 
-    // Gọi /api/streams để lấy thông tin codec cho debug
-    $parsed_base = parse_url($frame_url);
-    $base_origin = ($parsed_base['scheme'] ?? 'http') . '://' . ($parsed_base['host'] ?? '') . (isset($parsed_base['port']) ? ':' . $parsed_base['port'] : '');
     $streams_info = '';
-    $streams_resp = wp_remote_get($base_origin . '/api/streams', ['timeout' => 4, 'sslverify' => false]);
-    if (! is_wp_error($streams_resp) && wp_remote_retrieve_response_code($streams_resp) === 200) {
-        $streams_json = json_decode(wp_remote_retrieve_body($streams_resp), true);
-        if (isset($streams_json[$stream_slug])) {
-            $producers = $streams_json[$stream_slug]['producers'] ?? [];
-            foreach ($producers as $p) {
-                foreach ((array) ($p['medias'] ?? []) as $m) {
-                    $streams_info .= $m . ' | ';
-                }
-            }
-        }
-    }
 
     // Try go2rtc first, fall back to Hikvision ISAPI for H.265 cameras
     $capture_method = 'go2rtc';
@@ -463,35 +438,13 @@ function aitrongcay_ajax_timelapse_capture_now(): void {
         $capture_method = 'isapi';
         $rtsp_url       = aitrongcay_timelapse_get_rtsp_url($base_origin, $stream_slug);
 
-        // Build debug info: probe all 3 channel candidates
         if ($rtsp_url !== '') {
             $rp         = parse_url($rtsp_url);
-            $isapi_host = $rp['host'] ?? '';
             $isapi_user = rawurldecode($rp['user'] ?? '');
-            $isapi_pass = rawurldecode($rp['pass'] ?? '');
-            $isapi_path = $rp['path'] ?? '';
-            preg_match('/\/ch(\d+)\//i', $isapi_path, $cm);
-            $ch_n        = (int) ($cm[1] ?? 1);
-            $candidates  = array_unique([$ch_n * 100 + 1, $ch_n, 101]);
-            $auth_header = ['Authorization' => 'Basic ' . base64_encode("{$isapi_user}:{$isapi_pass}")];
-            $probe_args  = ['timeout' => 10, 'sslverify' => false, 'headers' => $auth_header];
-            $probes      = [];
-            foreach ($candidates as $cand) {
-                $probe_url  = "http://{$isapi_host}/ISAPI/Streaming/channels/{$cand}/picture";
-                $probe_resp = wp_remote_get($probe_url, $probe_args);
-                $probe_code = is_wp_error($probe_resp) ? ('err: ' . $probe_resp->get_error_message()) : wp_remote_retrieve_response_code($probe_resp);
-                $probe_body = is_wp_error($probe_resp) ? '' : wp_remote_retrieve_body($probe_resp);
-                $probes[]   = [
-                    'url'       => $probe_url,
-                    'code'      => $probe_code,
-                    'body_len'  => strlen($probe_body),
-                    'body_head' => substr(strip_tags($probe_body), 0, 200),
-                ];
-            }
+            
             $isapi_debug = [
                 'rtsp_url' => preg_replace('/\/\/([^:]+):([^@]+)@/', '//\\1:***@', $rtsp_url),
                 'has_user' => $isapi_user !== '',
-                'probes'   => $probes,
             ];
         } else {
             $isapi_debug = ['rtsp_url' => '(không lấy được từ go2rtc /api/streams)'];

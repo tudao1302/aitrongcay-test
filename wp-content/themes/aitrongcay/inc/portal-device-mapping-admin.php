@@ -364,7 +364,7 @@ function aitrongcay_blynk_pot_token_for_device(string $garden_key, string $devic
 function aitrongcay_blynk_remote_get(array $query_args, string $base, string $endpoint = '/get')
 {
     $url = add_query_arg($query_args, untrailingslashit($base) . $endpoint);
-    return wp_remote_get($url, ['timeout' => 10]);
+    return wp_remote_get($url, ['timeout' => 3]); // Giảm timeout từ 10s xuống 3s để tránh chết PHP-FPM
 }
 
 function aitrongcay_blynk_read_values(string $token, array $vpins, string $base): array

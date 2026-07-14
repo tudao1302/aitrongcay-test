@@ -259,6 +259,9 @@ get_template_part('template-parts/site/eco-shell-start');
         // Fetch real data from user meta
         $tuoi_nuoc_count = (int) get_user_meta($user_id, "_aitrongcay_daily_waters_count_{$today}", true);
         $chup_anh_count = (int) get_user_meta($user_id, "_aitrongcay_daily_chup_anh_{$today}", true);
+        if ($chup_anh_count === 0 && get_user_meta($user_id, '_aitrongcay_last_photo_bonus_date', true) === $today) {
+            $chup_anh_count = 1;
+        }
         $thu_hoach_count = (int) get_user_meta($user_id, "_aitrongcay_daily_thu_hoach_{$today}", true);
         $moi_ban_count = (int) get_user_meta($user_id, "_aitrongcay_total_referrals", true);
 

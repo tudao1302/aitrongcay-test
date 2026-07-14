@@ -6195,7 +6195,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         return d2HlsScriptPromise;
       }
       function buildMediaBadge(streamUrl, snapshotAt) {
-        if (streamUrl) return 'live stream . 4k';
+        if (streamUrl) return 'LIVE STREAM | ' + String(streamUrl).split('?')[0].split('/').pop();
         if (snapshotAt) {
           var raw = String(snapshotAt).trim();
           var normalized = raw.indexOf('T') === -1 ? raw.replace(' ', 'T') : raw;
@@ -6347,6 +6347,26 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             pooled.style.zIndex = '0';
             frame.insertBefore(pooled, frame.firstChild);
             d2IframePool[streamUrl] = pooled;
+
+            var iframeLoadCount = 0;
+            var firstLoadTime = Date.now();
+            pooled.onload = function() {
+              iframeLoadCount++;
+              if (iframeLoadCount > 2) {
+                var timePassed = Date.now() - firstLoadTime;
+                if (timePassed < 15000) {
+                  // Reloaded 3 times in 15 seconds -> it's stuck in an error loop!
+                  console.error('[Camera] Iframe reload loop detected, showing error.');
+                  pooled.remove();
+                  delete d2IframePool[streamUrl];
+                  frame.innerHTML = '<div class="d2-hero-cam-error" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#1e2720; color:#ff6b6b; font-size:14px; text-align:center; padding: 20px; z-index:9999; font-weight:500; border-radius: 16px; border: 1px dashed #ff6b6b; width:100%; height:100%;">Đường truyền camera đang có vấn đề,<br>bộ phận kĩ thuật sẽ tiến hành sửa chữa sớm nhất.</div>';
+                } else {
+                  // Reset count if it's been a long time
+                  iframeLoadCount = 1;
+                  firstLoadTime = Date.now();
+                }
+              }
+            };
           }
           pooled.style.opacity = '1';
           pooled.style.pointerEvents = 'auto';
@@ -6373,10 +6393,45 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           currentImage.alt = fallbackAlt || 'Khoang cây';
           currentImage.setAttribute('data-d2-hero-mjpeg', mjpegBase);
           currentImage.hidden = false;
-          d2HeroMjpegTimer = setInterval(function () {
-            if (!document.querySelector('[data-d2-hero-mjpeg]')) { clearInterval(d2HeroMjpegTimer); return; }
+          var heroErrCount = 0;
+          var heroTimeoutTimer = null;
+          var isDestroyed = false;
+
+          function showError() {
+            frame.innerHTML = '<div class="d2-hero-cam-error" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#1e2720; color:#ff6b6b; font-size:14px; text-align:center; padding: 20px; z-index:9999; font-weight:500; border-radius: 16px; border: 1px dashed #ff6b6b; width:100%; height:100%;">Đường truyền camera đang có vấn đề,<br>bộ phận kĩ thuật sẽ tiến hành sửa chữa sớm nhất.</div>';
+            console.error('[Camera] MJPEG loading failed entirely, showing error message.');
+          }
+
+          function loadNextFrame() {
+            if (isDestroyed || !document.querySelector('[data-d2-hero-mjpeg]')) return;
             currentImage.src = mjpegBase + '?_t=' + Date.now();
-          }, 2000);
+            clearTimeout(heroTimeoutTimer);
+            heroTimeoutTimer = setTimeout(function() {
+              handleError(); // Timeout after 5s
+            }, 5000);
+          }
+
+          function handleError() {
+            heroErrCount++;
+            clearTimeout(heroTimeoutTimer);
+            if (heroErrCount > 2) {
+              isDestroyed = true;
+              showError();
+            } else {
+              setTimeout(loadNextFrame, 1000); // retry after 1s
+            }
+          }
+
+          currentImage.onerror = handleError;
+          currentImage.onload = function() {
+            heroErrCount = 0;
+            clearTimeout(heroTimeoutTimer);
+            if (!isDestroyed) {
+              d2HeroMjpegTimer = setTimeout(loadNextFrame, 2000);
+            }
+          };
+
+          loadNextFrame();
           return;
         }
         ensureHeroFallbackVisible();
@@ -6419,18 +6474,25 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             manifestLoadingMaxRetry: 10,
             manifestLoadingRetryDelay: 1000
           });
-          
+          var hlsErrCount = 0;
           d2HlsInstance.on(Hls.Events.ERROR, function (event, data) {
             console.warn('[HLS Error]', data.type, data.details, data.fatal);
             if (data.fatal) {
+              hlsErrCount++;
+              if (hlsErrCount > 3) {
+                console.error('[Camera] HLS loading failed entirely, showing error message.');
+                d2HlsInstance.destroy();
+                frame.innerHTML = '<div class="d2-hero-cam-error" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#1e2720; color:#ff6b6b; font-size:14px; text-align:center; padding: 20px; z-index:9999; font-weight:500; border-radius: 16px; border: 1px dashed #ff6b6b; width:100%; height:100%;">Đường truyền camera đang có vấn đề,<br>bộ phận kĩ thuật sẽ tiến hành sửa chữa sớm nhất.</div>';
+                return;
+              }
               switch (data.type) {
                 case Hls.ErrorTypes.NETWORK_ERROR:
                   console.log('[HLS] Fatal network error, trying to recover...');
-                  d2HlsInstance.startLoad();
+                  setTimeout(function() { d2HlsInstance.startLoad(); }, 2000);
                   break;
                 case Hls.ErrorTypes.MEDIA_ERROR:
                   console.log('[HLS] Fatal media error, trying to recover...');
-                  d2HlsInstance.recoverMediaError();
+                  setTimeout(function() { d2HlsInstance.recoverMediaError(); }, 2000);
                   break;
                 default:
                   console.error('[HLS] Unrecoverable error, destroying instance');
@@ -6890,7 +6952,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
 
       // ── Rack Monitor: multi-rack sensor polling + webcam + controls ───
       (function () {
-        var POLL_INTERVAL = 5000;
+        var POLL_INTERVAL = 60000; // Tăng lên 60s để không chết máy chủ PHP
         var THRESHOLDS = {
           temp: { ok: [18, 28], warn: [14, 34] },
           hum: { ok: [50, 85], warn: [35, 95] },
@@ -7008,9 +7070,45 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         document.querySelectorAll('[data-tray-mjpeg]').forEach(function (img) {
           var base = img.getAttribute('data-tray-mjpeg') || '';
           if (!base) return;
-          window.setInterval(function () {
+          var errCount = 0;
+          var timeoutTimer = null;
+          var isDestroyed = false;
+
+          function showError() {
+            var parent = img.parentNode;
+            if (parent) {
+              parent.innerHTML = '<div class="d2-tray-cam-empty" style="color:#ff6b6b; font-size:10px; padding: 10px; text-align:center; line-height:1.4; border: 1px dashed #ff6b6b; border-radius: 8px;">Đường truyền camera có vấn đề<br>Kỹ thuật đang khắc phục.</div>';
+            }
+          }
+
+          function loadNext() {
+            if (isDestroyed) return;
             img.src = base + (base.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now();
-          }, 2000);
+            clearTimeout(timeoutTimer);
+            timeoutTimer = setTimeout(handleError, 5000);
+          }
+
+          function handleError() {
+            errCount++;
+            clearTimeout(timeoutTimer);
+            if (errCount > 2) {
+              isDestroyed = true;
+              showError();
+            } else {
+              setTimeout(loadNext, 1000);
+            }
+          }
+
+          img.onerror = handleError;
+          img.onload = function () {
+            errCount = 0;
+            clearTimeout(timeoutTimer);
+            if (!isDestroyed) {
+              setTimeout(loadNext, 2000);
+            }
+          };
+          
+          loadNext();
         });
 
         // HLS.js init

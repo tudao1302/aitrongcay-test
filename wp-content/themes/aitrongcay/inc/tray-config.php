@@ -303,7 +303,7 @@ function aitrongcay_tray_write_device(array $tray, string $vpin, int $value): bo
         ['token' => $token, $vpin => $value],
         untrailingslashit($base) . '/update'
     );
-    $resp = wp_remote_get($url, ['timeout' => 8]);
+    $resp = wp_remote_get($url, ['timeout' => 4]);
     return ! is_wp_error($resp) && (int) wp_remote_retrieve_response_code($resp) === 200;
 }
 
@@ -320,6 +320,19 @@ function aitrongcay_tray_sensors_ajax(): void
     $ri         = absint($_POST['rack_index'] ?? 0);
     $ti         = absint($_POST['tray_index'] ?? 0);
 
+    $cache_key = 'aitr_tray_sensors_' . md5($garden_key . '_r' . $ri . '_t' . $ti);
+    $cooldown_key = 'aitr_tray_sensors_cooldown_' . md5($garden_key . '_r' . $ri . '_t' . $ti);
+
+    $cached = get_transient($cache_key);
+    if (is_array($cached) && !empty($cached)) {
+        wp_send_json_success($cached);
+    }
+    
+    $cooldown = get_transient($cooldown_key);
+    if (is_array($cooldown) && isset($cooldown['message'])) {
+        wp_send_json_error($cooldown);
+    }
+
     if (
         ! current_user_can('manage_options')
         && (! is_user_logged_in() || ! aitrongcay_user_can_view_garden($garden_key, get_current_user_id()))
@@ -335,6 +348,26 @@ function aitrongcay_tray_sensors_ajax(): void
     }
 
     $data = aitrongcay_tray_read_sensors($racks[$ri]['trays'][$ti]);
+    
+    if (isset($data['error'])) {
+        wp_send_json_error(['message' => 'Lỗi cấu hình khay: ' . $data['error']], 400);
+    }
+
+    $has_data = false;
+    foreach ($data as $k => $v) {
+        if ($v !== null) {
+            $has_data = true;
+            break;
+        }
+    }
+
+    if (!$has_data) {
+        set_transient($cooldown_key, ['message' => 'Blynk đang giới hạn quota hoặc chưa phản hồi, tạm ngưng gọi lại trong ít phút.'], 300);
+        wp_send_json_error(['message' => 'Không đọc được dữ liệu Blynk.'], 502);
+    }
+
+    delete_transient($cooldown_key);
+    set_transient($cache_key, $data, 45); // Cache for 45 seconds to reduce load
     wp_send_json_success($data);
 }
 add_action('wp_ajax_aitrongcay_tray_sensors', 'aitrongcay_tray_sensors_ajax');

@@ -281,6 +281,11 @@ THÔNG TIN KHOANG:
 DANH MỤC VẬT TƯ (DÙNG ĐỂ GỢI Ý MUA HÀNG NẾU CẦN):
 {SUPPLIES_INJECTION}
 
+LƯU Ý QUAN TRỌNG VỀ CAMERA GÓC RỘNG VÀ ĐIỂM MÙ (BẮT BUỘC PHẢI TUÂN THỦ 100%):
+- Trong khung hình này, ngay trước ống kính có thể có một hoặc nhiều CHẬU CÂY ĐÃ CHẾT KHÔ, CÀNH CỦI KHÔ, hoặc chậu đất trống. ĐÓ KHÔNG PHẢI LÀ ĐỐI TƯỢNG CẦN PHÂN TÍCH.
+- Đối tượng cần phân tích là \"{$plant_name}\" NẰM Ở CÁC LUỐNG/KHOANG PHÍA SAU hoặc XUNG QUANH.
+- NGUYÊN TẮC TỐI CAO: Nếu bạn nhìn thấy BẤT KỲ mầm xanh, lá xanh, hoặc cây xanh nào trong toàn bộ bức ảnh, BẮT BUỘC phải lấy trạng thái của những cây XANH TỐT đó làm kết quả phân tích. TUYỆT ĐỐI KHÔNG BÁO CÁO \"CÂY CHẾT KHÔ\" HOẶC \"HÉO ÚA\" NẾU VẪN CÒN CÂY XANH TRONG ẢNH. Việc báo cáo cây chết khi trong ảnh có cây xanh là một lỗi nghiêm trọng.
+
 QUY TRÌNH PHÂN TÍCH (BẮT BUỘC):
 1. KIỂM TRA SỰ CỐ CƠ HỌC & NGOẠI LỰC: Xem giá thể/đất có bị đào bới không (chuột, mèo, côn trùng), thân cây có bị gãy gập, đổ rạp, hoặc bật gốc do tác động vật lý không.
 2. KIỂM TRA SỨC KHỎE THÂN/LÁ: Phân tích màu sắc lá (vàng, cháy mép, đốm đen, bạc lá), hình thái thân (vống quá cao, teo gốc, lở cổ rễ) và ngọn (xoăn, héo rũ).

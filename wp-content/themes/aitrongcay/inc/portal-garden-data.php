@@ -136,6 +136,21 @@ function aitrongcay_resolve_onboarding_plant_for_pot(array $pot): array
         'has_onboarding' => false,
     ];
 
+    if (!empty($pot['plant_id'])) {
+        $pot_plant_id = (int) $pot['plant_id'];
+        foreach (aitrongcay_onboarding_plant_catalog() as $plant) {
+            if ((int) ($plant['id'] ?? 0) === $pot_plant_id) {
+                return [
+                    'plant_id' => $pot_plant_id,
+                    'plant_slug' => (string) ($plant['slug'] ?? ''),
+                    'plant_name' => (string) ($plant['public_name'] ?? 'Cây chưa xác định'),
+                    'onboarding_status' => 'matched',
+                    'has_onboarding' => true,
+                ];
+            }
+        }
+    }
+
     if (trim((string) ($pot['plant_name'] ?? '')) === 'Cây chưa xác định') {
         return $unknown;
     }
