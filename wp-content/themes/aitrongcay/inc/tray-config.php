@@ -321,7 +321,7 @@ function aitrongcay_tray_sensors_ajax(): void
     $ti         = absint($_POST['tray_index'] ?? 0);
 
     $cache_key = 'aitr_tray_sensors_' . md5($garden_key . '_r' . $ri . '_t' . $ti);
-    $cooldown_key = 'aitr_tray_sensors_cooldown_' . md5($garden_key . '_r' . $ri . '_t' . $ti);
+    $cooldown_key = 'aitr_blynk_status_cooldown_' . md5($garden_key);
 
     $cached = get_transient($cache_key);
     if (is_array($cached) && !empty($cached)) {
@@ -363,7 +363,7 @@ function aitrongcay_tray_sensors_ajax(): void
 
     if (!$has_data) {
         set_transient($cooldown_key, ['message' => 'Blynk đang giới hạn quota hoặc chưa phản hồi, tạm ngưng gọi lại trong ít phút.'], 300);
-        wp_send_json_error(['message' => 'Không đọc được dữ liệu Blynk.'], 502);
+        wp_send_json_error(['message' => 'Không đọc được dữ liệu Blynk.']);
     }
 
     delete_transient($cooldown_key);

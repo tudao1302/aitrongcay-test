@@ -6061,7 +6061,7 @@ function aitrongcay_blynk_get_status_ajax(): void
     $req_tray_index = isset($_POST['tray_index']) ? (int) $_POST['tray_index'] : 0;
 
     $cache_key = 'aitr_blynk_status_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
-    $cooldown_key = 'aitr_blynk_status_cooldown_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
+    $cooldown_key = 'aitr_blynk_status_cooldown_' . md5($garden_key);
     $cached = get_transient($cache_key);
     if (is_array($cached) && isset($cached['garden_key'])) {
         wp_send_json_success($cached);
@@ -6185,7 +6185,7 @@ function aitrongcay_blynk_get_status_ajax(): void
 
     if ($shared_data === [] && !$has_any_light) {
         set_transient($cooldown_key, ['message' => 'Blynk đang giới hạn quota hoặc chưa phản hồi, tạm ngưng gọi lại trong ít phút.'], 300);
-        wp_send_json_error(['message' => 'Không đọc được dữ liệu Blynk.'], 502);
+        wp_send_json_error(['message' => 'Không đọc được dữ liệu Blynk.']);
     }
 
     delete_transient($cooldown_key);
