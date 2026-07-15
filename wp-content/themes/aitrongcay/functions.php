@@ -6069,49 +6069,56 @@ function aitrongcay_blynk_get_status_ajax(): void
     $cooldown_key = 'aitr_blynk_status_cooldown_' . md5($garden_key);
     $lock_key = 'aitr_blynk_sync_lock_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
 
-    // Sử dụng cơ chế Stale-While-Revalidate (Lưu cache vĩnh viễn nhưng kiểm tra timestamp)
+    // Sử dụng cơ chế Stale-While-Revalidate
     $cached = get_transient($cache_key);
-    if (is_array($cached) && isset($cached['last_updated'])) {
-        $age = time() - (int) $cached['last_updated'];
+    $has_stale_data = is_array($cached) && isset($cached['garden_key']);
+
+    if ($has_stale_data) {
+        $age = time() - (int) ($cached['last_updated'] ?? 0);
         if ($age < 60) {
-            // Dữ liệu còn mới (dưới 60s), trả về luôn!
+            // Tươi ngon, trả về ngay!
             wp_send_json_success($cached);
         }
-    }
-    $cooldown = get_transient($cooldown_key);
-    if (is_array($cooldown) && isset($cooldown['message'])) {
-        wp_send_json_error($cooldown);
-    }
-
-    // KÍCH HOẠT BACKGROUND SYNC (Cập nhật ngầm)
-    // Chỉ kích hoạt nếu chưa có request nào đang chạy
-    if (!get_transient($lock_key)) {
-        set_transient($lock_key, true, 15); // Khoá 15s
         
-        $url = admin_url('admin-ajax.php');
-        $bg_args = [
-            'action'     => 'aitrongcay_blynk_bg_sync',
-            'garden_key' => $garden_key,
-            'rack_index' => $req_rack_index,
-            'tray_index' => $req_tray_index,
-            'nonce'      => wp_create_nonce('aitrongcay_blynk_bg_sync_nonce')
-        ];
-        
-        // Gọi lệnh ngầm không cần chờ kết quả trả về
-        wp_remote_post($url, [
-            'blocking'  => false,
-            'timeout'   => 0.01,
-            'sslverify' => false,
-            'body'      => $bg_args
-        ]);
-    }
+        // Dữ liệu cũ (>60s). Nếu đang bị sập nguồn (cooldown) thì vẫn trả về dữ liệu cũ (để user xem đồ cổ còn hơn xem --°C)
+        if (get_transient($cooldown_key)) {
+            wp_send_json_success($cached);
+        }
 
-    // TRẢ VỀ DỮ LIỆU CŨ NGAY LẬP TỨC (Stale Data) để giao diện không bị giật lag
-    if (is_array($cached) && isset($cached['garden_key'])) {
+        // KÍCH HOẠT BACKGROUND SYNC
+        if (!get_transient($lock_key)) {
+            set_transient($lock_key, true, 15);
+            wp_remote_post(admin_url('admin-ajax.php'), [
+                'blocking'  => false,
+                'timeout'   => 0.01,
+                'sslverify' => false,
+                'body'      => [
+                    'action'     => 'aitrongcay_blynk_bg_sync',
+                    'garden_key' => $garden_key,
+                    'rack_index' => $req_rack_index,
+                    'tray_index' => $req_tray_index,
+                    'nonce'      => wp_create_nonce('aitrongcay_blynk_bg_sync_nonce')
+                ]
+            ]);
+        }
+        
+        // Trả về dữ liệu cũ ngay lập tức (0.01s)
         wp_send_json_success($cached);
     }
 
-    wp_send_json_success(['garden_key' => $garden_key, 'is_loading' => true]);
+    // NẾU CHƯA CÓ DATA (Lần đầu tiên mở web hoặc bị xoá cache)
+    // Nếu cooldown đang bật -> báo lỗi ngay (để UI hiện lỗi)
+    if (get_transient($cooldown_key)) {
+        wp_send_json_error(['message' => 'Blynk đang giới hạn quota, tạm ngưng gọi lại trong ít phút.']);
+    }
+
+    // Không có data cũ + Không bị cooldown -> Lấy LIVE trực tiếp (đợi tối đa 3s)
+    $payload = aitrongcay_sync_blynk_data_for_tray($garden_key, $req_rack_index, $req_tray_index);
+    if (is_wp_error($payload)) {
+        wp_send_json_error(['message' => $payload->get_error_message()]);
+    }
+    
+    wp_send_json_success($payload);
 }
 add_action('wp_ajax_aitrongcay_blynk_get_status', 'aitrongcay_blynk_get_status_ajax');
 
@@ -6132,15 +6139,25 @@ function aitrongcay_blynk_bg_sync_ajax(): void
     $req_rack_index = isset($_POST['rack_index']) ? (int) $_POST['rack_index'] : 0;
     $req_tray_index = isset($_POST['tray_index']) ? (int) $_POST['tray_index'] : 0;
 
+    $lock_key = 'aitr_blynk_sync_lock_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
+    $cooldown_key = 'aitr_blynk_status_cooldown_' . md5($garden_key);
+
+    if (!get_transient($cooldown_key)) {
+        aitrongcay_sync_blynk_data_for_tray($garden_key, $req_rack_index, $req_tray_index);
+    }
+
+    delete_transient($lock_key);
+    wp_die();
+}
+
+/**
+ * Hàm lấy dữ liệu từ Blynk và lưu vào cache
+ * @return array|WP_Error
+ */
+function aitrongcay_sync_blynk_data_for_tray(string $garden_key, int $req_rack_index, int $req_tray_index)
+{
     $cache_key = 'aitr_blynk_status_swr_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
     $cooldown_key = 'aitr_blynk_status_cooldown_' . md5($garden_key);
-    $lock_key = 'aitr_blynk_sync_lock_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
-
-    // Nếu đang bị giới hạn quota, bỏ qua không lấy nữa
-    if (get_transient($cooldown_key)) {
-        delete_transient($lock_key);
-        wp_die();
-    }
 
     $rack_configs = function_exists('aitrongcay_get_rack_monitor_configs') ? aitrongcay_get_rack_monitor_configs($garden_key) : [];
     $target_rack = $rack_configs[$req_rack_index] ?? null;
@@ -6253,14 +6270,14 @@ function aitrongcay_blynk_bg_sync_ajax(): void
 
     if ($shared_data === [] && !$has_any_light) {
         set_transient($cooldown_key, ['message' => 'Blynk đang giới hạn quota, tạm ngưng gọi lại trong ít phút.'], 300);
+        return new WP_Error('blynk_timeout', 'Blynk đang giới hạn quota, tạm ngưng gọi lại trong ít phút.');
     } else {
         delete_transient($cooldown_key);
         $payload['last_updated'] = time();
         set_transient($cache_key, $payload, YEAR_IN_SECONDS); // Lưu vĩnh viễn, check timestamp
     }
     
-    delete_transient($lock_key);
-    wp_die();
+    return $payload;
 }
 
 function aitrongcay_blynk_send_control(string $device, int $state, string $garden_key = '', string $pot_code = '', int $req_rack_index = -1, int $req_tray_index = -1)
