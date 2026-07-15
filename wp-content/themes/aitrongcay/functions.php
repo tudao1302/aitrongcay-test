@@ -6047,6 +6047,11 @@ function aitrongcay_market_posts_query_args(string $garden_key = '', int $posts_
 
 function aitrongcay_blynk_get_status_ajax(): void
 {
+    // Ngay lập tức giải phóng Session Lock để không chặn người dùng chuyển trang
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
     aitrongcay_require_portal_nonce();
 
     $garden_key = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? ''));
@@ -6060,15 +6065,81 @@ function aitrongcay_blynk_get_status_ajax(): void
     $req_rack_index = isset($_POST['rack_index']) ? (int) $_POST['rack_index'] : 0;
     $req_tray_index = isset($_POST['tray_index']) ? (int) $_POST['tray_index'] : 0;
 
-    $cache_key = 'aitr_blynk_status_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
+    $cache_key = 'aitr_blynk_status_swr_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
     $cooldown_key = 'aitr_blynk_status_cooldown_' . md5($garden_key);
+    $lock_key = 'aitr_blynk_sync_lock_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
+
+    // Sử dụng cơ chế Stale-While-Revalidate (Lưu cache vĩnh viễn nhưng kiểm tra timestamp)
     $cached = get_transient($cache_key);
-    if (is_array($cached) && isset($cached['garden_key'])) {
-        wp_send_json_success($cached);
+    if (is_array($cached) && isset($cached['last_updated'])) {
+        $age = time() - (int) $cached['last_updated'];
+        if ($age < 60) {
+            // Dữ liệu còn mới (dưới 60s), trả về luôn!
+            wp_send_json_success($cached);
+        }
     }
     $cooldown = get_transient($cooldown_key);
     if (is_array($cooldown) && isset($cooldown['message'])) {
         wp_send_json_error($cooldown);
+    }
+
+    // KÍCH HOẠT BACKGROUND SYNC (Cập nhật ngầm)
+    // Chỉ kích hoạt nếu chưa có request nào đang chạy
+    if (!get_transient($lock_key)) {
+        set_transient($lock_key, true, 15); // Khoá 15s
+        
+        $url = admin_url('admin-ajax.php');
+        $bg_args = [
+            'action'     => 'aitrongcay_blynk_bg_sync',
+            'garden_key' => $garden_key,
+            'rack_index' => $req_rack_index,
+            'tray_index' => $req_tray_index,
+            'nonce'      => wp_create_nonce('aitrongcay_blynk_bg_sync_nonce')
+        ];
+        
+        // Gọi lệnh ngầm không cần chờ kết quả trả về
+        wp_remote_post($url, [
+            'blocking'  => false,
+            'timeout'   => 0.01,
+            'sslverify' => false,
+            'body'      => $bg_args
+        ]);
+    }
+
+    // TRẢ VỀ DỮ LIỆU CŨ NGAY LẬP TỨC (Stale Data) để giao diện không bị giật lag
+    if (is_array($cached) && isset($cached['garden_key'])) {
+        wp_send_json_success($cached);
+    }
+
+    wp_send_json_success(['garden_key' => $garden_key, 'is_loading' => true]);
+}
+add_action('wp_ajax_aitrongcay_blynk_get_status', 'aitrongcay_blynk_get_status_ajax');
+
+// ─── AJAX Background Worker (Chạy ngầm lấy dữ liệu từ Blynk) ────────────────
+add_action('wp_ajax_aitrongcay_blynk_bg_sync', 'aitrongcay_blynk_bg_sync_ajax');
+add_action('wp_ajax_nopriv_aitrongcay_blynk_bg_sync', 'aitrongcay_blynk_bg_sync_ajax');
+function aitrongcay_blynk_bg_sync_ajax(): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    
+    if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'aitrongcay_blynk_bg_sync_nonce')) {
+        wp_die();
+    }
+    
+    $garden_key = sanitize_text_field((string) wp_unslash($_POST['garden_key'] ?? ''));
+    $req_rack_index = isset($_POST['rack_index']) ? (int) $_POST['rack_index'] : 0;
+    $req_tray_index = isset($_POST['tray_index']) ? (int) $_POST['tray_index'] : 0;
+
+    $cache_key = 'aitr_blynk_status_swr_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
+    $cooldown_key = 'aitr_blynk_status_cooldown_' . md5($garden_key);
+    $lock_key = 'aitr_blynk_sync_lock_' . md5($garden_key . '_r' . $req_rack_index . '_t' . $req_tray_index);
+
+    // Nếu đang bị giới hạn quota, bỏ qua không lấy nữa
+    if (get_transient($cooldown_key)) {
+        delete_transient($lock_key);
+        wp_die();
     }
 
     $rack_configs = function_exists('aitrongcay_get_rack_monitor_configs') ? aitrongcay_get_rack_monitor_configs($garden_key) : [];
@@ -6088,7 +6159,6 @@ function aitrongcay_blynk_get_status_ajax(): void
         }
         $trays = (array) ($target_rack['trays'] ?? []);
 
-        // Map all lights from the rack's trays
         foreach ($trays as $idx => $tray) {
             $light_key = 'light' . ($idx + 1);
             $vpin = strtoupper(trim((string) ($tray['vpin_light'] ?? '')));
@@ -6103,7 +6173,6 @@ function aitrongcay_blynk_get_status_ajax(): void
         }
         if ($target_tray) {
             $base = trim((string) ($target_tray['blynk_base'] ?? $base)) ?: $base;
-            // Map tray vpins → dashboard vpins
             foreach (['temp', 'hum', 'soil', 'ph', 'ec'] as $key) {
                 $vpin = strtoupper(trim((string) ($target_tray['vpin_' . $key] ?? '')));
                 if ($vpin !== '') {
@@ -6114,7 +6183,6 @@ function aitrongcay_blynk_get_status_ajax(): void
             if ($pump_vpin !== '') {
                 $vpins['pump'] = $pump_vpin;
             }
-            // For backward compatibility if any older code expects 'light'
             $vpins['light'] = $vpins['light' . ($req_tray_index + 1)] ?? '';
         }
     }
@@ -6184,15 +6252,16 @@ function aitrongcay_blynk_get_status_ajax(): void
     }
 
     if ($shared_data === [] && !$has_any_light) {
-        set_transient($cooldown_key, ['message' => 'Blynk đang giới hạn quota hoặc chưa phản hồi, tạm ngưng gọi lại trong ít phút.'], 300);
-        wp_send_json_error(['message' => 'Không đọc được dữ liệu Blynk.']);
+        set_transient($cooldown_key, ['message' => 'Blynk đang giới hạn quota, tạm ngưng gọi lại trong ít phút.'], 300);
+    } else {
+        delete_transient($cooldown_key);
+        $payload['last_updated'] = time();
+        set_transient($cache_key, $payload, YEAR_IN_SECONDS); // Lưu vĩnh viễn, check timestamp
     }
-
-    delete_transient($cooldown_key);
-    set_transient($cache_key, $payload, 60);
-    wp_send_json_success($payload);
+    
+    delete_transient($lock_key);
+    wp_die();
 }
-add_action('wp_ajax_aitrongcay_blynk_get_status', 'aitrongcay_blynk_get_status_ajax');
 
 function aitrongcay_blynk_send_control(string $device, int $state, string $garden_key = '', string $pot_code = '', int $req_rack_index = -1, int $req_tray_index = -1)
 {
