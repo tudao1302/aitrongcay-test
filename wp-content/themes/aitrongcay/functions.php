@@ -2558,12 +2558,10 @@ function aitrongcay_get_db_pots(string $garden_key): array
 {
     global $wpdb;
     static $cache = [];
-    file_put_contents('d:/laragon/www/aitrongcay/debug_sync.log', "ENTER aitrongcay_get_db_pots for '$garden_key'\n", FILE_APPEND);
     if ($garden_key === '') {
         return [];
     }
     if (isset($cache[$garden_key])) {
-        file_put_contents('d:/laragon/www/aitrongcay/debug_sync.log', "RETURN CACHE for '$garden_key'\n", FILE_APPEND);
         return $cache[$garden_key];
     }
     $table = aitrongcay_garden_pots_table();
@@ -2603,7 +2601,9 @@ function aitrongcay_get_db_pots(string $garden_key): array
                 );
                 $query = call_user_func_array([$wpdb, 'prepare'], $prepare_args);
                 
+                $wpdb->suppress_errors();
                 $results = $wpdb->get_results($query);
+                $wpdb->show_errors();
                 
                 if ($results) {
                     foreach ($results as $row) {
