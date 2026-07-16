@@ -31,6 +31,7 @@ require_once get_template_directory() . '/inc/blynk-webhook.php';
 require_once get_template_directory() . '/inc/portal-robot-api.php';
 require_once get_template_directory() . '/inc/notifications.php';
 require_once get_template_directory() . '/inc/rack-handoff.php';
+require_once get_template_directory() . '/inc/support-chat.php';
 require_once get_template_directory() . '/inc/rewards-admin.php';
 
 function aitrongcay_theme_setup(): void

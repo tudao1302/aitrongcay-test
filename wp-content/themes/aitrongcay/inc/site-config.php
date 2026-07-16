@@ -63,6 +63,7 @@ function aitrongcay_footer_groups(): array
                 ['label' => 'Đăng ký tư vấn', 'url' => home_url('/dang-ky-tu-van/')],
                 ['label' => 'Onboarding', 'url' => home_url('/onboarding/')],
                 ['label' => 'Đăng nhập', 'url' => home_url('/dang-nhap/')],
+                ['label' => 'Liên hệ quản trị viên', 'url' => 'javascript:aitrongcayOpenSupportChat()'],
             ]),
         ],
     ];

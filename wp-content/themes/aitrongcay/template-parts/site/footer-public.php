@@ -18,6 +18,21 @@ $footer_groups = aitrongcay_footer_groups();
       .footer .eco-footer-col a{display:block;color:rgba(227,227,222,.7);margin:8px 0}
       .footer .eco-footer-meta{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:18px 28px 0;border-top:1px solid rgba(255,255,255,.05);margin:0 28px 28px}
       @media (max-width:980px){.footer .eco-footer-top,.footer .eco-footer-grid{grid-template-columns:1fr}.footer .eco-footer-meta{flex-direction:column;align-items:flex-start}}
+      
+      #aitr-support-chat-widget {
+          width: 320px;
+          height: 450px;
+          max-width: calc(100vw - 40px);
+          max-height: calc(100vh - 40px);
+      }
+      @media (max-width: 480px) {
+          #aitr-support-chat-widget {
+              bottom: 10px !important;
+              right: 10px !important;
+              max-width: calc(100vw - 20px);
+              max-height: calc(100vh - 20px);
+          }
+      }
     </style>
     <div class="eco-footer-wrap">
       <div class="eco-footer-shell">
@@ -30,7 +45,11 @@ $footer_groups = aitrongcay_footer_groups();
             <div class="eco-footer-col">
               <h3><?php echo esc_html($group['title']); ?></h3>
               <?php foreach ($group['items'] as $item) : ?>
-                <a href="<?php echo esc_url($item['url']); ?>"><?php echo esc_html($item['label']); ?></a>
+                <?php if (strpos($item['url'], 'javascript:') === 0 || $item['label'] === 'Liên hệ quản trị viên') : ?>
+                    <a href="#" onclick="aitrongcayOpenSupportChat(); return false;"><?php echo esc_html($item['label']); ?></a>
+                <?php else : ?>
+                    <a href="<?php echo esc_url($item['url']); ?>"><?php echo esc_html($item['label']); ?></a>
+                <?php endif; ?>
               <?php endforeach; ?>
             </div>
           <?php endforeach; ?>
@@ -152,4 +171,94 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// --- Support Chat Widget Logic ---
+function aitrongcayOpenSupportChat() {
+    let chatWidget = document.getElementById('aitr-support-chat-widget');
+    if (chatWidget) {
+        chatWidget.style.display = 'flex';
+        aitrongcayLoadSupportMessages();
+    }
+}
+function aitrongcayCloseSupportChat() {
+    let chatWidget = document.getElementById('aitr-support-chat-widget');
+    if (chatWidget) {
+        chatWidget.style.display = 'none';
+    }
+}
+
+function aitrongcayLoadSupportMessages() {
+    let msgContainer = document.getElementById('aitr-support-messages');
+    if (!msgContainer) return;
+
+    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=aitrongcay_get_support_messages'
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (res.success && res.data.messages) {
+            msgContainer.innerHTML = '<div style="align-self: flex-start; background: #f0f0f0; color: #333; max-width: 80%; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 14px;">Xin chào! Chúng tôi có thể giúp gì cho bạn?</div>';
+            res.data.messages.forEach(m => {
+                let isCustomer = m.sender_type === 'customer';
+                let align = isCustomer ? 'align-self: flex-end; background: #2f7b45; color: #fff;' : 'align-self: flex-start; background: #f0f0f0; color: #333;';
+                let msgDiv = document.createElement('div');
+                msgDiv.style.cssText = `max-width: 80%; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; line-height: 1.4; ${align}`;
+                msgDiv.innerText = m.message;
+                msgContainer.appendChild(msgDiv);
+            });
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+        }
+    });
+}
+
+function aitrongcaySendSupportMessage(e) {
+    e.preventDefault();
+    let input = document.getElementById('aitr-support-input');
+    let message = input.value.trim();
+    if (!message) return;
+
+    input.value = '';
+    // Append temporarily
+    let msgContainer = document.getElementById('aitr-support-messages');
+    let msgDiv = document.createElement('div');
+    msgDiv.style.cssText = `max-width: 80%; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; line-height: 1.4; align-self: flex-end; background: #2f7b45; color: #fff; opacity: 0.7;`;
+    msgDiv.innerText = message;
+    msgContainer.appendChild(msgDiv);
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+
+    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=aitrongcay_send_support_message&message=' + encodeURIComponent(message)
+    })
+    .then(() => {
+        aitrongcayLoadSupportMessages();
+    });
+}
+
+// Auto-poll if chat is open
+setInterval(() => {
+    let chatWidget = document.getElementById('aitr-support-chat-widget');
+    if (chatWidget && chatWidget.style.display === 'flex') {
+        aitrongcayLoadSupportMessages();
+    }
+}, 5000);
+
 </script>
+
+<!-- Support Chat Widget HTML -->
+<div id="aitr-support-chat-widget" style="display: none; position: fixed; bottom: 20px; right: 20px; width: 320px; height: 450px; background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 999999; flex-direction: column; overflow: hidden; font-family: sans-serif;">
+    <div style="background: var(--primary, #072118); color: #fff; padding: 16px; display: flex; justify-content: space-between; align-items: center; border-radius: 16px 16px 0 0;">
+        <h4 style="margin: 0; font-size: 16px; font-weight: 600;">Hỗ trợ khách hàng</h4>
+        <button onclick="aitrongcayCloseSupportChat()" style="background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 0;">&times;</button>
+    </div>
+    <div id="aitr-support-messages" style="flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; background: #fafafa;">
+        <div style="align-self: flex-start; background: #f0f0f0; color: #333; max-width: 80%; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 14px;">Xin chào! Chúng tôi có thể giúp gì cho bạn?</div>
+    </div>
+    <form onsubmit="aitrongcaySendSupportMessage(event)" style="padding: 12px; background: #fff; border-top: 1px solid #eee; display: flex; gap: 8px;">
+        <input type="text" id="aitr-support-input" placeholder="Nhập tin nhắn..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size: 14px;">
+        <button type="submit" style="background: var(--primary, #072118); color: #fff; border: none; border-radius: 20px; padding: 0 16px; font-weight: 600; cursor: pointer;">Gửi</button>
+    </form>
+</div>
