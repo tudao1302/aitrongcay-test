@@ -173,6 +173,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // --- Support Chat Widget Logic ---
+let aitrChatState = "";
+
 function aitrongcayOpenSupportChat() {
     let chatWidget = document.getElementById('aitr-support-chat-widget');
     if (chatWidget) {
@@ -199,13 +201,17 @@ function aitrongcayLoadSupportMessages() {
     .then(res => res.json())
     .then(res => {
         if (res.success && res.data.messages) {
+            let newState = JSON.stringify(res.data.messages);
+            if (newState === aitrChatState) return; // Prevent jitter
+            aitrChatState = newState;
+
             msgContainer.innerHTML = '<div style="align-self: flex-start; background: #f0f0f0; color: #333; max-width: 80%; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 14px;">Xin chào! Chúng tôi có thể giúp gì cho bạn?</div>';
             res.data.messages.forEach(m => {
                 let isCustomer = m.sender_type === 'customer';
                 let align = isCustomer ? 'align-self: flex-end; background: #2f7b45; color: #fff;' : 'align-self: flex-start; background: #f0f0f0; color: #333;';
                 let msgDiv = document.createElement('div');
                 msgDiv.style.cssText = `max-width: 80%; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; line-height: 1.4; ${align}`;
-                msgDiv.innerText = m.message;
+                msgDiv.innerHTML = m.message.replace(/\n/g, '<br>');
                 msgContainer.appendChild(msgDiv);
             });
             msgContainer.scrollTop = msgContainer.scrollHeight;
@@ -220,14 +226,16 @@ function aitrongcaySendSupportMessage(e) {
     if (!message) return;
 
     input.value = '';
-    // Append temporarily
+    
+    // Append temporarily as SOLID message (Optimistic UI)
     let msgContainer = document.getElementById('aitr-support-messages');
     let msgDiv = document.createElement('div');
-    msgDiv.style.cssText = `max-width: 80%; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; line-height: 1.4; align-self: flex-end; background: #2f7b45; color: #fff; opacity: 0.7;`;
-    msgDiv.innerText = message;
+    msgDiv.style.cssText = `max-width: 80%; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; line-height: 1.4; align-self: flex-end; background: #2f7b45; color: #fff;`;
+    msgDiv.innerHTML = message.replace(/\n/g, '<br>');
     msgContainer.appendChild(msgDiv);
     msgContainer.scrollTop = msgContainer.scrollHeight;
 
+    // Send silently in background
     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -244,7 +252,7 @@ setInterval(() => {
     if (chatWidget && chatWidget.style.display === 'flex') {
         aitrongcayLoadSupportMessages();
     }
-}, 5000);
+}, 3000);
 
 </script>
 

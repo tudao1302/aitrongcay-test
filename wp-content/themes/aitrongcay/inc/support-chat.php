@@ -36,16 +36,12 @@ add_action('wp_ajax_nopriv_aitrongcay_get_support_messages', 'aitrongcay_get_sup
 function aitrongcay_get_support_messages_ajax() {
     $user_id = get_current_user_id();
     if (!$user_id) {
-        // Cho phép guest dùng session/cookie, hoặc bắt buộc login?
-        // Đề bài yêu cầu "cạnh bên dưới chỗ đăng nhập", thường người ta dùng chat này cả lúc chưa đăng nhập.
-        // Nhưng để dễ quản lý, mình gán session_id cho guest.
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        if (empty($_COOKIE['aitr_guest_id'])) {
+            $guest_id = 'guest_' . time() . '_' . rand(1000, 9999);
+            setcookie('aitr_guest_id', $guest_id, time() + 31536000, '/');
+            $_COOKIE['aitr_guest_id'] = $guest_id;
         }
-        if (empty($_SESSION['aitr_guest_id'])) {
-            $_SESSION['aitr_guest_id'] = 'guest_' . time() . '_' . rand(1000, 9999);
-        }
-        $user_id_str = $_SESSION['aitr_guest_id'];
+        $user_id_str = $_COOKIE['aitr_guest_id'];
     } else {
         $user_id_str = (string) $user_id;
     }
@@ -79,13 +75,12 @@ add_action('wp_ajax_nopriv_aitrongcay_send_support_message', 'aitrongcay_send_su
 function aitrongcay_send_support_message_ajax() {
     $user_id = get_current_user_id();
     if (!$user_id) {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        if (empty($_COOKIE['aitr_guest_id'])) {
+            $guest_id = 'guest_' . time() . '_' . rand(1000, 9999);
+            setcookie('aitr_guest_id', $guest_id, time() + 31536000, '/');
+            $_COOKIE['aitr_guest_id'] = $guest_id;
         }
-        if (empty($_SESSION['aitr_guest_id'])) {
-            $_SESSION['aitr_guest_id'] = 'guest_' . time() . '_' . rand(1000, 9999);
-        }
-        $user_id_str = $_SESSION['aitr_guest_id'];
+        $user_id_str = $_COOKIE['aitr_guest_id'];
     } else {
         $user_id_str = (string) $user_id;
     }
@@ -192,6 +187,7 @@ function aitrongcay_support_chat_admin_page() {
             let form = document.getElementById('aitr-admin-chat-form');
             let input = document.getElementById('aitr-admin-message');
             let userId = document.getElementById('aitr-reply-to').value;
+            let aitrAdminChatState = "";
             
             function loadMessages() {
                 fetch(ajaxurl, {
@@ -202,12 +198,16 @@ function aitrongcay_support_chat_admin_page() {
                 .then(res => res.json())
                 .then(res => {
                     if (res.success && res.data.messages) {
+                        let newState = JSON.stringify(res.data.messages);
+                        if (newState === aitrAdminChatState) return; // Prevent jitter
+                        aitrAdminChatState = newState;
+
                         chatBox.innerHTML = '';
                         res.data.messages.forEach(m => {
                             let isAdmin = m.sender_type === 'admin';
                             let align = isAdmin ? 'align-self:flex-end;background:#e3f2fd;border:1px solid #bbdefb;' : 'align-self:flex-start;background:#fff;border:1px solid #ddd;';
                             let msgHTML = `<div style="max-width:70%;padding:10px 15px;border-radius:15px;${align}">
-                                <div style="font-size:13px;line-height:1.5;">${m.message.replace(/\\n/g, '<br>')}</div>
+                                <div style="font-size:13px;line-height:1.5;">${m.message.replace(/\n/g, '<br>')}</div>
                                 <div style="font-size:10px;color:#888;margin-top:5px;text-align:right;">${m.created_at}</div>
                             </div>`;
                             chatBox.innerHTML += msgHTML;
@@ -231,9 +231,9 @@ function aitrongcay_support_chat_admin_page() {
                 
                 input.value = '';
                 
-                // Temp append
-                let tempHTML = `<div style="max-width:70%;padding:10px 15px;border-radius:15px;align-self:flex-end;background:#e3f2fd;border:1px solid #bbdefb;opacity:0.7;">
-                                <div style="font-size:13px;line-height:1.5;">${message.replace(/\\n/g, '<br>')}</div>
+                // Temp append (Optimistic UI)
+                let tempHTML = `<div style="max-width:70%;padding:10px 15px;border-radius:15px;align-self:flex-end;background:#e3f2fd;border:1px solid #bbdefb;">
+                                <div style="font-size:13px;line-height:1.5;">${message.replace(/\n/g, '<br>')}</div>
                             </div>`;
                 chatBox.innerHTML += tempHTML;
                 chatBox.scrollTop = chatBox.scrollHeight;
@@ -254,7 +254,7 @@ function aitrongcay_support_chat_admin_page() {
             });
 
             loadMessages();
-            setInterval(loadMessages, 5000);
+            setInterval(loadMessages, 3000);
         });
         </script>
         <?php
