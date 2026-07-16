@@ -156,6 +156,22 @@ function aitrongcay_send_order_confirmation_email(array $order): void {
     wp_mail($to, "[AI trồng cây] Xác nhận đơn #{$order_id} – Thông tin chuyển khoản", $html, ['Content-Type: text/html; charset=UTF-8']);
 }
 
+// ─── ASYNC EMAILS ────────────────────────────────────────────────────────────
+add_action('aitrongcay_async_send_order_emails', 'aitrongcay_handle_async_order_emails');
+function aitrongcay_handle_async_order_emails(string $order_id): void {
+    global $wpdb;
+    $table = $wpdb->prefix . 'aitr_orders';
+    $order = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE order_id = %s", $order_id), ARRAY_A);
+    
+    if ($order) {
+        $order['items'] = json_decode((string) $order['items'], true) ?: [];
+        aitrongcay_send_order_confirmation_email($order);
+        if (function_exists('aitrongcay_send_admin_order_email')) {
+            aitrongcay_send_admin_order_email($order);
+        }
+    }
+}
+
 // ─── Email: Status update to customer ────────────────────────────────────────
 function aitrongcay_send_order_status_email(array $order, string $admin_note = ''): void {
     $to = sanitize_email((string) ($order['customer_email'] ?? ''));
@@ -400,15 +416,98 @@ function aitrongcay_handle_place_order(): void {
         'status'         => 'pending_payment',
     ];
 
-    aitrongcay_send_order_confirmation_email($order);
-    aitrongcay_send_admin_order_email($order);
+    // --- GỬI EMAIL (Bất đồng bộ qua Cron để giảm thời gian chờ) ---
+    if (!wp_next_scheduled('aitrongcay_async_send_order_emails', [$order_id])) {
+        wp_schedule_single_event(time(), 'aitrongcay_async_send_order_emails', [$order_id]);
+    }
+    
+    // --- GÁN RACK TỰ ĐỘNG & BÓC TÁCH TÊN CÂY TỪ ĐƠN HÀNG ---
+    if (function_exists('aitrongcay_assign_inventory_rack_to_garden') && function_exists('aitrongcay_upsert_db_pot')) {
+        $garden_key = '';
+        if ($user_id > 0 && function_exists('aitrongcay_get_user_garden_memberships')) {
+            foreach (aitrongcay_get_user_garden_memberships($user_id, ['active']) as $m) {
+                if (($m['role'] ?? '') === 'owner' && !empty($m['garden_key'])) {
+                    $garden_key = (string) $m['garden_key'];
+                    break;
+                }
+            }
+        }
+        if ($garden_key === '') {
+            $garden_key = 'garden:' . md5((string) $user_id . $order_id . (string) time());
+            if (function_exists('aitrongcay_upsert_garden_record')) {
+                aitrongcay_upsert_garden_record($garden_key, $user_id, ['garden_name' => 'Vườn của ' . $customer_name]);
+            }
+            if (function_exists('aitrongcay_garden_members_table')) {
+                $mt = aitrongcay_garden_members_table();
+                $wpdb->insert($mt, [
+                    'garden_key' => $garden_key,
+                    'user_id'    => $user_id,
+                    'role'       => 'owner',
+                    'status'     => 'active',
+                    'created_at' => current_time('mysql'),
+                    'updated_at' => current_time('mysql'),
+                ]);
+            }
+        }
+        
+        // Tìm tên cây từ giỏ hàng để ưu tiên chọn Rack có sẵn tên cây này
+        $extracted_plant = $plant_name;
+        if ($extracted_plant === '') {
+            foreach ($sanitized_items as $sit) {
+                $iname = mb_strtolower($sit['name']);
+                if (str_contains($iname, 'hạt giống') || str_contains($iname, 'cây con')) {
+                    $cleaned = preg_replace('/(hạt giống|cây con|thủy canh|trồng rau|rau mầm|hữu cơ|combo)/ui', '', $sit['name']);
+                    $cleaned = trim(preg_replace('/\s+/', ' ', $cleaned));
+                    if ($cleaned !== '') {
+                        $extracted_plant = mb_convert_case($cleaned, MB_CASE_TITLE, "UTF-8");
+                        break;
+                    }
+                }
+            }
+        }
+        if ($extracted_plant === '') {
+            $extracted_plant = 'Cây mới';
+        }
+
+        // Gọi hàm cấp Rack từ Kho (ưu tiên Rack số thứ tự nhỏ nhất, hoặc có chứa cây $extracted_plant)
+        $assign_res = aitrongcay_assign_inventory_rack_to_garden($garden_key, $user_id, $extracted_plant);
+        if (!isset($assign_res['error'])) {
+            $wpdb->update($table, ['garden_key' => $garden_key], ['order_id' => $order_id]);
+            
+            $rack_id = (int) ($assign_res['rack']['id'] ?? 0);
+            if ($rack_id > 0 && function_exists('aitrongcay_garden_rack_slots_table')) {
+                $slots_table = aitrongcay_garden_rack_slots_table();
+                
+                // Lấy pot_code thực sự của khoang đầu tiên (ví dụ R2_S01)
+                $first_slot = $wpdb->get_row($wpdb->prepare("SELECT pot_code, slot_name FROM {$slots_table} WHERE rack_id = %d ORDER BY slot_index ASC LIMIT 1", $rack_id));
+                $target_pot_code = $first_slot ? $first_slot->pot_code : 'pot_0_0';
+                $target_pot_name = $first_slot ? $first_slot->slot_name : ('Chậu ' . $extracted_plant);
+
+                $existing = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$slots_table} WHERE rack_id = %d AND plant_name = %s LIMIT 1", $rack_id, $extracted_plant));
+                
+                if (!$existing) {
+                    $wpdb->update($slots_table, ['plant_name' => $extracted_plant], ['rack_id' => $rack_id, 'pot_code' => $target_pot_code]);
+                    
+                    if (function_exists('aitrongcay_upsert_db_pot')) {
+                        aitrongcay_upsert_db_pot($garden_key, [
+                            'pot_code'   => $target_pot_code,
+                            'pot_name'   => $target_pot_name,
+                            'plant_name' => $extracted_plant,
+                            'status'     => 'Đang gieo hạt',
+                        ]);
+                    }
+                }
+            }
+        }
+    }
+    // --- KẾT THÚC AUTO ASSIGN ---
     
     if (function_exists('aitrongcay_add_notification') && $user_id > 0) {
         aitrongcay_add_notification(
             $user_id,
             'Đặt hàng thành công',
             'Đơn hàng ' . esc_html($order_id) . ' đã được ghi nhận. Chúng tôi sẽ sớm liên hệ lại với bạn!',
-            '#'
+            home_url('/portal/lich-su-giao-dich/')
         );
     }
 
@@ -899,7 +998,7 @@ function aitrongcay_render_orders_page(): void {
         $oid       = esc_html((string) $o['order_id']);
         $color     = $badge_colors[$o['status']] ?? '#9ca3af';
         $label     = $labels[$o['status']] ?? (string) $o['status'];
-        $date      = date_i18n('d/m/Y H:i', strtotime((string) $o['created_at']));
+        $date      = mysql2date('d/m/Y H:i', (string) $o['created_at']);
         $total_fmt = number_format((int) $o['total'], 0, ',', '.');
 
         // Build "Cây / Dịch vụ" cell from items JSON (fallback to plant_name)
@@ -1137,4 +1236,72 @@ function aitrongcay_save_payment_settings(): void {
 
     wp_redirect(add_query_arg(['page' => 'aitrongcay-payment-settings', 'saved' => '1'], admin_url('admin.php')));
     exit;
+}
+
+// ------------------------------------------------------------------
+// CRON: NHẮC NHỞ THANH TOÁN & THU HỒI DỊCH VỤ QUÁ HẠN
+// ------------------------------------------------------------------
+add_action('init', function() {
+    if (!wp_next_scheduled('aitrongcay_daily_payment_reminder')) {
+        $local_midnight = strtotime('tomorrow 00:00:00');
+        wp_schedule_event($local_midnight, 'daily', 'aitrongcay_daily_payment_reminder');
+    }
+});
+
+add_action('aitrongcay_daily_payment_reminder', 'aitrongcay_process_pending_payment_orders');
+
+function aitrongcay_process_pending_payment_orders(): void {
+    global $wpdb;
+    $orders_table = function_exists('aitrongcay_orders_table') ? aitrongcay_orders_table() : ($wpdb->prefix . 'aitr_orders');
+    if ($wpdb->get_var("SHOW TABLES LIKE '{$orders_table}'") !== $orders_table) return;
+
+    $orders = $wpdb->get_results("SELECT * FROM {$orders_table} WHERE status = 'pending_payment'");
+    if (!$orders) return;
+
+    $now = current_time('mysql');
+    $now_ts = strtotime($now);
+
+    foreach ($orders as $order) {
+        $created_at = strtotime($order->created_at);
+        $days_diff = floor(($now_ts - $created_at) / DAY_IN_SECONDS);
+
+        $garden_key = $order->garden_key;
+        $order_code = esc_html($order->order_id);
+        $user_id = (int) $order->user_id;
+
+        if ($days_diff == 1) {
+            // Nhắc nhở còn 2 ngày
+            if (function_exists('aitrongcay_add_notification')) {
+                aitrongcay_add_notification(
+                    $user_id,
+                    'Thanh toán dịch vụ',
+                    "Bạn còn 2 ngày nữa để thanh toán cho đơn hàng {$order_code} để duy trì dịch vụ.",
+                    home_url('/portal/lich-su-giao-dich/?garden=' . rawurlencode($garden_key))
+                );
+            }
+        } elseif ($days_diff == 2) {
+            // Nhắc nhở còn 1 ngày
+            if (function_exists('aitrongcay_add_notification')) {
+                aitrongcay_add_notification(
+                    $user_id,
+                    'Hạn chót thanh toán',
+                    "Chỉ còn 1 ngày nữa để thanh toán đơn hàng {$order_code}. Vui lòng thanh toán để tránh bị thu hồi dịch vụ.",
+                    home_url('/portal/lich-su-giao-dich/?garden=' . rawurlencode($garden_key))
+                );
+            }
+        } elseif ($days_diff >= 3) {
+            // Quá hạn 3 ngày -> Huỷ đơn & Thu hồi
+            $wpdb->update($orders_table, ['status' => 'cancelled', 'updated_at' => $now], ['id' => $order->id]);
+            if (function_exists('aitrongcay_add_notification')) {
+                aitrongcay_add_notification(
+                    $user_id,
+                    'Đã huỷ dịch vụ',
+                    "Đơn hàng {$order_code} đã bị huỷ do quá hạn thanh toán. Hệ thống sẽ tiến hành thu hồi Rack nếu có.",
+                    home_url('/portal/lich-su-giao-dich/?garden=' . rawurlencode($garden_key))
+                );
+            }
+            // (Thực tế: Quản trị viên sẽ nhìn thấy đơn hàng bị Cancelled và thực hiện thao tác Thu hồi thủ công trên giao diện Admin 
+            // hoặc ta có thể code gọi hàm thu hồi nếu lưu vết rack_id trong đơn hàng).
+        }
+    }
 }

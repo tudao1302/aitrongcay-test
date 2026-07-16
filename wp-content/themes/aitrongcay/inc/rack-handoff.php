@@ -70,7 +70,7 @@ function aitrongcay_handoff_archive_old_customer(int $rack_id, string $from_gard
 
     // 3.5 Xoá dữ liệu các khoang (pots) thuộc rack này khỏi garden của KH cũ
     global $wpdb;
-    $slots_table = $wpdb->prefix . 'aitr_rack_slots';
+    $slots_table = function_exists('aitrongcay_garden_rack_slots_table') ? aitrongcay_garden_rack_slots_table() : ($wpdb->prefix . 'aitr_garden_rack_slots');
     $pots_table  = function_exists('aitrongcay_garden_pots_table') ? aitrongcay_garden_pots_table() : ($wpdb->prefix . 'aitr_garden_pots');
     
     $pot_codes = $wpdb->get_col($wpdb->prepare(

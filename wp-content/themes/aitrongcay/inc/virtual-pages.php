@@ -38,6 +38,7 @@ function aitrongcay_virtual_pages(): array
         'portal/ban-be' => ['title' => 'Hàng xóm (cũ)', 'template' => 'template-parts/virtual/portal.php'],
         'portal/doi-diem'  => ['title' => 'Cửa hàng đổi điểm', 'template' => 'template-parts/virtual/doi-diem.php'],
         'portal/chia-se-khu-vuon' => ['title' => 'Chia sẻ khu vườn', 'template' => 'template-parts/virtual/portal.php'],
+        'portal/lich-su-giao-dich' => ['title' => 'Sổ giao dịch & Hợp đồng', 'template' => 'template-parts/virtual/lich-su-giao-dich.php'],
     ];
 }
 

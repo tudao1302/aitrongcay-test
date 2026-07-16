@@ -55,6 +55,7 @@ if ($is_logged_in) {
                         <div class="account-menu-links" role="menu">
                             <a class="account-menu-link" href="<?php echo esc_url(home_url('/portal/dashboard-2/')); ?>">Khu vườn của tôi</a>
                             <a class="account-menu-link" href="<?php echo esc_url(home_url('/cho-que/')); ?>">Chợ quê</a>
+                            <a class="account-menu-link" href="<?php echo esc_url(home_url('/portal/lich-su-giao-dich/')); ?>">Sổ giao dịch & Hợp đồng</a>
                             <a class="account-menu-link" href="<?php echo esc_url(home_url('/tai-khoan/')); ?>">Hồ sơ tài khoản</a>
                             <a class="account-menu-link" href="<?php echo esc_url(home_url('/tai-khoan/#doi-mat-khau')); ?>">Đổi mật khẩu</a>
                             <a class="account-menu-link danger" href="<?php echo esc_url(aitrongcay_logout_url()); ?>">Đăng xuất</a>

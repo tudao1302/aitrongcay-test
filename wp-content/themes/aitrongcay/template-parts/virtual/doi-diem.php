@@ -256,6 +256,13 @@ get_template_part('template-parts/site/eco-shell-start');
         $g_param = $garden_key ? "?garden=" . $garden_key : "";
         $g_param_amp = $garden_key ? "&garden=" . $garden_key : "";
 
+        // Calculate dynamic maximums
+        global $wpdb;
+        $pot_table = $wpdb->prefix . 'aitr_garden_pots';
+        $active_pots_count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$pot_table} WHERE garden_key = %s", $garden_key));
+        $chup_anh_max = max(1, $active_pots_count);
+        $tuoi_nuoc_max = 3 + (crc32($user_id . $today . 'tuoi_nuoc') % 4); // Randomizes from 3 to 6 per user per day
+
         // Fetch real data from user meta
         $tuoi_nuoc_count = (int) get_user_meta($user_id, "_aitrongcay_daily_waters_count_{$today}", true);
         $chup_anh_count = (int) get_user_meta($user_id, "_aitrongcay_daily_chup_anh_{$today}", true);
@@ -266,13 +273,13 @@ get_template_part('template-parts/site/eco-shell-start');
         $moi_ban_count = (int) get_user_meta($user_id, "_aitrongcay_total_referrals", true);
 
         // Cap maximum values to ensure progress bar doesn't overflow
-        $tuoi_nuoc_count = min($tuoi_nuoc_count, 3);
-        $chup_anh_count = min($chup_anh_count, 1);
+        $tuoi_nuoc_count = min($tuoi_nuoc_count, $tuoi_nuoc_max);
+        $chup_anh_count = min($chup_anh_count, $chup_anh_max);
         $thu_hoach_count = min($thu_hoach_count, 1);
 
         $completed_missions = 0;
-        if ($tuoi_nuoc_count >= 3) $completed_missions++;
-        if ($chup_anh_count >= 1) $completed_missions++;
+        if ($tuoi_nuoc_count >= $tuoi_nuoc_max) $completed_missions++;
+        if ($chup_anh_count >= $chup_anh_max) $completed_missions++;
         if ($thu_hoach_count >= 1) $completed_missions++;
         
         $missions = [
@@ -282,16 +289,16 @@ get_template_part('template-parts/site/eco-shell-start');
             'title' => 'Tưới nước hộ hàng xóm',
             'reward' => '+10đ / lần',
             'current' => $tuoi_nuoc_count,
-            'max' => 3,
+            'max' => $tuoi_nuoc_max,
             'link' => home_url('/portal/hang-xom/') . $g_param
           ],
           [
             'id' => 'chup_anh',
             'icon' => '📸',
             'title' => 'Chụp ảnh khu vườn',
-            'reward' => '+5đ',
+            'reward' => '+5đ / khoang',
             'current' => $chup_anh_count,
-            'max' => 1,
+            'max' => $chup_anh_max,
             'link' => home_url('/portal/dashboard-2/') . '?view=timelapse' . $g_param_amp
           ],
           [

@@ -370,8 +370,9 @@ $build_growth_journey = static function (int $plant_id, int $analysis_level = 2,
     $base_width = ((2 * $active_stage_position - 1) / (2 * $growth_stage_total)) * 100;
     
     if ($active_stage_position < $growth_stage_total) {
-       // Thêm một đoạn ngắn qua node hiện tại để hiển thị trạng thái "đang xử lý" ở giai đoạn này
-       $progress_width = $base_width + ($step_width * 0.35); 
+       // Chỉ kéo dài đường tiến trình (nhích qua node hiện tại) nếu đã sang Ngày 2 trở đi
+       $extra = ($age_days !== null && $age_days > 1) ? ($step_width * 0.35) : 0;
+       $progress_width = $base_width + $extra; 
     } else {
        $progress_width = 100;
     }
@@ -838,6 +839,21 @@ if ($has_active_subscription || !empty($rack_configs)) {
     }
   }
 } // Closes if ($has_active_subscription || !empty($rack_configs))
+
+// Pre-load sensor cache from transients so JS doesn't have to wait for AJAX
+$initial_sensor_cache = [];
+if (!empty($rack_configs)) {
+    foreach ($rack_configs as $ri => $rack) {
+        foreach (($rack['trays'] ?? []) as $ti => $tray) {
+            $transient_key = 'aitr_blynk_status_swr_' . md5($garden_key . '_r' . $ri . '_t' . $ti);
+            $cached = get_transient($transient_key);
+            if (is_array($cached) && isset($cached['temp'])) {
+                $cacheKey = 'r' . $ri . '_t' . $ti;
+                $initial_sensor_cache[$cacheKey] = $cached;
+            }
+        }
+    }
+}
 
 // Update hero variables from the fully resolved payload
 if (!empty($switcher_pot_payload)) {
@@ -1953,6 +1969,17 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
       text-transform: uppercase;
       font-weight: 800;
       margin-bottom: 0
+    }
+
+    .d2-blynk-notice {
+      color: #fca5a5;
+      font-size: 12px;
+      white-space: nowrap;
+      background: rgba(220, 38, 38, 0.15);
+      padding: 6px 12px;
+      border-radius: 8px;
+      align-self: center;
+      border: 1px solid rgba(220, 38, 38, 0.3);
     }
 
     .d2-pot-journal-edit {
@@ -4337,6 +4364,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
           <?php get_template_part('template-parts/site/eco-notification-bell'); ?>
           <button class="d2-profile-trigger" type="button" data-d2-profile-trigger aria-expanded="false"><?php echo $header_avatar_html; ?></button>
           <div class="d2-profile-popup" data-d2-profile-popup hidden>
+            <a href="<?php echo esc_url(home_url('/portal/lich-su-giao-dich/')); ?>">Sổ giao dịch & Hợp đồng</a>
             <a href="<?php echo esc_url(home_url('/tai-khoan/')); ?>">Quản lý tài khoản</a>
             <a href="<?php echo esc_url(aitrongcay_logout_url()); ?>">Đăng xuất</a>
           </div>
@@ -5806,7 +5834,7 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         d2BlynkNotice.hidden = !text;
       }
       // Per-pot sensor cache: { 'P-003': { temp: 26.1, hum: 61 }, ... }
-      var potSensorCache = {};
+      var potSensorCache = <?php echo wp_json_encode((object) $initial_sensor_cache); ?>;
       var activePotCodeForSensor = <?php echo wp_json_encode($hero_pot_code ?? ''); ?>;
       // Maps: pot codes with token, and pot → {ri, ti} — built from PHP-injected lane info (reliable)
       var potsWithToken = {};
@@ -5924,8 +5952,8 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
             applyBlynkSensorsToHero(d);
             updateControlsFromData(d);
           }
-        }).catch(function () {
-          showD2BlynkNotice('Blynk đang giới hạn quota, vui lòng thử lại sau');
+        }).catch(function (e) {
+          console.warn('Blynk fetch failed', e);
         });
       }
 
@@ -8047,18 +8075,61 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
         .then(function(r) { return r.json(); })
         .then(function(res) {
           if (res.success) {
-            alert('Khoang đã sẵn sàng cho vụ mới! Đang tải lại khu vườn...');
-            window.location.reload();
+            // Đóng modal hiện tại nếu có
+            if (typeof modal !== 'undefined' && modal) {
+                modal.style.display = 'none';
+            }
+            
+            // Tạo overlay thành công đẹp mắt
+            var successOverlay = document.createElement('div');
+            successOverlay.style.position = 'fixed';
+            successOverlay.style.top = '0';
+            successOverlay.style.left = '0';
+            successOverlay.style.width = '100vw';
+            successOverlay.style.height = '100vh';
+            successOverlay.style.backgroundColor = 'rgba(12, 18, 12, 0.9)';
+            successOverlay.style.backdropFilter = 'blur(10px)';
+            successOverlay.style.zIndex = '999999';
+            successOverlay.style.display = 'flex';
+            successOverlay.style.flexDirection = 'column';
+            successOverlay.style.alignItems = 'center';
+            successOverlay.style.justifyContent = 'center';
+            successOverlay.style.color = '#fff';
+            successOverlay.style.transition = 'opacity 0.3s ease';
+            successOverlay.style.opacity = '0';
+            
+            successOverlay.innerHTML = `
+              <div style="font-size:4.5rem;margin-bottom:1rem;color:#4ade80;animation: aitrScaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;">🌾</div>
+              <div style="font-size:1.5rem;font-weight:600;margin-bottom:0.5rem;font-family:'Space Grotesk', sans-serif;">Thu hoạch & dọn khoang thành công!</div>
+              <div style="color:#a1a1aa;font-size:1.1rem;display:flex;align-items:center;gap:8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: aitrSpin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                </svg>
+                Hệ thống đang tải lại khu vườn...
+              </div>
+              <style>
+                @keyframes aitrScaleIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+                @keyframes aitrSpin { 100% { transform: rotate(360deg); } }
+              </style>
+            `;
+            document.body.appendChild(successOverlay);
+            
+            // Fade in
+            setTimeout(function() { successOverlay.style.opacity = '1'; }, 10);
+            
+            // Reload sau 2 giây để user đọc kịp thông báo
+            setTimeout(function() { window.location.reload(); }, 2000);
           } else {
             alert('Lỗi: ' + (res.data ? res.data.message : 'Không xác định'));
-            resetBtn.textContent = '🌱 Trồng vụ mới';
+            resetBtn.textContent = '🗑️ Hủy vụ & Dọn khoang';
             resetBtn.style.opacity = '1';
             resetBtn.disabled = false;
           }
         })
         .catch(function(e) {
           alert('Lỗi kết nối. Vui lòng thử lại.');
-          resetBtn.textContent = '🌱 Trồng vụ mới';
+          resetBtn.textContent = '🗑️ Hủy vụ & Dọn khoang';
           resetBtn.style.opacity = '1';
           resetBtn.disabled = false;
         });

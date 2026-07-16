@@ -444,6 +444,7 @@ set_query_var('aitr_eco_shell', [
         <button class="eco-warehouse-avatar eco-warehouse-profile-trigger" type="button" data-eco-warehouse-profile-trigger aria-expanded="false"><?php echo $header_avatar_html; ?></button>
       </div>
       <div class="eco-warehouse-profile-popup" data-eco-warehouse-profile-popup hidden>
+        <a href="<?php echo esc_url(home_url('/portal/lich-su-giao-dich/')); ?>">Sổ giao dịch & Hợp đồng</a>
         <a href="<?php echo esc_url(home_url('/tai-khoan/')); ?>">Quản lý tài khoản</a>
         <a href="<?php echo esc_url(aitrongcay_logout_url()); ?>">Đăng xuất</a>
       </div>

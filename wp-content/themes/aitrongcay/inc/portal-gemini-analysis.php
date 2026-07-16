@@ -766,7 +766,8 @@ function aitrongcay_reset_pot_crop_ajax(): void
         }
         
         if ($is_harvest) {
-            $user_id = $current_user->ID;
+            $user_obj = wp_get_current_user();
+            $user_id = $user_obj->ID;
             $current_points = (int) get_user_meta($user_id, '_aitrongcay_eco_points', true);
             update_user_meta($user_id, '_aitrongcay_eco_points', $current_points + 50);
             

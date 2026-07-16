@@ -25,6 +25,7 @@ unset($shared_top_link);
 $brand_home_url = $active_garden_key !== '' ? add_query_arg('garden', $active_garden_key, home_url('/portal/dashboard-2/')) : home_url('/portal/dashboard-2/');
 $profile_links = is_user_logged_in()
     ? [
+        ['label' => 'Sổ giao dịch & Hợp đồng', 'url' => home_url('/portal/lich-su-giao-dich/')],
         ['label' => 'Quản lý tài khoản', 'url' => home_url('/tai-khoan/')],
         ['label' => 'Đăng xuất', 'url' => aitrongcay_logout_url(), 'danger' => true],
     ]

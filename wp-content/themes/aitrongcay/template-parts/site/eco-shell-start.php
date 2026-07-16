@@ -21,6 +21,7 @@ $shared_top_links = [
 // Removed garden query forwarding for top links to allow escaping neighbor context
 $profile_links = is_user_logged_in()
     ? [
+        ['label' => 'Sổ giao dịch & Hợp đồng', 'url' => home_url('/portal/lich-su-giao-dich/')],
         ['label' => 'Quản lý tài khoản', 'url' => home_url('/tai-khoan/')],
         ['label' => 'Đăng xuất', 'url' => aitrongcay_logout_url(), 'danger' => true],
     ]

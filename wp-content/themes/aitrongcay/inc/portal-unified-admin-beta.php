@@ -2448,12 +2448,26 @@ function aitrongcay_render_unified_admin_beta_page(): void {
             
             setTimeout(() => {
                 document.querySelectorAll('#aitr-modal-trays-container select[name^="trays["]').forEach(sel => {
-                    const selectedText = sel.getAttribute('data-selected');
-                    if (selectedText) {
+                    const selectedTextOriginal = sel.getAttribute('data-selected');
+                    if (selectedTextOriginal) {
+                        const sText = selectedTextOriginal.toLowerCase().trim();
+                        let found = false;
                         for (let i = 0; i < sel.options.length; i++) {
-                            if (sel.options[i].value.endsWith('|' + selectedText) || sel.options[i].text === selectedText || sel.options[i].value === selectedText) {
+                            const optValue = sel.options[i].value.toLowerCase();
+                            const optText = sel.options[i].text.toLowerCase();
+                            if (optValue.endsWith('|' + sText) || optText === sText || optValue === sText) {
                                 sel.selectedIndex = i;
+                                found = true;
                                 break;
+                            }
+                        }
+                        if (!found && sText.length > 2) {
+                            for (let i = 0; i < sel.options.length; i++) {
+                                const optText = sel.options[i].text.toLowerCase();
+                                if (optText.includes(sText) || sText.includes(optText)) {
+                                    sel.selectedIndex = i;
+                                    break;
+                                }
                             }
                         }
                     }

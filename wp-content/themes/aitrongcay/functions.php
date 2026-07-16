@@ -5303,16 +5303,35 @@ function aitrongcay_release_rack_to_inventory(int $rack_id): array
     return ['rack' => aitrongcay_get_rack_by_id($rack_id)];
 }
 
-function aitrongcay_find_available_inventory_rack(int $minimum_slots = 2): ?array
+function aitrongcay_find_available_inventory_rack(int $minimum_slots = 2, string $preferred_plant = ''): ?array
 {
     global $wpdb;
     $table = aitrongcay_garden_racks_table();
-    $row = $wpdb->get_row($wpdb->prepare(
-        "SELECT * FROM {$table} WHERE status = %s AND slot_count >= %d ORDER BY slot_count ASC, id ASC LIMIT 1",
+    $racks = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM {$table} WHERE status = %s AND slot_count >= %d ORDER BY slot_count ASC, id ASC",
         'inventory',
         max(2, $minimum_slots)
     ), ARRAY_A);
-    return is_array($row) ? $row : null;
+
+    if (empty($racks)) {
+        return null;
+    }
+
+    if ($preferred_plant !== '') {
+        $preferred_plant_lower = mb_strtolower(trim($preferred_plant), 'UTF-8');
+        $pots_table = aitrongcay_garden_pots_table();
+        foreach ($racks as $rack) {
+            $garden_key = (string) $rack['garden_key'];
+            $pots = $wpdb->get_results($wpdb->prepare("SELECT plant_name FROM {$pots_table} WHERE garden_key = %s", $garden_key), ARRAY_A);
+            foreach ($pots as $pot) {
+                if (mb_strtolower(trim((string) $pot['plant_name']), 'UTF-8') === $preferred_plant_lower) {
+                    return $rack;
+                }
+            }
+        }
+    }
+
+    return $racks[0];
 }
 
 function aitrongcay_log_rack_inventory_event(int $rack_id, string $event_type, string $from_status = '', string $to_status = '', int $target_user_id = 0, string $notes = '', int $created_by_user_id = 0): bool
@@ -5351,7 +5370,7 @@ function aitrongcay_move_blynk_config_key(string $from_garden_key, string $to_ga
     aitrongcay_save_blynk_configs($configs);
 }
 
-function aitrongcay_assign_inventory_rack_to_garden(string $garden_key, int $user_id = 0): array
+function aitrongcay_assign_inventory_rack_to_garden(string $garden_key, int $user_id = 0, string $preferred_plant = ''): array
 {
     global $wpdb;
     $garden_key = trim($garden_key);
@@ -5359,7 +5378,7 @@ function aitrongcay_assign_inventory_rack_to_garden(string $garden_key, int $use
         return ['error' => 'Thiếu mã khu vườn để cấp rack.'];
     }
 
-    $inventory_rack = aitrongcay_find_available_inventory_rack(2);
+    $inventory_rack = aitrongcay_find_available_inventory_rack(2, $preferred_plant);
     if (!$inventory_rack) {
         aitrongcay_log_rack_inventory_event(0, 'out_of_stock', 'inventory', 'empty', $user_id, 'Kho rack đã hết khi yêu cầu cấp cho khu vườn ' . $garden_key, $user_id);
         return ['error' => 'Kho rack hiện đang hết. Anh vui lòng chờ thêm để em bổ sung rack mới rồi mình khởi tạo tiếp.'];
@@ -6080,30 +6099,10 @@ function aitrongcay_blynk_get_status_ajax(): void
             wp_send_json_success($cached);
         }
         
-        // Dữ liệu cũ (>60s). Nếu đang bị sập nguồn (cooldown) thì vẫn trả về dữ liệu cũ (để user xem đồ cổ còn hơn xem --°C)
+        // Dữ liệu cũ (>60s). Nếu đang bị sập nguồn (cooldown) thì vẫn trả về dữ liệu cũ
         if (get_transient($cooldown_key)) {
             wp_send_json_success($cached);
         }
-
-        // KÍCH HOẠT BACKGROUND SYNC
-        if (!get_transient($lock_key)) {
-            set_transient($lock_key, true, 15);
-            wp_remote_post(admin_url('admin-ajax.php'), [
-                'blocking'  => false,
-                'timeout'   => 0.01,
-                'sslverify' => false,
-                'body'      => [
-                    'action'     => 'aitrongcay_blynk_bg_sync',
-                    'garden_key' => $garden_key,
-                    'rack_index' => $req_rack_index,
-                    'tray_index' => $req_tray_index,
-                    'nonce'      => wp_create_nonce('aitrongcay_blynk_bg_sync_nonce')
-                ]
-            ]);
-        }
-        
-        // Trả về dữ liệu cũ ngay lập tức (0.01s)
-        wp_send_json_success($cached);
     }
 
     // NẾU CHƯA CÓ DATA (Lần đầu tiên mở web hoặc bị xoá cache)
@@ -6112,9 +6111,13 @@ function aitrongcay_blynk_get_status_ajax(): void
         wp_send_json_error(['message' => 'Blynk đang giới hạn quota, tạm ngưng gọi lại trong ít phút.']);
     }
 
-    // Không có data cũ + Không bị cooldown -> Lấy LIVE trực tiếp (đợi tối đa 3s)
+    // Lấy LIVE trực tiếp (đợi ~200ms)
     $payload = aitrongcay_sync_blynk_data_for_tray($garden_key, $req_rack_index, $req_tray_index);
     if (is_wp_error($payload)) {
+        if ($has_stale_data) {
+            // Nếu lỗi mạng nhưng vẫn còn đồ cổ thì xài tạm
+            wp_send_json_success($cached);
+        }
         wp_send_json_error(['message' => $payload->get_error_message()]);
     }
     
@@ -9440,8 +9443,10 @@ add_action('wp_ajax_aitrongcay_water_friend_garden', function () {
     $daily_waters_key = "_aitrongcay_daily_waters_count_{$today}";
     $daily_waters_count = (int) get_user_meta($current_user_id, $daily_waters_key, true);
 
-    if ($daily_waters_count >= 3) {
-        wp_send_json_error(['message' => 'Hôm nay bạn đã hết 3 lượt tưới nước hộ hàng xóm rồi. Hãy quay lại vào ngày mai nhé!']);
+    $daily_waters_max = 3 + (crc32($current_user_id . $today . 'tuoi_nuoc') % 4);
+
+    if ($daily_waters_count >= $daily_waters_max) {
+        wp_send_json_error(['message' => "Hôm nay bạn đã hết {$daily_waters_max} lượt tưới nước hộ hàng xóm rồi. Hãy quay lại vào ngày mai nhé!"]);
     }
 
     $last_water_friend_key = "_aitrongcay_watered_{$friend_id}_{$today}";
@@ -9549,11 +9554,17 @@ add_filter('aitrongcay_daily_mission_data', function ($data, $mission_id, $user_
         return $data;
     }
 
+    global $wpdb;
+    $garden_key = function_exists('aitrongcay_resolve_active_garden_key') ? aitrongcay_resolve_active_garden_key(get_user_by('id', $user_id)) : '';
+    $pot_table = $wpdb->prefix . 'aitr_garden_pots';
+    $active_pots_count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$pot_table} WHERE garden_key = %s", $garden_key));
+    $chup_anh_max = max(1, $active_pots_count);
+
     // Modular registry for simple static missions
     $missions = apply_filters('aitrongcay_daily_missions_registry', [
         'chup_anh' => [
-            'points' => 5,
-            'max' => 1,
+            'points' => 5, // 5 points PER pot photo
+            'max' => $chup_anh_max,
             'message' => 'Bạn nhận được +5đ từ nhiệm vụ Chụp ảnh khu vườn!'
         ],
         'thu_hoach' => [
