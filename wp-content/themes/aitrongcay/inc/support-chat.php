@@ -173,11 +173,11 @@ function aitrongcay_support_chat_admin_page() {
 
         // Khung nhập
         echo '<div style="padding:15px;border-top:1px solid #ccd0d4;background:#fff;">';
-        echo '<form id="aitr-admin-chat-form" style="display:flex;gap:10px;">';
+        echo '<div id="aitr-admin-chat-form" style="display:flex;gap:10px;">';
         echo "<input type='hidden' id='aitr-reply-to' value='{$active_user}'>";
         echo '<textarea id="aitr-admin-message" rows="2" style="flex:1;padding:10px;border-radius:5px;" placeholder="Nhập tin nhắn..." required></textarea>';
-        echo '<button type="submit" class="button button-primary" style="align-self:flex-end;">Gửi</button>';
-        echo '</form>';
+        echo '<button type="button" id="aitr-admin-btn-send" class="button button-primary" style="align-self:flex-end;">Gửi</button>';
+        echo '</div>';
         echo '</div>';
         
         ?>
@@ -224,8 +224,9 @@ function aitrongcay_support_chat_admin_page() {
                 });
             }
 
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
+            let btnSend = document.getElementById('aitr-admin-btn-send');
+            
+            function handleSend() {
                 let message = input.value.trim();
                 if (!message) return;
                 
@@ -243,13 +244,15 @@ function aitrongcay_support_chat_admin_page() {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: 'action=aitrongcay_admin_send_message&user_id=' + userId + '&message=' + encodeURIComponent(message)
                 }).then(() => loadMessages());
-            });
+            }
+
+            btnSend.addEventListener('click', handleSend);
             
             // Allow Enter to send
             input.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    form.dispatchEvent(new Event('submit'));
+                    handleSend();
                 }
             });
 
