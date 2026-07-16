@@ -157,7 +157,7 @@ function aitrongcay_support_chat_admin_page() {
         $name = $user_obj ? $user_obj->display_name : ($uid > 0 ? "User #{$uid}" : "Guest #{$uid}");
         $url = add_query_arg(['user_chat' => $uid], menu_page_url('aitr-support-chat', false));
         $unread = $cu->unread_count > 0 ? "<span class='aitr-unread-badge' style='background:red;color:#fff;border-radius:10px;padding:2px 6px;font-size:11px;float:right;'>{$cu->unread_count}</span>" : '';
-        echo "<li style='border-bottom:1px solid #eee;'><a href='{$url}' style='display:block;padding:15px;text-decoration:none;color:#3c434a;background:{$bg};'>{$name} {$unread}</a></li>";
+        echo "<li style='border-bottom:1px solid #eee;'><a href='{$url}' class='aitr-admin-user-link' data-user-id='{$uid}' data-user-name='".esc_attr($name)."' style='display:block;padding:15px;text-decoration:none;color:#3c434a;background:{$bg};'>{$name} {$unread}</a></li>";
     }
     echo '</ul></div>';
 
@@ -166,7 +166,7 @@ function aitrongcay_support_chat_admin_page() {
     if ($active_user) {
         $active_user_obj = $active_user > 0 ? get_user_by('id', $active_user) : false;
         $u_name = $active_user_obj ? $active_user_obj->display_name : ($active_user > 0 ? "User #{$active_user}" : "Guest #{$active_user}");
-        echo "<h2 style='padding:15px;margin:0;border-bottom:1px solid #ccd0d4;'>Đang chat với: {$u_name}</h2>";
+        echo "<h2 id='aitr-admin-chat-header' style='padding:15px;margin:0;border-bottom:1px solid #ccd0d4;'>Đang chat với: {$u_name}</h2>";
         
         echo '<div id="aitr-admin-chat-box" style="flex:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:#f9f9f9;">';
         echo '</div>';
@@ -184,16 +184,21 @@ function aitrongcay_support_chat_admin_page() {
         <script>
         document.addEventListener('DOMContentLoaded', function() {
             let chatBox = document.getElementById('aitr-admin-chat-box');
-            let form = document.getElementById('aitr-admin-chat-form');
             let input = document.getElementById('aitr-admin-message');
-            let userId = document.getElementById('aitr-reply-to').value;
+            let activeUserIdInput = document.getElementById('aitr-reply-to');
             let aitrAdminChatState = "";
+            let pollInterval = null;
+            
+            function getUserId() {
+                return activeUserIdInput.value;
+            }
             
             function loadMessages() {
+                let currentUid = getUserId();
                 fetch(ajaxurl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'action=aitrongcay_admin_get_messages&user_id=' + userId
+                    body: 'action=aitrongcay_admin_get_messages&user_id=' + currentUid
                 })
                 .then(res => res.json())
                 .then(res => {
@@ -206,20 +211,23 @@ function aitrongcay_support_chat_admin_page() {
                         res.data.messages.forEach(m => {
                             let isAdmin = m.sender_type === 'admin';
                             let align = isAdmin ? 'align-self:flex-end;background:#e3f2fd;border:1px solid #bbdefb;' : 'align-self:flex-start;background:#fff;border:1px solid #ddd;';
+                            let formattedTime = m.created_at;
                             let msgHTML = `<div style="max-width:70%;padding:10px 15px;border-radius:15px;${align}">
                                 <div style="font-size:13px;line-height:1.5;">${m.message.replace(/\n/g, '<br>')}</div>
-                                <div style="font-size:10px;color:#888;margin-top:5px;text-align:right;">${m.created_at}</div>
+                                <div style="font-size:10px;color:#888;margin-top:5px;text-align:right;">${formattedTime}</div>
                             </div>`;
                             chatBox.innerHTML += msgHTML;
                         });
                         chatBox.scrollTop = chatBox.scrollHeight;
                         
                         // Hide unread badge for this user
-                        let activeLi = document.querySelector(`a[href*="user_chat=${userId}"]`);
+                        let activeLi = document.querySelector(`a[href*="user_chat=${currentUid}"]`);
                         if (activeLi) {
                             let badge = activeLi.querySelector('.aitr-unread-badge');
                             if (badge) badge.style.display = 'none';
                         }
+                    } else if (res.success && res.data.messages.length === 0) {
+                        chatBox.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">Chưa có tin nhắn nào.</div>';
                     }
                 });
             }
@@ -228,13 +236,24 @@ function aitrongcay_support_chat_admin_page() {
             
             function handleSend() {
                 let message = input.value.trim();
+                let currentUid = getUserId();
                 if (!message) return;
                 
                 input.value = '';
                 
                 // Temp append (Optimistic UI)
+                let now = new Date();
+                let day = String(now.getDate()).padStart(2, '0');
+                let month = String(now.getMonth() + 1).padStart(2, '0');
+                let year = now.getFullYear();
+                let hours = String(now.getHours()).padStart(2, '0');
+                let minutes = String(now.getMinutes()).padStart(2, '0');
+                let seconds = String(now.getSeconds()).padStart(2, '0');
+                let timeString = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+
                 let tempHTML = `<div style="max-width:70%;padding:10px 15px;border-radius:15px;align-self:flex-end;background:#e3f2fd;border:1px solid #bbdefb;">
                                 <div style="font-size:13px;line-height:1.5;">${message.replace(/\n/g, '<br>')}</div>
+                                <div style="font-size:10px;color:#888;margin-top:5px;text-align:right;">${timeString}</div>
                             </div>`;
                 chatBox.innerHTML += tempHTML;
                 chatBox.scrollTop = chatBox.scrollHeight;
@@ -242,7 +261,7 @@ function aitrongcay_support_chat_admin_page() {
                 fetch(ajaxurl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'action=aitrongcay_admin_send_message&user_id=' + userId + '&message=' + encodeURIComponent(message)
+                    body: 'action=aitrongcay_admin_send_message&user_id=' + currentUid + '&message=' + encodeURIComponent(message)
                 }).then(() => loadMessages());
             }
 
@@ -256,8 +275,40 @@ function aitrongcay_support_chat_admin_page() {
                 }
             });
 
+            // Smooth user switching via AJAX
+            let userLinks = document.querySelectorAll('.aitr-admin-user-link');
+            let chatHeader = document.getElementById('aitr-admin-chat-header');
+            
+            userLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    let targetUid = this.getAttribute('data-user-id');
+                    let targetUname = this.getAttribute('data-user-name');
+                    
+                    if (targetUid === getUserId()) return;
+                    
+                    // Update visual state in sidebar
+                    userLinks.forEach(l => l.style.background = 'transparent');
+                    this.style.background = '#f0f0f1';
+                    
+                    // Update header & Input
+                    if (chatHeader) chatHeader.innerText = "Đang chat với: " + targetUname;
+                    activeUserIdInput.value = targetUid;
+                    
+                    // Reset chatbox immediately to show transition
+                    chatBox.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">Đang tải tin nhắn...</div>';
+                    aitrAdminChatState = ""; 
+                    
+                    // Update URL without page reload
+                    window.history.pushState({}, '', this.href);
+                    
+                    // Fetch new messages
+                    loadMessages();
+                });
+            });
+
             loadMessages();
-            setInterval(loadMessages, 3000);
+            pollInterval = setInterval(loadMessages, 3000);
         });
         </script>
         <?php
@@ -283,6 +334,10 @@ function aitrongcay_admin_get_messages_ajax() {
     // Đánh dấu đã đọc
     $wpdb->query($wpdb->prepare("UPDATE {$table_name} SET is_read = 1 WHERE user_id = %d AND sender_type = 'customer'", $user_id));
     
+    foreach ($messages as &$m) {
+        $m['created_at'] = date('d/m/Y H:i:s', strtotime($m['created_at']));
+    }
+
     wp_send_json_success(['messages' => $messages]);
 }
 
