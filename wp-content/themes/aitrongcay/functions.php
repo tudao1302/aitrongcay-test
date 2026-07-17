@@ -2569,7 +2569,7 @@ function aitrongcay_get_db_pots(string $garden_key): array
 
     // TỰ ĐỘNG ĐỒNG BỘ KHOANG TỪ SLOTS
     if (function_exists('aitrongcay_get_rack_slots')) {
-        $slots = aitrongcay_get_rack_slots($garden_key);
+        $slots = aitrongcay_get_rack_slots($garden_key, false);
         if (!empty($slots)) {
             $existing_pots_data = $wpdb->get_results($wpdb->prepare("SELECT pot_code, plant_name, video_url FROM {$table} WHERE garden_key = %s", $garden_key), ARRAY_A);
             $existing_map = [];
@@ -2683,6 +2683,21 @@ function aitrongcay_get_db_pots(string $garden_key): array
                 foreach ($chunks as $chunk) {
                     $values = implode(", ", $chunk);
                     $wpdb->query("INSERT INTO {$table} (garden_key, pot_code, pot_name, plant_name, status, status_summary, ai_note, created_at, sort_order, light_device, video_url, updated_at) VALUES {$values}");
+                }
+            }
+
+            // Dọn dẹp các khoang không còn tồn tại trong $slots (ví dụ: gỡ rack hoặc khoang ảo bị đồng bộ nhầm)
+            $current_pot_codes = array_map(function($slot) {
+                return trim((string) ($slot['pot_code'] ?? ''));
+            }, $slots);
+            $current_pot_codes = array_filter($current_pot_codes, function($c) { return $c !== ''; });
+            
+            if (!empty($existing_map)) {
+                $orphaned_codes = array_diff(array_keys($existing_map), $current_pot_codes);
+                if (!empty($orphaned_codes)) {
+                    $placeholders = implode(',', array_fill(0, count($orphaned_codes), '%s'));
+                    $delete_query = $wpdb->prepare("DELETE FROM {$table} WHERE garden_key = %s AND pot_code IN ($placeholders)", array_merge([$garden_key], $orphaned_codes));
+                    $wpdb->query($delete_query);
                 }
             }
         }
@@ -4278,7 +4293,7 @@ function aitrongcay_get_rack_record(string $garden_key): ?array
     return $cache[$garden_key];
 }
 
-function aitrongcay_get_rack_slots(string $garden_key): array
+function aitrongcay_get_rack_slots(string $garden_key, bool $include_cloned = true): array
 {
     global $wpdb;
     static $cache = [];
@@ -4287,28 +4302,32 @@ function aitrongcay_get_rack_slots(string $garden_key): array
     if ($garden_key === '') {
         return [];
     }
-    if (isset($cache[$garden_key])) {
-        return $cache[$garden_key];
+    
+    $cache_key = $garden_key . '_' . ($include_cloned ? '1' : '0');
+    if (isset($cache[$cache_key])) {
+        return $cache[$cache_key];
     }
 
     $racks_table = aitrongcay_garden_racks_table();
     $racks = $wpdb->get_col($wpdb->prepare("SELECT id FROM {$racks_table} WHERE garden_key = %s", $garden_key));
 
-    $cloned_rack_ids = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
-    $cloned_rack_ids = is_array($cloned_rack_ids) ? array_values($cloned_rack_ids) : (is_string($cloned_rack_ids) && $cloned_rack_ids !== '' ? explode(',', $cloned_rack_ids) : array_values((array) $cloned_rack_ids));
-    if (!empty($cloned_rack_ids)) {
-        $racks = array_unique(array_merge($racks, array_map('intval', $cloned_rack_ids)));
+    if ($include_cloned) {
+        $cloned_rack_ids = get_option('aitrongcay_cloned_racks_' . $garden_key, []);
+        $cloned_rack_ids = is_array($cloned_rack_ids) ? array_values($cloned_rack_ids) : (is_string($cloned_rack_ids) && $cloned_rack_ids !== '' ? explode(',', $cloned_rack_ids) : array_values((array) $cloned_rack_ids));
+        if (!empty($cloned_rack_ids)) {
+            $racks = array_unique(array_merge($racks, array_map('intval', $cloned_rack_ids)));
+        }
     }
 
     if (empty($racks)) {
-        $cache[$garden_key] = [];
+        $cache[$cache_key] = [];
         return [];
     }
 
     $rack_ids_placeholder = implode(',', array_map('intval', $racks));
     $table = aitrongcay_garden_rack_slots_table();
-    $cache[$garden_key] = $wpdb->get_results("SELECT * FROM {$table} WHERE rack_id IN ({$rack_ids_placeholder}) ORDER BY rack_id ASC, slot_index ASC, id ASC", ARRAY_A) ?: [];
-    return $cache[$garden_key];
+    $cache[$cache_key] = $wpdb->get_results("SELECT * FROM {$table} WHERE rack_id IN ({$rack_ids_placeholder}) ORDER BY rack_id ASC, slot_index ASC, id ASC", ARRAY_A) ?: [];
+    return $cache[$cache_key];
 }
 
 function aitrongcay_upsert_rack_record(string $garden_key, array $payload = []): bool
