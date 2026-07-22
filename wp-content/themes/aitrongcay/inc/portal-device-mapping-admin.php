@@ -470,21 +470,40 @@ function aitrongcay_known_gardens_for_device_admin(): array
     }
 
     global $wpdb;
-    if (function_exists('aitrongcay_garden_members_table')) {
-        $table = aitrongcay_garden_members_table();
-        $rows = $wpdb->get_results("SELECT DISTINCT garden_key FROM {$table} ORDER BY garden_key ASC", ARRAY_A) ?: [];
+    if (function_exists('aitrongcay_garden_members_table') && function_exists('aitrongcay_gardens_table')) {
+        $members_table = aitrongcay_garden_members_table();
+        $gardens_table = aitrongcay_gardens_table();
+        
+        // Tối ưu hóa: Dùng 1 câu truy vấn JOIN duy nhất thay vì lặp qua từng khu vườn
+        $sql = "
+            SELECT 
+                m.garden_key,
+                m.user_id as owner_id,
+                g.garden_name,
+                u.user_email,
+                u.display_name
+            FROM {$members_table} m
+            LEFT JOIN {$gardens_table} g ON m.garden_key = g.garden_key
+            LEFT JOIN {$wpdb->users} u ON m.user_id = u.ID
+            WHERE m.role = 'owner' AND m.status = 'active'
+        ";
+        $rows = $wpdb->get_results($sql, ARRAY_A) ?: [];
+        
         foreach ($rows as $row) {
             $garden_key = sanitize_text_field((string) ($row['garden_key'] ?? ''));
             if ($garden_key === '') {
                 continue;
             }
             if (! isset($gardens[$garden_key])) {
-                $owner = function_exists('aitrongcay_get_garden_owner_user') ? aitrongcay_get_garden_owner_user($garden_key) : null;
-                $profile = function_exists('aitrongcay_portal_profile_for_garden_context') ? aitrongcay_portal_profile_for_garden_context($garden_key, $owner instanceof WP_User ? $owner : null) : null;
+                $garden_name = trim((string) ($row['garden_name'] ?? ''));
+                if ($garden_name === '') {
+                    $display_name = trim((string) ($row['display_name'] ?? 'Khách hàng'));
+                    $garden_name = 'Vườn của ' . $display_name;
+                }
                 $gardens[$garden_key] = [
                     'garden_key' => $garden_key,
-                    'label' => (string) (($profile['garden_name'] ?? $garden_key)),
-                    'owner_email' => strtolower(trim((string) ($owner->user_email ?? ''))),
+                    'label' => $garden_name,
+                    'owner_email' => strtolower(trim((string) ($row['user_email'] ?? ''))),
                     'dataset_key' => '',
                 ];
             }

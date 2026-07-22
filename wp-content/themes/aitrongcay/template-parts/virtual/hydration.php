@@ -857,7 +857,6 @@ if (function_exists('aitrongcay_blynk_get_pump_history') && $blynk_token !== '')
   // AJAX Polling for Real-time History
   let hyPollInterval = null;
   const hyModal = document.getElementById('hy-history-modal');
-  const blynkToken = "<?php echo esc_js($blynk_token); ?>";
   const apiUrl = "<?php echo esc_url(rest_url('aitrongcay/v1/pump-history')); ?>";
 
   function fetchPumpHistory() {

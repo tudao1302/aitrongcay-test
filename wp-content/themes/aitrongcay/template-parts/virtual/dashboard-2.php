@@ -4532,6 +4532,15 @@ $rent_rack_url = home_url('/portal/kho-nong-cu-2/');
                 <?php endif; ?>
               <?php endif; ?>
             </div>
+            <script>
+              document.addEventListener('click', function(e) {
+                if (!e.target.closest('.d2-pot-menu-wrap')) {
+                  document.querySelectorAll('.d2-pot-menu-dropdown').forEach(function(menu) {
+                    menu.style.display = 'none';
+                  });
+                }
+              });
+            </script>
             <?php if (!empty($hero_growth_journey['hasGrowthJourney'])): ?>
               <div class="d2-growth-track" data-d2-growth-track>
                 <div class="d2-growth-progress" data-d2-growth-progress

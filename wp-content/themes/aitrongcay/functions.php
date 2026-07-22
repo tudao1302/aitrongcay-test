@@ -9622,6 +9622,36 @@ function aitrongcay_daily_login_bonus(): void
                 home_url('/portal/doi-diem/')
             );
         }
+
+        // Kiểm tra nhắc nhở đáo hạn gói nâng cấp (còn <= 3 ngày)
+        if (function_exists('aitrongcay_get_active_subscription_plan') && function_exists('aitrongcay_add_notification')) {
+            $plan = aitrongcay_get_active_subscription_plan($user_id);
+            if (!empty($plan['id']) && $plan['expiry'] > 0) {
+                $now = time();
+                $diff = $plan['expiry'] - $now;
+                $days_left = ceil($diff / DAY_IN_SECONDS);
+                
+                if ($days_left >= 0 && $days_left <= 3) {
+                    $plan_name = 'Gói Nâng Cấp';
+                    if ($plan['id'] === 'prime') $plan_name = 'Verdant Prime';
+                    elseif ($plan['id'] === 'enterprise') $plan_name = 'Eco Enterprise';
+                    elseif ($plan['id'] === 'basic') $plan_name = 'Basic Seed';
+                    
+                    if ($days_left == 0) {
+                        $msg = 'Gói ' . $plan_name . ' của bạn sẽ hết hạn trong hôm nay. Vui lòng gia hạn để không bị gián đoạn dịch vụ!';
+                    } else {
+                        $msg = 'Gói ' . $plan_name . ' của bạn sẽ hết hạn sau ' . $days_left . ' ngày nữa. Đừng quên gia hạn nhé!';
+                    }
+                    
+                    aitrongcay_add_notification(
+                        $user_id,
+                        '⚠️ Nhắc nhở đáo hạn',
+                        $msg,
+                        home_url('/nang-cap-goi/')
+                    );
+                }
+            }
+        }
     }
 }
 add_action('wp', 'aitrongcay_daily_login_bonus');

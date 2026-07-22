@@ -576,6 +576,24 @@ set_query_var('aitr_eco_shell', [
         var cartTotal = document.querySelector('[data-eco-warehouse-cart-total]');
         var cartClear = document.querySelector('[data-eco-warehouse-cart-clear]');
         function formatNumber(n){ return new Intl.NumberFormat('vi-VN').format(n); }
+        function saveCart() {
+          if (!cartList) return;
+          var items = cartList.querySelectorAll('[data-cart-item]');
+          var cartData = [];
+          items.forEach(function(item){
+            cartData.push({
+              name: item.getAttribute('data-cart-key'),
+              qty: Number(item.getAttribute('data-cart-qty')),
+              total: Number(item.getAttribute('data-cart-total')),
+              category: item.getAttribute('data-cart-category'),
+              stock: Number(item.getAttribute('data-cart-stock')),
+              image: item.getAttribute('data-cart-image'),
+              price: Number(item.getAttribute('data-cart-unit-price'))
+            });
+          });
+          sessionStorage.setItem('eco_warehouse_cart', JSON.stringify(cartData));
+        }
+
         function recalc(){
           if (!cartList) return;
           var items = cartList.querySelectorAll('[data-cart-item]');
@@ -589,30 +607,25 @@ set_query_var('aitr_eco_shell', [
           if (cartTotal) cartTotal.textContent = formatNumber(total) + 'đ';
           var cartBox = cartList.closest('.eco-warehouse-cart');
           if (cartBox) cartBox.classList.toggle('is-empty', items.length === 0);
+          saveCart();
         }
+
         if (cartClear && cartList) {
           cartClear.addEventListener('click', function(){
             cartList.innerHTML = '';
             recalc();
           });
         }
-        document.querySelectorAll('[data-eco-warehouse-buy-row]').forEach(function(row){
-          var buyBtn = row.querySelector('[data-eco-warehouse-buy]');
-          if (buyBtn) buyBtn.addEventListener('click', function(){
+
+        function addItemToCart(name, price, stock, image, category, qty, isLoad) {
             if (!cartList) return;
-            var name = row.getAttribute('data-tool-name') || 'Vật tư';
-            var price = Number(row.getAttribute('data-tool-price') || '0');
-            var stock = Number(row.getAttribute('data-tool-stock') || '0');
-            var image = row.getAttribute('data-tool-image') || '';
-            var category = row.getAttribute('data-tool-category') || 'Kho';
-            var qty = 1;
             var total = price * qty;
-            if (qty > stock) { ecoAlert('Sản phẩm này đã hết hàng trong kho.'); return; }
+            if (!isLoad && qty > stock) { ecoAlert('Sản phẩm này đã hết hàng trong kho.'); return; }
             var existingItem = cartList.querySelector('[data-cart-key="' + CSS.escape(name) + '"]');
             if (existingItem) {
               var currentQty = Number(existingItem.getAttribute('data-cart-qty') || '0');
-              var newQty = currentQty + qty;
-              if (newQty > stock) { ecoAlert('Sản phẩm này trong kho chỉ còn ' + stock + ' đơn vị.'); return; }
+              var newQty = isLoad ? qty : (currentQty + qty);
+              if (!isLoad && newQty > stock) { ecoAlert('Sản phẩm này trong kho chỉ còn ' + stock + ' đơn vị.'); return; }
               var newTotal = price * newQty;
               existingItem.setAttribute('data-cart-qty', String(newQty));
               existingItem.setAttribute('data-cart-total', String(newTotal));
@@ -629,6 +642,8 @@ set_query_var('aitr_eco_shell', [
               item.setAttribute('data-cart-total',    String(total));
               item.setAttribute('data-cart-category', category);
               item.setAttribute('data-cart-stock',    String(stock));
+              item.setAttribute('data-cart-image',    image);
+              item.setAttribute('data-cart-unit-price', String(price));
               item.innerHTML = '<img src="' + image + '" alt="' + name.replace(/"/g, '&quot;') + '">'
                 + '<div><div style="font-weight:800;font-size:14px">' + name + '</div>'
                 + '<div style="font-size:11px;color:rgba(227,227,222,.5);margin-bottom:3px">' + category + '</div>'
@@ -664,11 +679,40 @@ set_query_var('aitr_eco_shell', [
                 var pd = item.querySelector('[data-cart-price]'); if (pd) pd.textContent = formatNumber(price * q) + 'đ';
                 recalc();
               });
-              cartList.prepend(item);
+              if (isLoad) {
+                  cartList.appendChild(item);
+              } else {
+                  cartList.prepend(item);
+              }
             }
             recalc();
+        }
+
+        function loadCart() {
+          if (!cartList) return;
+          try {
+            var data = JSON.parse(sessionStorage.getItem('eco_warehouse_cart'));
+            if (Array.isArray(data)) {
+               data.forEach(function(d) {
+                  addItemToCart(d.name, d.price, d.stock, d.image, d.category, d.qty, true);
+               });
+            }
+          } catch (e) {}
+        }
+
+        document.querySelectorAll('[data-eco-warehouse-buy-row]').forEach(function(row){
+          var buyBtn = row.querySelector('[data-eco-warehouse-buy]');
+          if (buyBtn) buyBtn.addEventListener('click', function(){
+            var name = row.getAttribute('data-tool-name') || 'Vật tư';
+            var price = Number(row.getAttribute('data-tool-price') || '0');
+            var stock = Number(row.getAttribute('data-tool-stock') || '0');
+            var image = row.getAttribute('data-tool-image') || '';
+            var category = row.getAttribute('data-tool-category') || 'Kho';
+            addItemToCart(name, price, stock, image, category, 1, false);
           });
         });
+        
+        loadCart();
 
         var urlParams = new URLSearchParams(window.location.search);
         var autoAddCode = urlParams.get('add_to_cart');

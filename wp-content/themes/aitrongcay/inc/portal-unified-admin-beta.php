@@ -1436,9 +1436,25 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                             
                             $selected_is_admin = false;
                             $owner_user = function_exists('aitrongcay_get_garden_owner_user') ? aitrongcay_get_garden_owner_user($selected_garden_key) : null;
-                            if ($owner_user instanceof WP_User && user_can($owner_user, 'manage_options')) {
-                                $selected_is_admin = true;
+                            
+                            $g_phone = 'Không xác định';
+                            $owner_id_for_phone = 0;
+                            if ($owner_user instanceof WP_User) {
+                                $owner_id_for_phone = $owner_user->ID;
+                                if (user_can($owner_user, 'manage_options')) {
+                                    $selected_is_admin = true;
+                                }
+                            } else if (!empty($g_email)) {
+                                $user_by_email = get_user_by('email', $g_email);
+                                if ($user_by_email) $owner_id_for_phone = $user_by_email->ID;
                             }
+                            if ($owner_id_for_phone > 0) {
+                                $phone = get_user_meta($owner_id_for_phone, 'aitrongcay_phone', true);
+                                if (empty($phone)) $phone = get_user_meta($owner_id_for_phone, 'billing_phone', true);
+                                if (empty($phone)) $phone = get_user_meta($owner_id_for_phone, 'phone', true);
+                                if (!empty($phone)) $g_phone = $phone;
+                            }
+                            
                             $assignable_racks = $selected_is_admin ? $wpdb->get_results("SELECT * FROM {$wpdb->prefix}aitr_garden_racks ORDER BY id ASC", ARRAY_A) ?: [] : $available_racks;
 
                             // Get auto pump settings
@@ -1460,6 +1476,10 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                                         <div class="aitr-meta-row-single" style="margin-top:10px">
                                             <span class="lbl">Email Khách hàng</span>
                                             <span class="val"><?php echo esc_html($g_email); ?></span>
+                                        </div>
+                                        <div class="aitr-meta-row-single" style="margin-top:10px">
+                                            <span class="lbl">Số điện thoại</span>
+                                            <span class="val" style="font-weight:600;color:#f8fafc"><?php echo esc_html($g_phone); ?></span>
                                         </div>
                                     </div>
                                 </div>
@@ -1716,6 +1736,50 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                                 $status = (string) ($rk['status'] ?? 'inventory');
                                 $connectivity = (string) ($rk['connectivity_status'] ?? 'unknown');
                                 $is_inventory = $status === 'inventory';
+
+                                $owner_info_html = '';
+                                if ($status === 'assigned') {
+                                    $g_key = (string) ($rk['garden_key'] ?? '');
+                                    $o_uid = (int) ($rk['owner_user_id'] ?? 0);
+                                    
+                                    $g_name = 'Không xác định';
+                                    $o_email = 'Không xác định';
+                                    
+                                    if ($g_key) {
+                                        if (function_exists('aitrongcay_get_garden_display_name')) {
+                                            $g_name = aitrongcay_get_garden_display_name($g_key);
+                                        } else {
+                                            $g_record = aitrongcay_get_garden_record($g_key);
+                                            if ($g_record && !empty($g_record['garden_name'])) {
+                                                $g_name = $g_record['garden_name'];
+                                            }
+                                        }
+                                    }
+                                    $o_phone = 'Không xác định';
+                                    
+                                    if ($o_uid <= 0 && $g_key && function_exists('aitrongcay_get_garden_owner_user')) {
+                                        $gu = aitrongcay_get_garden_owner_user($g_key);
+                                        if ($gu instanceof WP_User) {
+                                            $o_uid = $gu->ID;
+                                        }
+                                    }
+                                    
+                                    if ($o_uid > 0) {
+                                        $u = get_user_by('id', $o_uid);
+                                        if ($u) {
+                                            $o_email = $u->user_email;
+                                            
+                                            $phone = get_user_meta($o_uid, 'aitrongcay_phone', true);
+                                            if (empty($phone)) $phone = get_user_meta($o_uid, 'billing_phone', true);
+                                            if (empty($phone)) $phone = get_user_meta($o_uid, 'phone', true);
+                                            if (!empty($phone)) $o_phone = $phone;
+                                        }
+                                    }
+                                    
+                                    $owner_info_html = "data-gkey='".esc_attr($g_key)."' data-gname='".esc_attr($g_name)."' data-oemail='".esc_attr($o_email)."' data-ophone='".esc_attr($o_phone)."'";
+                                } else {
+                                    $owner_info_html = "data-gkey='' data-gname='Hiện là rack đang trống' data-oemail='Chưa có thông tin' data-ophone='Chưa có thông tin'";
+                                }
                         ?>
                                 <tr>
                                     <td><code><?php echo esc_html((string) ($rk['rack_code'] ?? '')); ?></code></td>
@@ -1724,6 +1788,7 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                                         <span style="padding:3px 8px;border-radius:4px;font-size:11px;background:<?php echo $is_inventory ? '#1e293b' : 'rgba(16,185,129,0.1)'; ?>;color:<?php echo $is_inventory ? '#94a3b8' : '#34d399'; ?>">
                                             <?php echo esc_html($status); ?>
                                         </span>
+                                        <i class="fa-solid fa-circle-info aitr-owner-info-btn" style="color:<?php echo $is_inventory ? '#64748b' : '#10b981'; ?>;cursor:pointer;margin-left:8px;font-size:13px" title="Xem thông tin sở hữu" <?php echo $owner_info_html; ?>></i>
                                     </td>
                                     <td>
                                         <?php
@@ -1775,6 +1840,47 @@ function aitrongcay_render_unified_admin_beta_page(): void {
                         ?>
                     </tbody>
                 </table>
+
+                <!-- Modal Thông tin sở hữu -->
+                <div id="aitr-owner-info-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:99999;align-items:center;justify-content:center;">
+                    <div style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;width:100%;max-width:700px;box-shadow:0 15px 35px rgba(0,0,0,0.5);margin: 20px;">
+                        <div style="padding:16px 24px;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center;">
+                            <h3 style="margin:0;color:#10b981;font-size:16px;font-weight:600"><i class="fa-solid fa-circle-user" style="margin-right:6px"></i> Thông tin sở hữu</h3>
+                            <span style="cursor:pointer;color:#64748b;font-size:18px;transition:color 0.2s" onclick="document.getElementById('aitr-owner-info-modal').style.display='none'" onmouseover="this.style.color='#f1f5f9'" onmouseout="this.style.color='#64748b'"><i class="fa-solid fa-times"></i></span>
+                        </div>
+                        <div style="padding:32px 24px;display:flex;flex-wrap:wrap;gap:30px;">
+                            <div style="flex:1;min-width:220px;">
+                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;margin-bottom:8px;font-weight:500;letter-spacing:0.5px">TÊN VƯỜN</div>
+                                <div id="aitr-owner-gname" style="font-weight:600;color:#f8fafc;font-size:15px"></div>
+                                
+                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;margin-bottom:8px;margin-top:28px;font-weight:500;letter-spacing:0.5px">EMAIL KHÁCH HÀNG</div>
+                                <div id="aitr-owner-email" style="font-weight:600;color:#f8fafc;font-size:15px"></div>
+                            </div>
+                            <div style="flex:1;min-width:250px;">
+                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;margin-bottom:8px;font-weight:500;letter-spacing:0.5px">MÃ KHU VƯỜN (GARDEN KEY)</div>
+                                <div id="aitr-owner-gkey" style="color:#10b981;font-size:13px;word-break:break-all;font-family:monospace;background:rgba(16,185,129,0.1);padding:8px 12px;border-radius:6px;border:1px dashed rgba(16,185,129,0.3)"></div>
+                                
+                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;margin-bottom:8px;margin-top:28px;font-weight:500;letter-spacing:0.5px">SỐ ĐIỆN THOẠI</div>
+                                <div id="aitr-owner-phone" style="font-weight:600;color:#f8fafc;font-size:15px"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    document.querySelectorAll('.aitr-owner-info-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            let gkey = this.getAttribute('data-gkey');
+                            document.getElementById('aitr-owner-gkey').innerText = gkey || 'Chưa có thông tin';
+                            document.getElementById('aitr-owner-gname').innerText = this.getAttribute('data-gname') || '';
+                            document.getElementById('aitr-owner-email').innerText = this.getAttribute('data-oemail') || '';
+                            document.getElementById('aitr-owner-phone').innerText = this.getAttribute('data-ophone') || '';
+                            document.getElementById('aitr-owner-info-modal').style.display = 'flex';
+                        });
+                    });
+                });
+                </script>
             </div>
 
         <!-- Tab 3.5: Rewards Management Panel -->
